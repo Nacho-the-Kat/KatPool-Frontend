@@ -130,23 +130,26 @@ export default function AnalyticsCard04() {
     return baseAmount * BigInt(Math.round(multiplier));
   };
 
-  const calculateNachoRebate = (kasAmount: bigint | null) => {
-    if (kasAmount === null || kasPrice === null || nachoPrice === null) return null;
-
-    // Convert the sompi amount to KAS
-    const kasValue = Number(kasAmount) / 100000000;
-
-    // Calculate USD value of the KAS
-    const kasUSDValue = kasValue * kasPrice;
-
-    // Calculate the total fee amount in USD
-    const feeAmount = kasUSDValue / 0.9925;
-
-    // Calculate NACHO rebate based on qualification
-    const rebateFactor = isQualified ? 1 : 1/3;
-    const nachoRebate = (feeAmount * rebateFactor) / nachoPrice;
-
-    return nachoRebate;
+  const calculateNachoRebate = (kasAmount: bigint | null): number | null => {
+    if (!kasAmount || !kasPrice || !nachoPrice) return null;
+    
+    // Pool fee is 0.5% of KAS amount
+    const poolFee = kasAmount * BigInt(5) / BigInt(1000);
+    
+    // Calculate rebate percentage based on qualification
+    const rebatePercent = isQualified ? BigInt(100) : BigInt(33);
+    
+    // Calculate KAS value of rebate
+    const kasRebate = (poolFee * rebatePercent) / BigInt(100);
+    
+    // Account for 10% loss during swap
+    const kasAfterSwapLoss = (kasRebate * BigInt(90)) / BigInt(100);
+    
+    // Convert KAS value to NACHO tokens
+    if (nachoPrice === 0) return null;
+    
+    // Convert to number at the end for display
+    return Number(kasAfterSwapLoss) * (kasPrice / nachoPrice) / 1e8;
   };
 
   const calculateUSDValue = (kasAmount: bigint | null, nachoRebate: number | null) => {
