@@ -12,6 +12,27 @@ interface Payment {
   transactionHash: string;
 }
 
+interface EstimateRange {
+  low: bigint;
+  expected: bigint;
+  high: bigint;
+}
+
+// Add a confidence score type
+type ConfidenceLevel = 'high' | 'medium' | 'low';
+
+// Add interfaces for hashrate data
+interface HashratePoint {
+  value: number;
+  timestamp: number;
+}
+
+// Add interface for difficulty data
+interface DifficultyPoint {
+  timestamp: number;
+  value: number;
+}
+
 export default function AnalyticsCard04() {
   const searchParams = useSearchParams()
   const walletAddress = searchParams.get('wallet')
@@ -21,6 +42,12 @@ export default function AnalyticsCard04() {
   const [kasPrice, setKasPrice] = useState<number | null>(null)
   const [nachoPrice, setNachoPrice] = useState<number | null>(null)
   const [hasPayments, setHasPayments] = useState<boolean>(false)
+  const [recentPayments, setRecentPayments] = useState<Payment[]>([])
+  const [averagePayment, setAveragePayment] = useState<bigint | null>(null)
+  const [networkDifficulty, setNetworkDifficulty] = useState<number | null>(null)
+  const [minerHashrate, setMinerHashrate] = useState<number | null>(null)
+  // Add state for confidence
+  const [estimateConfidence, setEstimateConfidence] = useState<ConfidenceLevel>('medium');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,17 +55,22 @@ export default function AnalyticsCard04() {
 
       try {
         setIsLoading(true);
-        const [paymentsRes, kasPriceRes, nachoPriceRes] = await Promise.all([
+        const [paymentsRes, kasPriceRes, nachoPriceRes, hashrateRes] = await Promise.all([
           $fetch(`/api/miner/payments?wallet=${walletAddress}`),
           $fetch('/api/pool/price'),
-          $fetch('/api/pool/nachoPrice')
+          $fetch('/api/pool/nachoPrice'),
+          $fetch(`/api/miner/currentHashrate?wallet=${walletAddress}`)
         ]);
 
         if (paymentsRes.status === 'success') {
           setHasPayments(paymentsRes.data.length > 0);
           if (paymentsRes.data.length > 0) {
-            const latestPayment = paymentsRes.data[0];
-            const dailyEstimate = BigInt(latestPayment.amount) * BigInt(2);
+            setRecentPayments(paymentsRes.data);
+            
+            const confidence = calculateConfidence(paymentsRes.data, hashrateRes.data?.minerHashrate);
+            setEstimateConfidence(confidence);
+            
+            const dailyEstimate = calculateDailyEstimate(paymentsRes.data);
             setDailyKas(dailyEstimate);
           } else {
             setDailyKas(null);
@@ -53,6 +85,11 @@ export default function AnalyticsCard04() {
           setNachoPrice(nachoPriceRes.data.price);
         }
 
+        if (hashrateRes.status === 'success') {
+          setNetworkDifficulty(hashrateRes.data.networkDifficulty);
+          setMinerHashrate(hashrateRes.data.minerHashrate);
+        }
+
         setError(null);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -61,6 +98,8 @@ export default function AnalyticsCard04() {
         setKasPrice(null);
         setNachoPrice(null);
         setHasPayments(false);
+        setNetworkDifficulty(null);
+        setMinerHashrate(null);
       } finally {
         setIsLoading(false);
       }
@@ -142,26 +181,164 @@ export default function AnalyticsCard04() {
     });
   };
 
-  const renderRow = (period: string, kasAmount: bigint | null) => {
-    const nachoRebate = calculateNachoRebate(kasAmount);
-    const usdValue = calculateUSDValue(kasAmount, nachoRebate);
+  const calculateDailyEstimate = (payments: Payment[]): bigint => {
+    if (payments.length === 0) return BigInt(0);
+    
+    let weightedSum = BigInt(0);
+    let weightSum = 0;
+    
+    // Use up to last 5 payments with exponential decay
+    const recentPayouts = payments.slice(0, 5);
+    recentPayouts.forEach((payment, index) => {
+      const weight = Math.exp(-0.5 * index); // Exponential decay factor
+      weightedSum += BigInt(Math.round(Number(payment.amount) * weight));
+      weightSum += weight;
+    });
+    
+    const weightedAvg = weightedSum / BigInt(Math.round(weightSum * 1e8)) * BigInt(1e8);
+    return weightedAvg * BigInt(2); // Double for daily estimate
+  };
 
+  const calculateConfidence = (payments: Payment[], currentHashrate: number | null): ConfidenceLevel => {
+    if (!payments.length || !currentHashrate) return 'low';
+
+    // Check payment consistency
+    const paymentTimestamps = payments.map(p => p.timestamp);
+    const intervals = paymentTimestamps
+      .slice(1)
+      .map((timestamp, i) => timestamp - paymentTimestamps[i]);
+    
+    const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+    const expectedInterval = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+    const intervalVariance = Math.abs(avgInterval - expectedInterval) / expectedInterval;
+
+    // Check payment amount consistency
+    const amounts = payments.slice(0, 5).map(p => p.amount);
+    const avgAmount = amounts.reduce((sum, amount) => sum + amount, 0) / amounts.length;
+    const amountVariance = amounts
+      .map(amount => Math.abs(amount - avgAmount) / avgAmount)
+      .reduce((max, variance) => Math.max(max, variance), 0);
+
+    if (intervalVariance < 0.1 && amountVariance < 0.1 && payments.length >= 5) {
+      return 'high';
+    } else if (intervalVariance < 0.2 && amountVariance < 0.2 && payments.length >= 3) {
+      return 'medium';
+    }
+    return 'low';
+  };
+
+  const renderRow = (label: string, amount: bigint | null) => {
+    const nachoRebate = calculateNachoRebate(amount);
+    const usdValue = calculateUSDValue(amount, nachoRebate);
+    
     return (
       <tr>
         <td className="p-2">
-          <div className="text-gray-800 dark:text-gray-100">{period}</div>
+          <div className="flex items-center">
+            <div className="text-gray-800 dark:text-gray-100">{label}</div>
+            {label !== 'Hourly' && label !== 'Daily' && (
+              <div className="ml-2 w-2 h-2 rounded-full" 
+                   style={{ 
+                     backgroundColor: estimateConfidence === 'high' ? '#10B981' : 
+                                    estimateConfidence === 'medium' ? '#F59E0B' : 
+                                    '#EF4444'
+                   }} 
+              />
+            )}
+          </div>
         </td>
-        <td className="p-2">
-          <div className="text-center">{formatKas(kasAmount)}</div>
-        </td>
-        <td className="p-2">
-          <div className="text-center">{formatNacho(nachoRebate)}</div>
-        </td>
-        <td className="p-2">
-          <div className="text-center text-green-500">{formatUSD(usdValue)}</div>
-        </td>
+        <td className="p-2 text-center">{formatKas(amount)}</td>
+        <td className="p-2 text-center">{formatNacho(nachoRebate)}</td>
+        <td className="p-2 text-center">{formatUSD(usdValue)}</td>
       </tr>
     );
+  };
+
+  const calculateHashrateAdjustedEstimate = (baseEstimate: bigint) => {
+    if (!minerHashrate || !averagePayment) return baseEstimate;
+    
+    const currentHashrateGhs = minerHashrate;
+    const avgHashrateGhs = calculateAverageHashrate(recentPayments);
+    
+    if (avgHashrateGhs === 0) return baseEstimate;
+    
+    const adjustmentFactor = currentHashrateGhs / avgHashrateGhs;
+    return BigInt(Math.round(Number(baseEstimate) * adjustmentFactor));
+  };
+
+  const calculateAverageHashrate = (payments: Payment[]): number => {
+    if (payments.length < 2) return 0;
+    
+    const hashrates: number[] = [];
+    for (let i = 1; i < payments.length; i++) {
+      const interval = (payments[i-1].timestamp - payments[i].timestamp) / 1000;
+      const amount = Number(payments[i].amount) / 1e8;
+      if (interval > 0) {
+        hashrates.push(amount / interval);
+      }
+    }
+    
+    return hashrates.length > 0 
+      ? hashrates.reduce((a, b) => a + b, 0) / hashrates.length 
+      : 0;
+  };
+
+  // Fix type errors in calculateHashrateStability
+  const calculateHashrateStability = async (wallet: string | null): Promise<number> => {
+    if (!wallet) return 1;
+    
+    const response = await $fetch(`/api/miner/workerHashrate?wallet=${wallet}`);
+    if (response.status !== 'success') return 1;
+
+    const last24Hours = response.data['24h'] || [];
+    if (last24Hours.length === 0) return 1;
+
+    // Fix type errors in the map and reduce functions
+    const values = last24Hours.map((point: HashratePoint) => point.value);
+    const mean = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+    const variance = values.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / values.length;
+    const stdDev = Math.sqrt(variance);
+    
+    return 1 - (stdDev / mean) * 0.1;
+  };
+
+  // Modify getAdjustedEstimate to include difficulty trend
+  const getAdjustedEstimate = async (baseEstimate: bigint) => {
+    if (!walletAddress) return baseEstimate;
+    
+    const [stabilityFactor, difficultyFactor] = await Promise.all([
+      calculateHashrateStability(walletAddress),
+      calculateDifficultyTrend()
+    ]);
+    
+    const hashrateAdjusted = calculateHashrateAdjustedEstimate(baseEstimate);
+    return BigInt(Math.round(
+      Number(hashrateAdjusted) * 
+      stabilityFactor * 
+      difficultyFactor
+    ));
+  };
+
+  // Fix the calculateDifficultyTrend function
+  const calculateDifficultyTrend = async (): Promise<number> => {
+    try {
+      const response = await $fetch<{ status: string; data: DifficultyPoint[] }>('/api/pool/networkDifficulty/history');
+      if (response.status !== 'success' || !response.data) return 1;
+
+      const difficulties = response.data.slice(-12); // Last 12 hours
+      if (difficulties.length < 2) return 1;
+
+      const trend = difficulties.reduce((acc: number, curr: DifficultyPoint, idx: number, arr: DifficultyPoint[]) => {
+        if (idx === 0) return acc;
+        return acc + (curr.value / arr[idx - 1].value - 1);
+      }, 0) / (difficulties.length - 1);
+
+      // Return a factor between 0.9 and 1.1 based on trend
+      return Math.max(0.9, Math.min(1.1, 1 + trend));
+    } catch (error) {
+      console.error('Error calculating difficulty trend:', error);
+      return 1; // Default to no adjustment on error
+    }
   };
 
   return (
