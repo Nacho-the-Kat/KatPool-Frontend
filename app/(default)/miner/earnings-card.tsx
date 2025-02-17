@@ -30,6 +30,11 @@ interface DifficultyPoint {
   value: number;
 }
 
+// Current block reward constants as of Feb 2025
+// const CURRENT_BLOCK_REWARD = 65; // KAS per block
+const BLOCKS_PER_DAY = 144; // Average Kaspa blocks per day
+const MONTHLY_REDUCTION_PERCENT = 5.6; // Approximate monthly reduction percentage
+
 export default function AnalyticsCard04() {
   const searchParams = useSearchParams()
   const walletAddress = searchParams.get('wallet')
@@ -44,6 +49,7 @@ export default function AnalyticsCard04() {
   const [networkDifficulty, setNetworkDifficulty] = useState<number | null>(null)
   const [minerHashrate, setMinerHashrate] = useState<number | null>(null)
   const [isQualified, setIsQualified] = useState<boolean>(false)
+  const [currentBlockReward, setCurrentBlockReward] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,13 +57,22 @@ export default function AnalyticsCard04() {
 
       try {
         setIsLoading(true);
-        const [paymentsRes, kasPriceRes, nachoPriceRes, hashrateRes, nachoBalanceRes, nachoNFTsRes] = await Promise.all([
+        const [
+          paymentsRes, 
+          kasPriceRes, 
+          nachoPriceRes, 
+          hashrateRes, 
+          nachoBalanceRes, 
+          nachoNFTsRes,
+          blockRewardRes  // Add block reward fetch
+        ] = await Promise.all([
           $fetch(`/api/miner/payments?wallet=${walletAddress}`),
           $fetch('/api/pool/price'),
           $fetch('/api/pool/nachoPrice'),
           $fetch(`/api/miner/currentHashrate?wallet=${walletAddress}`),
           $fetch(`/api/pool/nachoBalance?wallet=${walletAddress}`),
-          $fetch(`/api/pool/nachoNFTs?wallet=${walletAddress}`)
+          $fetch(`/api/pool/nachoNFTs?wallet=${walletAddress}`),
+          $fetch('/api/pool/blockReward')  // Add this endpoint
         ]);
 
         // Check qualification status
@@ -65,12 +80,21 @@ export default function AnalyticsCard04() {
         const isQualifiedByNFTs = nachoNFTsRes.status === 'success' && nachoNFTsRes.data.qualified;
         setIsQualified(isQualifiedByTokens || isQualifiedByNFTs);
 
+        if (blockRewardRes.status === 'success') {
+          setCurrentBlockReward(Number(blockRewardRes.data.amount));
+        }
+
         if (paymentsRes.status === 'success') {
           setHasPayments(paymentsRes.data.length > 0);
           if (paymentsRes.data.length > 0) {
             setRecentPayments(paymentsRes.data);
             
-            const dailyEstimate = calculateDailyEstimate(paymentsRes.data);
+            const dailyEstimate = calculateDailyEstimate(
+              paymentsRes.data, 
+              minerHashrate, 
+              networkDifficulty,
+              currentBlockReward
+            );
             setDailyKas(dailyEstimate);
           } else {
             setDailyKas(null);
@@ -101,6 +125,7 @@ export default function AnalyticsCard04() {
         setHasPayments(false);
         setNetworkDifficulty(null);
         setMinerHashrate(null);
+        setCurrentBlockReward(null);
       } finally {
         setIsLoading(false);
       }
@@ -183,22 +208,93 @@ export default function AnalyticsCard04() {
     });
   };
 
-  const calculateDailyEstimate = (payments: Payment[]): bigint => {
-    if (payments.length === 0) return BigInt(0);
-    
+  const calculateDailyEstimate = (
+    payments: Payment[], 
+    minerHashrate: number | null, 
+    networkDifficulty: number | null,
+    blockReward: number | null
+  ): bigint | null => {
+    if (!blockReward) return null;
+    if (payments.length < 2) return null;
+
+    const sortedPayments = [...payments].sort((a, b) => b.timestamp - a.timestamp);
+    const recentPayments = sortedPayments.slice(0, 14); // Last 7 days
+
+    // Calculate time-weighted average of payments with progressive decay
     let weightedSum = BigInt(0);
     let weightSum = 0;
     
-    // Use up to last 5 payments with exponential decay
-    const recentPayouts = payments.slice(0, 5);
-    recentPayouts.forEach((payment, index) => {
-      const weight = Math.exp(-0.5 * index); // Exponential decay factor
-      weightedSum += BigInt(Math.round(Number(payment.amount) * weight));
+    // Get the most recent payment's block reward at the time
+    const latestPaymentAmount = Number(recentPayments[0].amount) / 100000000; // Convert sompi to KAS
+    const latestPaymentBlockCount = Math.round(latestPaymentAmount / blockReward); // Approximate blocks found
+
+    recentPayments.forEach((payment, index) => {
+      // Calculate weight as before
+      let weight: number;
+      if (index < 2) {
+        weight = 1 - (index * 0.1);
+      } else if (index < 6) {
+        weight = 0.8 - ((index - 2) * 0.05);
+      } else {
+        weight = 0.5 - ((index - 6) * 0.02);
+      }
+
+      // Normalize the payment amount based on current block reward
+      const paymentAmount = Number(payment.amount) / 100000000; // Convert to KAS
+      const estimatedBlocks = Math.round(paymentAmount / blockReward); // How many blocks this payment represents
+      const normalizedAmount = BigInt(Math.floor(estimatedBlocks * blockReward * 100000000)); // Convert back to sompi
+
+      weightedSum += BigInt(Math.floor(Number(normalizedAmount) * weight));
       weightSum += weight;
     });
+
+    // Get base estimate (in sompi)
+    let baseEstimate = weightedSum / BigInt(Math.floor(weightSum * 1e8)) * BigInt(1e8);
     
-    const weightedAvg = weightedSum / BigInt(Math.round(weightSum * 1e8)) * BigInt(1e8);
-    return weightedAvg * BigInt(2); // Double for daily estimate
+    // Double it for daily (12-hour payments)
+    baseEstimate = baseEstimate * BigInt(2);
+
+    // Apply hashrate adjustment if available
+    if (minerHashrate !== null) {
+      const hashrateAdjustment = calculateHashrateAdjustment(recentPayments, minerHashrate);
+      baseEstimate = applyHashrateAdjustment(baseEstimate, hashrateAdjustment);
+    }
+
+    // Apply more conservative factor for older payments
+    const conservativeFactor = recentPayments.length > 4 ? 92 : 95;
+    return baseEstimate * BigInt(conservativeFactor) / BigInt(100);
+  };
+
+  const calculateHashrateAdjustment = (payments: Payment[], currentHashrate: number): number => {
+    // Get average hashrate during payment period
+    const avgHashrate = calculateAverageHashrate(payments);
+    
+    if (avgHashrate === 0 || !currentHashrate) return 1;
+    
+    // Calculate adjustment factor
+    const adjustment = currentHashrate / avgHashrate;
+    
+    // Cap adjustment to prevent extreme variations
+    // Max 20% adjustment up or down
+    return Math.max(0.8, Math.min(1.2, adjustment));
+  };
+
+  const calculateAverageHashrate = (payments: Payment[]): number => {
+    if (payments.length < 2) return 0;
+    
+    // Get hashrate data points during payment period
+    const hashratePoints = payments.map(payment => ({
+      timestamp: payment.timestamp,
+      hashrate: minerHashrate || 0
+    }));
+    
+    // Calculate simple average
+    const sum = hashratePoints.reduce((acc, point) => acc + point.hashrate, 0);
+    return sum / hashratePoints.length;
+  };
+
+  const applyHashrateAdjustment = (estimate: bigint, adjustment: number): bigint => {
+    return BigInt(Math.floor(Number(estimate) * adjustment));
   };
 
   const renderRow = (label: string, amount: bigint | null) => {
@@ -231,23 +327,6 @@ export default function AnalyticsCard04() {
     
     const adjustmentFactor = currentHashrateGhs / avgHashrateGhs;
     return BigInt(Math.round(Number(baseEstimate) * adjustmentFactor));
-  };
-
-  const calculateAverageHashrate = (payments: Payment[]): number => {
-    if (payments.length < 2) return 0;
-    
-    const hashrates: number[] = [];
-    for (let i = 1; i < payments.length; i++) {
-      const interval = (payments[i-1].timestamp - payments[i].timestamp) / 1000;
-      const amount = Number(payments[i].amount) / 1e8;
-      if (interval > 0) {
-        hashrates.push(amount / interval);
-      }
-    }
-    
-    return hashrates.length > 0 
-      ? hashrates.reduce((a, b) => a + b, 0) / hashrates.length 
-      : 0;
   };
 
   // Fix type errors in calculateHashrateStability
