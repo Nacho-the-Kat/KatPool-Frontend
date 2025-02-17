@@ -183,9 +183,9 @@ export default function AnalyticsCard02() {
                   <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z" />
                 </svg>
               </button>
-              <div className="absolute top-full right-0 mt-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="absolute top-full left-0 mt-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <div className="relative">
-                  <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 right-4 -top-[6px]"></div>
+                  <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 left-4 -top-[6px]"></div>
                   <div className="font-medium mb-1"><strong>About NACHO Rebates:</strong></div>
                   <p className="mb-2">The Nacho rebate is a 0.25% pool fee refund, paid to you in $NACHO tokens. After each payout period, the pool automatically swaps one-third of the fees earned from $KAS to $NACHO and distributes them proportionally to Kat Pool miners. Rebates are paid within an hour of every rewards payout.</p>
                   <p className="mb-2">Below, you can see your recent earnings and rebate payments. Use the "Full Payout History" button at the bottom to view the complete history of payouts for this wallet.</p>
@@ -218,9 +218,9 @@ export default function AnalyticsCard02() {
                       <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z" />
                     </svg>
                   </button>
-                  <div className="absolute bottom-full left-0 mb-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="absolute top-full left-0 mt-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <div className="relative">
-                      <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 left-4 -bottom-[6px]"></div>
+                      <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 left-4 -top-[6px]"></div>
                       <div className="font-medium mb-1"><strong>About Pending NACHO Rebates:</strong></div>
                       <p className="mb-2">
                         This is an estimate of your pending NACHO token rebates from recent mining activity. The actual amount may vary based on:
