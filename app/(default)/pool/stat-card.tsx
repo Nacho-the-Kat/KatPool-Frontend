@@ -80,11 +80,17 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
             break
           case 'nextReward':
             const nextRewardInfo = await KaspaAPI.network.getHalvingInfo()
-            result = `${Math.round(nextRewardInfo.nextHalvingAmount)} KAS`
+            const nextRewardAmount = Number(nextRewardInfo.nextHalvingAmount)
+            result = nextRewardAmount % 1 === 0 
+              ? `${nextRewardAmount} KAS` 
+              : `${nextRewardAmount.toFixed(2)} KAS`
             break
           case 'blockReward':
             const currentRewardResponse = await KaspaAPI.network.getBlockReward(false)
-            result = `${Math.round(Number(currentRewardResponse.blockreward))} KAS`
+            const currentReward = Number(currentRewardResponse.blockreward)
+            result = currentReward % 1 === 0 
+              ? `${currentReward} KAS` 
+              : `${currentReward.toFixed(2)} KAS`
             break
           case 'totalSupply':
             const totalSupplyResponse = await KaspaAPI.network.getTotalSupply()
