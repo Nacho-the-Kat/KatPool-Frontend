@@ -204,7 +204,12 @@ export default function AnalyticsCard02() {
           </div>
           <div>
             <div className="flex items-center">
-              <div className="text-2xl font-bold text-gray-400 dark:text-gray-500">{pendingNachoRebate} NACHO</div>
+              <div className="text-xl font-bold text-gray-400 dark:text-gray-500">
+                {Number(pendingNachoRebate).toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })} NACHO
+              </div>
               <div className="group relative ml-2">
                 <button className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-500">
                   <span className="sr-only">View information</span>
@@ -212,9 +217,9 @@ export default function AnalyticsCard02() {
                     <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z" />
                   </svg>
                 </button>
-                <div className="absolute bottom-full right-0 mb-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="absolute bottom-full left-0 mb-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <div className="relative">
-                    <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 right-4 -bottom-[6px]"></div>
+                    <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 left-4 -bottom-[6px]"></div>
                     <div className="font-medium mb-1"><strong>About Pending NACHO Rebates:</strong></div>
                     <p className="mb-2">
                       This is an estimate of your pending NACHO token rebates from recent mining activity. The actual amount may vary based on:
