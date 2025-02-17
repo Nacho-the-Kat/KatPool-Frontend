@@ -18,9 +18,6 @@ interface EstimateRange {
   high: bigint;
 }
 
-// Add a confidence score type
-type ConfidenceLevel = 'high' | 'medium' | 'low';
-
 // Add interfaces for hashrate data
 interface HashratePoint {
   value: number;
@@ -46,8 +43,7 @@ export default function AnalyticsCard04() {
   const [averagePayment, setAveragePayment] = useState<bigint | null>(null)
   const [networkDifficulty, setNetworkDifficulty] = useState<number | null>(null)
   const [minerHashrate, setMinerHashrate] = useState<number | null>(null)
-  // Add state for confidence
-  const [estimateConfidence, setEstimateConfidence] = useState<ConfidenceLevel>('medium');
+  const [isQualified, setIsQualified] = useState<boolean>(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,20 +51,24 @@ export default function AnalyticsCard04() {
 
       try {
         setIsLoading(true);
-        const [paymentsRes, kasPriceRes, nachoPriceRes, hashrateRes] = await Promise.all([
+        const [paymentsRes, kasPriceRes, nachoPriceRes, hashrateRes, nachoBalanceRes, nachoNFTsRes] = await Promise.all([
           $fetch(`/api/miner/payments?wallet=${walletAddress}`),
           $fetch('/api/pool/price'),
           $fetch('/api/pool/nachoPrice'),
-          $fetch(`/api/miner/currentHashrate?wallet=${walletAddress}`)
+          $fetch(`/api/miner/currentHashrate?wallet=${walletAddress}`),
+          $fetch(`/api/pool/nachoBalance?wallet=${walletAddress}`),
+          $fetch(`/api/pool/nachoNFTs?wallet=${walletAddress}`)
         ]);
+
+        // Check qualification status
+        const isQualifiedByTokens = nachoBalanceRes.status === 'success' && nachoBalanceRes.data.qualified;
+        const isQualifiedByNFTs = nachoNFTsRes.status === 'success' && nachoNFTsRes.data.qualified;
+        setIsQualified(isQualifiedByTokens || isQualifiedByNFTs);
 
         if (paymentsRes.status === 'success') {
           setHasPayments(paymentsRes.data.length > 0);
           if (paymentsRes.data.length > 0) {
             setRecentPayments(paymentsRes.data);
-            
-            const confidence = calculateConfidence(paymentsRes.data, hashrateRes.data?.minerHashrate);
-            setEstimateConfidence(confidence);
             
             const dailyEstimate = calculateDailyEstimate(paymentsRes.data);
             setDailyKas(dailyEstimate);
@@ -94,6 +94,7 @@ export default function AnalyticsCard04() {
       } catch (error) {
         console.error('Error fetching data:', error);
         setError(error instanceof Error ? error.message : 'Failed to load data');
+        setIsQualified(false);
         setDailyKas(null);
         setKasPrice(null);
         setNachoPrice(null);
@@ -132,7 +133,7 @@ export default function AnalyticsCard04() {
   const calculateNachoRebate = (kasAmount: bigint | null) => {
     if (kasAmount === null || kasPrice === null || nachoPrice === null) return null;
 
-    // First convert the sompi amount to KAS
+    // Convert the sompi amount to KAS
     const kasValue = Number(kasAmount) / 100000000;
 
     // Calculate USD value of the KAS
@@ -141,8 +142,9 @@ export default function AnalyticsCard04() {
     // Calculate the total fee amount in USD
     const feeAmount = kasUSDValue / 0.9925;
 
-    // Calculate NACHO rebate (1/3 of fee amount)
-    const nachoRebate = (feeAmount / 3) / nachoPrice;
+    // Calculate NACHO rebate based on qualification
+    const rebateFactor = isQualified ? 1 : 1/3;
+    const nachoRebate = (feeAmount * rebateFactor) / nachoPrice;
 
     return nachoRebate;
   };
@@ -199,34 +201,6 @@ export default function AnalyticsCard04() {
     return weightedAvg * BigInt(2); // Double for daily estimate
   };
 
-  const calculateConfidence = (payments: Payment[], currentHashrate: number | null): ConfidenceLevel => {
-    if (!payments.length || !currentHashrate) return 'low';
-
-    // Check payment consistency
-    const paymentTimestamps = payments.map(p => p.timestamp);
-    const intervals = paymentTimestamps
-      .slice(1)
-      .map((timestamp, i) => timestamp - paymentTimestamps[i]);
-    
-    const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
-    const expectedInterval = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
-    const intervalVariance = Math.abs(avgInterval - expectedInterval) / expectedInterval;
-
-    // Check payment amount consistency
-    const amounts = payments.slice(0, 5).map(p => p.amount);
-    const avgAmount = amounts.reduce((sum, amount) => sum + amount, 0) / amounts.length;
-    const amountVariance = amounts
-      .map(amount => Math.abs(amount - avgAmount) / avgAmount)
-      .reduce((max, variance) => Math.max(max, variance), 0);
-
-    if (intervalVariance < 0.1 && amountVariance < 0.1 && payments.length >= 5) {
-      return 'high';
-    } else if (intervalVariance < 0.2 && amountVariance < 0.2 && payments.length >= 3) {
-      return 'medium';
-    }
-    return 'low';
-  };
-
   const renderRow = (label: string, amount: bigint | null) => {
     const nachoRebate = calculateNachoRebate(amount);
     const usdValue = calculateUSDValue(amount, nachoRebate);
@@ -234,22 +208,15 @@ export default function AnalyticsCard04() {
     return (
       <tr>
         <td className="p-2">
-          <div className="flex items-center">
-            <div className="text-gray-800 dark:text-gray-100">{label}</div>
-            {label !== 'Hourly' && label !== 'Daily' && (
-              <div className="ml-2 w-2 h-2 rounded-full" 
-                   style={{ 
-                     backgroundColor: estimateConfidence === 'high' ? '#10B981' : 
-                                    estimateConfidence === 'medium' ? '#F59E0B' : 
-                                    '#EF4444'
-                   }} 
-              />
-            )}
-          </div>
+          <div className="text-gray-800 dark:text-gray-100">{label}</div>
         </td>
         <td className="p-2 text-center">{formatKas(amount)}</td>
         <td className="p-2 text-center">{formatNacho(nachoRebate)}</td>
-        <td className="p-2 text-center">{formatUSD(usdValue)}</td>
+        <td className="p-2 text-center">
+          <div className={`${usdValue && usdValue > 0 ? 'text-green-500' : 'text-gray-500'}`}>
+            {formatUSD(usdValue)}
+          </div>
+        </td>
       </tr>
     );
   };
@@ -363,7 +330,46 @@ export default function AnalyticsCard04() {
 
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
         <div className="flex justify-between items-center">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Estimated Earnings</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="font-semibold text-gray-800 dark:text-gray-100">Estimated Earnings</h2>
+            <div className="group relative inline-block">
+              <div className={`
+                px-2 py-1 rounded-full text-xs font-medium 
+                ${isQualified 
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700/30 dark:text-gray-400'
+                } 
+                flex items-center gap-1.5
+              `}>
+                <span className={`
+                  w-2 h-2 rounded-full 
+                  ${isQualified 
+                    ? 'bg-green-500 dark:bg-green-400' 
+                    : 'bg-gray-400 dark:bg-gray-500'
+                  }
+                `}></span>
+                {isQualified ? 'Elite Miner' : 'Standard Miner'}
+              </div>
+              <div className="absolute left-0 top-full mt-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
+                <div className="relative">
+                  <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 left-4 -top-[6px]"></div>
+                  <div className="font-medium mb-1">
+                    <strong>{isQualified ? 'Elite Miner Status' : 'Standard Miner Status'}</strong>
+                  </div>
+                  <p className="mb-2">
+                    {isQualified 
+                      ? 'This wallet qualifies for 100% pool fee rebates by holding either 100M+ NACHO tokens or at least 1 NACHO NFT.' 
+                      : 'This wallet receives 33% pool fee rebates. Upgrade to Elite status by holding either 100M+ NACHO tokens or at least 1 NACHO NFT.'}
+                  </p>
+                  <div className="mt-3 pt-2 border-t border-gray-700">
+                    <div className="text-xs text-gray-400">
+                      Pool fees are paid back in $NACHO tokens after each payout
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="relative flex items-center">
             <div className="group">
               <button className="flex items-center justify-center w-6 h-6 rounded-full text-gray-400 hover:text-gray-500">
@@ -377,7 +383,11 @@ export default function AnalyticsCard04() {
                   <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 right-4 -top-[6px]"></div>
                   <div className="font-medium mb-1"><strong>How we calculate estimates:</strong></div>
                   <p className="mb-2">Daily estimates are based on your most recent payout amount, doubled to account for two 12-hour intervals. Daily estimates are then extrapolated to calculate remaining periods.</p>
-                  <p className="mb-2">The <strong>NACHO rebate</strong> is a 0.25% pool fee refund paid in $NACHO tokens, distributed proportionally to miners after each payout.</p>
+                  <p className="mb-2">
+                    The <strong>NACHO rebate</strong> is a pool fee refund paid in $NACHO tokens. 
+                    Wallets holding 100M+ NACHO tokens or at least 1 NACHO NFT receive 100% of pool fees back. 
+                    Other wallets receive 33% of pool fees back.
+                  </p>
                   <p className="mb-2">The <strong>USD value</strong> is calculated using the latest $KAS & $NACHO price from the Kaspa and CoinGecko APIs.</p>
                   <p className="text-gray-400">Note: These estimates are provided as a reference and are not guaranteed. Actual earnings will vary depending on conditions.</p>
 
