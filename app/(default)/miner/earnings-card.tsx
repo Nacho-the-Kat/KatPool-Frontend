@@ -133,8 +133,8 @@ export default function AnalyticsCard04() {
   const calculateNachoRebate = (kasAmount: bigint | null): number | null => {
     if (!kasAmount || !kasPrice || !nachoPrice) return null;
     
-    // Pool fee is 0.5% of KAS amount
-    const poolFee = kasAmount * BigInt(5) / BigInt(1000);
+    // Pool fee is 0.75% of KAS amount (changed from 0.5%)
+    const poolFee = kasAmount * BigInt(75) / BigInt(10000); // Changed from 5/1000 to 75/10000
     
     // Calculate rebate percentage based on qualification
     const rebatePercent = isQualified ? BigInt(100) : BigInt(33);
