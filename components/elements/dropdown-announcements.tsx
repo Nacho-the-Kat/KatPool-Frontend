@@ -45,6 +45,19 @@ export default function DropdownAnnouncements({ align }: {
                 {({ active }) => (
                   <div className={`block py-2 px-4 ${active && 'bg-gray-50 dark:bg-gray-700/20'}`}>
                     <span className="block text-sm mb-2">
+                      🚀 <span className="font-medium text-gray-800 dark:text-gray-100">NACHO Rebates Now Live!</span> Starting 
+                      February 17th, our standard 0.75% pool fee is now active, along with our NACHO token rebate system. Qualify for 
+                      100% fee rebates by holding either 100M+ NACHO tokens or at least 1 NACHO NFT. All other miners receive 33% 
+                      rebates. Rebates are paid in $NACHO tokens within an hour of each payout. Payout mininum is 5 KAS or equivalent.
+                    </span>
+                    <span className="block text-xs font-medium text-gray-400 dark:text-gray-500">Feb 17, 2024</span>
+                  </div>
+                )}
+              </MenuItem>
+              <MenuItem as="li" className="border-b border-gray-200 dark:border-gray-700/60 last:border-0">
+                {({ active }) => (
+                  <div className={`block py-2 px-4 ${active && 'bg-gray-50 dark:bg-gray-700/20'}`}>
+                    <span className="block text-sm mb-2">
                       🎉 <span className="font-medium text-gray-800 dark:text-gray-100">Kat Pool Open Beta is Live!</span> We're excited to announce 
                       that Kat Pool is now in Open Beta. During this testing phase, all pool fees are set to zero. Thank you for helping us test and improve our platform.
                     </span>
