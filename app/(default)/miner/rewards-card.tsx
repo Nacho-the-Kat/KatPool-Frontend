@@ -19,6 +19,9 @@ export default function AnalyticsCard02() {
   const [error, setError] = useState<string | null>(null)
   const [pendingBalance, setPendingBalance] = useState<string>('--')
   const [recentPayouts, setRecentPayouts] = useState<Payout[]>([])
+  const [pendingNachoRebate, setPendingNachoRebate] = useState<string>('--')
+  const [kasPrice, setKasPrice] = useState<number | null>(null)
+  const [nachoPrice, setNachoPrice] = useState<number | null>(null)
 
   // Fetch pending balance
   useEffect(() => {
@@ -91,6 +94,51 @@ export default function AnalyticsCard02() {
     return () => clearInterval(interval);
   }, [walletAddress]);
 
+  // Add new useEffect for fetching NACHO rebate data
+  useEffect(() => {
+    const fetchNachoRebate = async () => {
+      if (!walletAddress) return;
+
+      try {
+        const [rebateRes, kasPriceRes, nachoPriceRes] = await Promise.all([
+          $fetch(`/api/pool/nachoRebates?wallet=${walletAddress}`, {
+            retry: 3,
+            retryDelay: 1000,
+            timeout: 10000,
+          }),
+          $fetch('/api/pool/price'),
+          $fetch('/api/pool/nachoPrice')
+        ]);
+
+        if (!rebateRes || rebateRes.status !== 'success') {
+          throw new Error('Failed to fetch rebate data');
+        }
+
+        // Convert sompi to KAS while maintaining precision
+        const sompi = BigInt(rebateRes.data.sompi);
+        const kasAmount = Number(sompi) / 1e8;
+
+        if (kasPriceRes.status === 'success' && nachoPriceRes.status === 'success') {
+          const kasPrice = kasPriceRes.data.price;
+          const nachoPrice = nachoPriceRes.data.price;
+
+          // Calculate NACHO amount
+          const nachoAmount = (kasAmount * kasPrice) / nachoPrice;
+          setPendingNachoRebate(nachoAmount.toFixed(3));
+        }
+
+      } catch (error) {
+        console.error('Error fetching NACHO rebate:', error);
+        setPendingNachoRebate('ERR');
+      }
+    };
+
+    fetchNachoRebate();
+    // Refresh every minute
+    const interval = setInterval(fetchNachoRebate, 60000);
+    return () => clearInterval(interval);
+  }, [walletAddress]);
+
   const formatAmount = (amount: number) => {
     return amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
@@ -155,7 +203,33 @@ export default function AnalyticsCard02() {
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pending Balance</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-gray-400 dark:text-gray-500">-- NACHO</div>
+            <div className="flex items-center">
+              <div className="text-2xl font-bold text-gray-400 dark:text-gray-500">{pendingNachoRebate} NACHO</div>
+              <div className="group relative ml-2">
+                <button className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-500">
+                  <span className="sr-only">View information</span>
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 16 16">
+                    <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z" />
+                  </svg>
+                </button>
+                <div className="absolute bottom-full right-0 mb-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="relative">
+                    <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 right-4 -bottom-[6px]"></div>
+                    <div className="font-medium mb-1"><strong>About Pending NACHO Rebates:</strong></div>
+                    <p className="mb-2">
+                      This is an estimate of your pending NACHO token rebates from recent mining activity. The actual amount may vary based on:
+                    </p>
+                    <ul className="list-disc pl-4 mb-2 space-y-1">
+                      <li>Pool fee rate (0.75%)</li>
+                      <li>Your qualification status (100% or 33% rebate)</li>
+                      <li>Current KAS and NACHO token prices</li>
+                      <li>Swap execution prices</li>
+                    </ul>
+                    <p className="text-gray-400">Rebates are distributed within an hour after each KAS payout.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pending Rebate</div>
           </div>
         </div>
