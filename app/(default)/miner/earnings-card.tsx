@@ -210,7 +210,7 @@ export default function AnalyticsCard04() {
 
   const calculateDailyEstimate = (
     payments: Payment[], 
-    minerHashrate: number | null, 
+    minerHashrate: number | null,
     networkDifficulty: number | null,
     blockReward: number | null
   ): bigint | null => {
@@ -220,37 +220,19 @@ export default function AnalyticsCard04() {
     const sortedPayments = [...payments].sort((a, b) => b.timestamp - a.timestamp);
     const recentPayments = sortedPayments.slice(0, 14); // Last 7 days
 
-    // Calculate time-weighted average of payments with progressive decay
+    // Calculate time-weighted average of payments
     let weightedSum = BigInt(0);
     let weightSum = 0;
-    
-    // Get the most recent payment's block reward at the time
-    const latestPaymentAmount = Number(recentPayments[0].amount) / 100000000; // Convert sompi to KAS
-    const latestPaymentBlockCount = Math.round(latestPaymentAmount / blockReward); // Approximate blocks found
 
-    recentPayments.forEach((payment, index) => {
-      // Calculate weight as before
-      let weight: number;
-      if (index < 2) {
-        weight = 1 - (index * 0.1);
-      } else if (index < 6) {
-        weight = 0.8 - ((index - 2) * 0.05);
-      } else {
-        weight = 0.5 - ((index - 6) * 0.02);
-      }
-
-      // Normalize the payment amount based on current block reward
-      const paymentAmount = Number(payment.amount) / 100000000; // Convert to KAS
-      const estimatedBlocks = Math.round(paymentAmount / blockReward); // How many blocks this payment represents
-      const normalizedAmount = BigInt(Math.floor(estimatedBlocks * blockReward * 100000000)); // Convert back to sompi
-
-      weightedSum += BigInt(Math.floor(Number(normalizedAmount) * weight));
+    for (let i = 0; i < recentPayments.length; i++) {
+      const weight = Math.pow(0.85, i); // Exponential decay
+      weightedSum += BigInt(Math.floor(recentPayments[i].amount * weight * 1e8));
       weightSum += weight;
-    });
+    }
 
     // Get base estimate (in sompi)
     let baseEstimate = weightedSum / BigInt(Math.floor(weightSum * 1e8)) * BigInt(1e8);
-    
+
     // Double it for daily (12-hour payments)
     baseEstimate = baseEstimate * BigInt(2);
 
@@ -260,9 +242,8 @@ export default function AnalyticsCard04() {
       baseEstimate = applyHashrateAdjustment(baseEstimate, hashrateAdjustment);
     }
 
-    // Apply more conservative factor for older payments
-    const conservativeFactor = recentPayments.length > 4 ? 92 : 95;
-    return baseEstimate * BigInt(conservativeFactor) / BigInt(100);
+    // Apply conservative factor
+    return baseEstimate * BigInt(95) / BigInt(100);
   };
 
   const calculateHashrateAdjustment = (payments: Payment[], currentHashrate: number): number => {
