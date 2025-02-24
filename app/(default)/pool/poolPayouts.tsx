@@ -7,16 +7,14 @@ import { $fetch } from 'ofetch'
 
 interface Payout {
   walletAddress: string
-  kasAmount?: string
-  nachoAmount?: string
+  amount: number
   timestamp: number
   transactionHash: string
   type: 'kas' | 'nacho'
 }
 
 interface AggregatedPayout {
-  kasAmount: number
-  nachoAmount: number
+  amount: number
   timestamp: number
   transactionHash: string
 }
@@ -30,16 +28,23 @@ export default function PoolPayouts() {
       try {
         const response = await $fetch('/api/pool/payouts')
         if (response.status === 'success') {
-          // Filter for KAS payouts only
-          const kasPayoutsOnly = response.data
-            .filter((payout: Payout) => payout.type === 'kas')
-            .map((payout: Payout) => ({
-              kasAmount: Number(payout.kasAmount || 0),
-              timestamp: payout.timestamp,
-              transactionHash: payout.transactionHash
-            }));
-          
-          setPayouts(kasPayoutsOnly)
+          // Filter for KAS payouts only and aggregate by transaction hash
+          const aggregated = Object.values(
+            response.data
+              .filter((payout: Payout) => payout.type === 'kas')
+              .reduce((acc: Record<string, AggregatedPayout>, payout: Payout) => {
+                if (!acc[payout.transactionHash]) {
+                  acc[payout.transactionHash] = {
+                    amount: 0,
+                    timestamp: payout.timestamp,
+                    transactionHash: payout.transactionHash
+                  }
+                }
+                acc[payout.transactionHash].amount += payout.amount
+                return acc
+              }, {})
+          ) as AggregatedPayout[]
+          setPayouts(aggregated)
         }
       } catch (error) {
         console.error('Error fetching pool payouts:', error)
@@ -147,15 +152,7 @@ export default function PoolPayouts() {
                       <div className="self-center">
                         <span className="font-medium text-gray-800 dark:text-gray-100">Pool Payout</span>
                         <span className="text-gray-500 dark:text-gray-400"> • </span>
-                        <span className="text-green-500">{formatAmount(payout.kasAmount)} KAS</span>
-                        {payout.nachoAmount > 0 && (
-                          <>
-                            <span className="text-gray-500 dark:text-gray-400"> • </span>
-                            <span className="text-[13px] text-gray-500 dark:text-gray-400">
-                              {formatAmount(payout.nachoAmount)} NACHO
-                            </span>
-                          </>
-                        )}
+                        <span className="text-green-500">{formatAmount(payout.amount)} KAS</span>
                         <span className="text-gray-500 dark:text-gray-400"> • </span>
                         <a
                           href={`https://explorer.kaspa.org/txs/${payout.transactionHash}`}
