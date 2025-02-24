@@ -4,12 +4,8 @@ export const runtime = 'edge';
 export const revalidate = 10;
 
 interface BlockMetric {
-  metric: {
-    block_hash: string;
-    daa_score: string;
-    timestamp: string;
-  };
-  values: [number, string][];
+  block_hash: string;
+  [key: string]: string; // For the dynamic DAA score key
 }
 
 interface Block {
@@ -20,12 +16,8 @@ interface Block {
 
 export async function GET() {
   try {
-    // Calculate timestamps
-    // const end = Math.floor(Date.now() / 1000);
-    // const start = 1704067200; // Jan 1 2024 at 12am midnight UTC
-
     const response = await fetch(
-      `http://kas.katpool.xyz:8080/api/v1/query?query=last_over_time(miner_rewards[12w])`
+      'http://kas.katpool.xyz:8080/api/pool/miningPoolStats'
     );
 
     if (!response.ok) {
@@ -34,28 +26,25 @@ export async function GET() {
 
     const data = await response.json();
 
-    if (data.status !== 'success' || !data.data?.result) {
+    if (!data?.blocks || !Array.isArray(data.blocks)) {
       throw new Error('Invalid response format');
     }
 
-    // Create a Map to store unique blocks by hash
-    const blocksMap = new Map<string, Block>();
-
-    // Process each result and store only unique blocks
-    data.data.result.forEach((item: BlockMetric) => {
-      const blockHash = item.metric.block_hash;
-      if (!blocksMap.has(blockHash)) {
-        blocksMap.set(blockHash, {
-          blockHash,
-          daaScore: item.metric.daa_score,
-          timestamp: item.metric.timestamp
-        });
-      }
+    // Transform the blocks data to match the expected format
+    const blocks: Block[] = data.blocks.map((block: BlockMetric) => {
+      // Extract the DAA score (key) and timestamp (value) from the first entry
+      const [[daaScore, timestamp]] = Object.entries(block).filter(([key]) => key !== 'block_hash');
+      
+      return {
+        blockHash: block.block_hash,
+        daaScore: daaScore,
+        // Convert from milliseconds to ISO string for timestamp
+        timestamp: new Date(Number(timestamp)).toISOString()
+      };
     });
 
-    // Convert Map to array and sort by timestamp (newest first)
-    const blocks = Array.from(blocksMap.values())
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Sort by timestamp (newest first) - maintaining existing sort behavior
+    blocks.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     return NextResponse.json({
       status: 'success',
