@@ -145,7 +145,10 @@ export async function GET(request: Request) {
                 console.error(`Failed to fetch NACHO data for wallet ${wallet}: ${res.status}`);
                 return { wallet, data: [] };
               }
-              return { wallet, data: await res.json() };
+              const data = await res.json();
+              // Debug log to see the structure
+              console.log(`NACHO data for ${wallet}:`, data);
+              return { wallet, data };
             })
             .catch(error => {
               console.error(`Error fetching NACHO data for wallet ${wallet}:`, error);
@@ -166,14 +169,30 @@ export async function GET(request: Request) {
       
       if (Array.isArray(data)) {
         data.forEach((payout: NachoPayment) => {
-          const timestamp = new Date(payout.timestamp).getTime();
-          if (timestamp >= fortyEightHoursAgo) {
-            total48h += Number(BigInt(payout.nacho_amount)) / 1e8;
+          try {
+            const timestamp = new Date(payout.timestamp).getTime();
+            if (timestamp >= fortyEightHoursAgo) {
+              // Handle both array and single string cases for wallet_address
+              const payoutWallet = Array.isArray(payout.wallet_address) 
+                ? payout.wallet_address[0] 
+                : payout.wallet_address;
+              
+              // Only count if the wallet matches
+              if (payoutWallet === wallet) {
+                const amount = Number(BigInt(payout.nacho_amount)) / 1e8;
+                if (!isNaN(amount)) {
+                  total48h += amount;
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Error processing NACHO payout for ${wallet}:`, error, payout);
           }
         });
       }
 
       if (total48h > 0) {
+        console.log(`Setting NACHO rebates for ${wallet}: ${total48h}`);
         rebatesMap.set(wallet, total48h);
       }
     });
@@ -182,6 +201,12 @@ export async function GET(request: Request) {
     paginatedData.forEach(miner => {
       miner.nachoRebates48h = rebatesMap.get(miner.wallet) || 0;
     });
+
+    // Debug log final data
+    console.log('Final paginated data with rebates:', paginatedData.map(m => ({
+      wallet: m.wallet,
+      nachoRebates48h: m.nachoRebates48h
+    })));
 
     return NextResponse.json({
       status: 'success',
