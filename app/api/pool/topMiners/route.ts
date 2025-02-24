@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     // Calculate time range for the last 48 hours
     const end = Math.floor(Date.now() / 1000);
     const timeStart = end - (48 * 60 * 60);
-    const step = 900; // Increase step to 15 minutes to reduce data points
+    const step = 900; // 15 minutes to reduce data points
 
     // Fetch hashrate data for all miners with optimized query
     const hashrateUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     hashrateUrl.searchParams.append('end', end.toString());
     hashrateUrl.searchParams.append('step', step.toString());
 
-    // Parallel fetch for both hashrate and KAS payouts
+    // Parallel fetch for hashrate and KAS payouts
     const [hashrateResponse, kasResponse] = await Promise.all([
       fetch(hashrateUrl),
       fetch('http://kas.katpool.xyz:8080/api/pool/payouts')
@@ -122,9 +122,66 @@ export async function GET(request: Request) {
       miner.rank = index + 1;
     });
 
-    // Apply pagination
+    // Get the miners for the current page
     const paginatedData = minerData.slice(start, start + limit);
     const total = minerData.length;
+
+    // Fetch NACHO data only for miners in the current page
+    const BATCH_SIZE = 10; // Increased batch size
+    const rebatesMap = new Map<string, number>();
+
+    // Only fetch NACHO data for miners in the current page
+    const pageWallets = paginatedData.map(miner => miner.wallet);
+    
+    // Process NACHO payments in larger batches with parallel requests
+    const batchPromises = [];
+    for (let i = 0; i < pageWallets.length; i += BATCH_SIZE) {
+      const batch = pageWallets.slice(i, i + BATCH_SIZE);
+      const batchPromise = Promise.all(
+        batch.map(wallet => 
+          fetch(`http://kas.katpool.xyz:8080/api/nacho_payments/${wallet}`)
+            .then(async res => {
+              if (!res.ok) {
+                console.error(`Failed to fetch NACHO data for wallet ${wallet}: ${res.status}`);
+                return { wallet, data: [] };
+              }
+              return { wallet, data: await res.json() };
+            })
+            .catch(error => {
+              console.error(`Error fetching NACHO data for wallet ${wallet}:`, error);
+              return { wallet, data: [] };
+            })
+        )
+      );
+      batchPromises.push(batchPromise);
+    }
+
+    // Wait for all batches to complete
+    const batchResults = await Promise.all(batchPromises);
+    
+    // Process all results
+    batchResults.flat().forEach(response => {
+      const { wallet, data } = response;
+      let total48h = 0;
+      
+      if (Array.isArray(data)) {
+        data.forEach((payout: NachoPayment) => {
+          const timestamp = new Date(payout.timestamp).getTime();
+          if (timestamp >= fortyEightHoursAgo) {
+            total48h += Number(BigInt(payout.nacho_amount)) / 1e8;
+          }
+        });
+      }
+
+      if (total48h > 0) {
+        rebatesMap.set(wallet, total48h);
+      }
+    });
+
+    // Update NACHO rebates for paginated miners
+    paginatedData.forEach(miner => {
+      miner.nachoRebates48h = rebatesMap.get(miner.wallet) || 0;
+    });
 
     return NextResponse.json({
       status: 'success',
