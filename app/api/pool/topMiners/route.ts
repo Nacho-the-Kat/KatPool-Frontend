@@ -28,9 +28,9 @@ interface MinerData {
 
 export async function GET() {
   try {
-    // Calculate time range for the last 24 hours
+    // Calculate time range for the last 48 hours
     const end = Math.floor(Date.now() / 1000);
-    const start = end - (24 * 60 * 60);
+    const start = end - (48 * 60 * 60);
     const step = 300;
 
     // Fetch hashrate data for all miners
@@ -71,24 +71,43 @@ export async function GET() {
 
     // Process NACHO data for each wallet
     const rebatesMap = new Map<string, number>();
-    const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+    const fortyEightHoursAgo = Date.now() - (48 * 60 * 60 * 1000);
+
+    // Add debug logging
+    console.log('Processing NACHO responses for wallets:', activeWallets.length);
 
     await Promise.all(
       nachoResponses.map(async (response, index) => {
-        if (response.ok) {
+        const wallet = activeWallets[index];
+        if (!response.ok) {
+          console.error(`Failed to fetch NACHO data for wallet ${wallet}: ${response.status}`);
+          return;
+        }
+
+        try {
           const nachoData = await response.json();
-          const wallet = activeWallets[index];
           
+          // Sum up all NACHO payments in the last 48 hours
+          let total48h = 0;
           nachoData.forEach((payout: NachoPayment) => {
             const timestamp = new Date(payout.timestamp).getTime();
-            if (timestamp >= twentyFourHoursAgo) {
+            if (timestamp >= fortyEightHoursAgo) {
               const amount = Number(BigInt(payout.nacho_amount)) / 1e8;
-              rebatesMap.set(wallet, (rebatesMap.get(wallet) || 0) + amount);
+              total48h += amount;
             }
           });
+
+          if (total48h > 0) {
+            rebatesMap.set(wallet, total48h);
+          }
+        } catch (error) {
+          console.error(`Error processing NACHO data for wallet ${wallet}:`, error);
         }
       })
     );
+
+    // Debug log final rebates map
+    console.log('Final rebates map:', Object.fromEntries(rebatesMap));
 
     // Also need to restore KAS rewards processing
     const rewardsMap = new Map<string, number>();
@@ -96,7 +115,7 @@ export async function GET() {
     // Process KAS rewards
     kasData.forEach((payout: KasPayment) => {
       const timestamp = new Date(payout.timestamp).getTime();
-      if (timestamp >= twentyFourHoursAgo) {
+      if (timestamp >= fortyEightHoursAgo) {
         const wallet = payout.wallet_address[0];
         const amount = Number(BigInt(payout.amount)) / 1e8;
         rewardsMap.set(wallet, (rewardsMap.get(wallet) || 0) + amount);

@@ -159,12 +159,12 @@ export default function TopMinersCard() {
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
-                      <SortableHeader label="24h Rewards" sortKey="rewards24h" />
+                      <SortableHeader label="48h Rewards" sortKey="rewards24h" />
                     </div>
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
-                      <SortableHeader label="24h Rebates" sortKey="nachoRebates" />
+                      <SortableHeader label="48h Rebates" sortKey="nachoRebates" />
                     </div>
                   </th>
                   <th className="p-2 whitespace-nowrap">
