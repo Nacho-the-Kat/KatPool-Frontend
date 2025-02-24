@@ -5,29 +5,33 @@ import { $fetch } from 'ofetch'
 import { Download } from 'lucide-react'
 
 type SortDirection = 'asc' | 'desc'
-type SortKey = 'timestamp' | 'transactionHash' | 'amount'
+type SortKey = 'timestamp' | 'transactionHash' | 'kasAmount' | 'nachoAmount'
 
 interface Payout {
   walletAddress: string
-  amount: number
+  kasAmount?: string
+  nachoAmount?: string
   timestamp: number
   transactionHash: string
+  type: 'kas' | 'nacho'
 }
 
 interface AggregatedPayout {
-  amount: number
+  kasAmount: number
+  nachoAmount: number
   timestamp: number
   transactionHash: string
 }
 
 const downloadCSV = (data: AggregatedPayout[]) => {
-  const headers = ['Time', 'Transaction Hash', 'Amount (KAS)']
+  const headers = ['Time', 'Transaction Hash', 'KAS Amount', 'NACHO Amount']
   const csvContent = [
     headers.join(','),
     ...data.map(payout => [
       new Date(payout.timestamp).toISOString(),
       payout.transactionHash,
-      (Math.floor(payout.amount * 100) / 100).toFixed(8)
+      payout.kasAmount.toFixed(8),
+      payout.nachoAmount.toFixed(8)
     ].join(','))
   ].join('\n')
 
@@ -59,12 +63,18 @@ export default function PoolPayoutsCard() {
             response.data.reduce((acc: Record<string, AggregatedPayout>, payout: Payout) => {
               if (!acc[payout.transactionHash]) {
                 acc[payout.transactionHash] = {
-                  amount: 0,
+                  kasAmount: 0,
+                  nachoAmount: 0,
                   timestamp: payout.timestamp,
                   transactionHash: payout.transactionHash
                 }
               }
-              acc[payout.transactionHash].amount += payout.amount
+              if (payout.type === 'kas' && payout.kasAmount) {
+                acc[payout.transactionHash].kasAmount += Number(payout.kasAmount)
+              }
+              if (payout.type === 'nacho' && payout.nachoAmount) {
+                acc[payout.transactionHash].nachoAmount += Number(payout.nachoAmount)
+              }
               return acc
             }, {})
           ) as AggregatedPayout[]
@@ -111,7 +121,19 @@ export default function PoolPayoutsCard() {
 
   const sortedPayouts = [...payouts].sort((a, b) => {
     const modifier = sortDirection === 'asc' ? 1 : -1
-    return (a[sortKey] > b[sortKey] ? 1 : -1) * modifier
+    
+    switch (sortKey) {
+      case 'timestamp':
+        return (a.timestamp - b.timestamp) * modifier
+      case 'transactionHash':
+        return a.transactionHash.localeCompare(b.transactionHash) * modifier
+      case 'kasAmount':
+        return (a.kasAmount - b.kasAmount) * modifier
+      case 'nachoAmount':
+        return (a.nachoAmount - b.nachoAmount) * modifier
+      default:
+        return 0
+    }
   })
 
   const SortIcon = ({ active, direction }: { active: boolean; direction: SortDirection }) => (
@@ -165,7 +187,10 @@ export default function PoolPayoutsCard() {
                   <SortableHeader label="Transaction" sortKey="transactionHash" />
                 </th>
                 <th className="p-2 whitespace-nowrap">
-                  <SortableHeader label="KAS Amount" sortKey="amount" />
+                  <SortableHeader label="KAS Amount" sortKey="kasAmount" />
+                </th>
+                <th className="p-2 whitespace-nowrap">
+                  <SortableHeader label="NACHO Amount" sortKey="nachoAmount" />
                 </th>
                 <th className="p-2 whitespace-nowrap">
                   <div className="font-semibold text-center">KRC20 Amount</div>
@@ -189,7 +214,7 @@ export default function PoolPayoutsCard() {
                   <td className="p-2 whitespace-nowrap">
                     <div className="text-center">
                       <a 
-                        href={`https://explorer.kaspa.org/txs/${payout.transactionHash}`}
+                        href={`https://kas.fyi/transaction/${payout.transactionHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
@@ -200,7 +225,14 @@ export default function PoolPayoutsCard() {
                   </td>
                   <td className="p-2 whitespace-nowrap">
                     <div className="text-center font-medium">
-                      {formatAmount(payout.amount)}
+                      {formatAmount(payout.kasAmount)}
+                    </div>
+                  </td>
+                  <td className="p-2 whitespace-nowrap">
+                    <div className="text-center">
+                      <span className="text-[13px] text-gray-500 dark:text-gray-400">
+                        {payout.nachoAmount > 0 ? `${formatAmount(payout.nachoAmount)} NACHO` : '--'}
+                      </span>
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">

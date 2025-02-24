@@ -8,9 +8,11 @@ import { useNachoPrice } from './nacho-price-context'
 interface Payment {
   id: number;
   walletAddress: string;
-  amount: number;
+  kasAmount?: string;
+  nachoAmount?: string;
   timestamp: number;
   transactionHash: string;
+  type: 'kas' | 'nacho';
 }
 
 interface EstimateRange {
@@ -215,7 +217,7 @@ export default function AnalyticsCard04() {
     recentPayouts.forEach((payment, index) => {
       // Slightly steeper decay to favor more recent payments
       const weight = Math.exp(-0.6 * index); // Changed from -0.5 to -0.6
-      weightedSum += BigInt(Math.round(Number(payment.amount) * weight));
+      weightedSum += BigInt(Math.round(Number(payment.kasAmount || 0) * weight));
       weightSum += weight;
     });
     
@@ -262,7 +264,7 @@ export default function AnalyticsCard04() {
     const hashrates: number[] = [];
     for (let i = 1; i < payments.length; i++) {
       const interval = (payments[i-1].timestamp - payments[i].timestamp) / 1000;
-      const amount = Number(payments[i].amount) / 1e8;
+      const amount = Number(payments[i].kasAmount || 0) / 1e8;
       if (interval > 0) {
         hashrates.push(amount / interval);
       }
