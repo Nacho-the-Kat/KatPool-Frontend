@@ -22,9 +22,24 @@ interface MinerStats {
   firstSeen: number
 }
 
+interface PaginationData {
+  total: number
+  page: number
+  limit: number
+  pages: number
+}
+
+interface ApiResponse {
+  status: 'success' | 'error'
+  data: Miner[]
+  pagination?: PaginationData
+  error?: string
+}
+
 const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
 const CACHE_DURATION = REFRESH_INTERVAL - 10000; // Slightly less than refresh interval
 const STALE_WHILE_REVALIDATE = 5 * 60 * 1000; // 5 minutes
+const ITEMS_PER_PAGE = 50;
 
 const getCachedData = () => {
   try {
@@ -71,9 +86,11 @@ export default function TopMinersCard() {
   const [error, setError] = useState<string | null>(null)
   const [miners, setMiners] = useState<Miner[]>([])
   const [isFetching, setIsFetching] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalMiners, setTotalMiners] = useState(0)
   const isSubscribed = useRef(true);
 
-  // Lift fetchData out of useEffect and make it a ref to avoid recreation
   const fetchDataRef = useRef(async () => {
     if (isFetching) return;
     
@@ -81,73 +98,45 @@ export default function TopMinersCard() {
       // Check cache first
       const cache = getCachedData();
       
-      // Use cache if available and not too old
       if (cache && !cache.isTooOld) {
         setMiners(cache.data);
         setError(null);
         
-        // If data is stale, refresh in background
         if (cache.isStale) {
           setIsFetching(true);
         } else {
-          return; // Fresh cache, no need to fetch
+          return;
         }
       } else {
         setIsFetching(true);
         setIsLoading(true);
       }
 
-      // Sequential requests instead of parallel to avoid connection limits
-      let hashrateResponse;
-      let statsResponse;
-
-      try {
-        hashrateResponse = await fetchWithBackoff('/api/pool/topMiners', {
+      const hashrateResponse = await fetchWithBackoff(
+        `/api/pool/topMiners?page=${currentPage}&limit=${ITEMS_PER_PAGE}`,
+        {
           retry: 2,
           retryDelay: 3000,
-        });
-        
-        if (hashrateResponse?.data && !hashrateResponse.error) {
-          statsResponse = await fetchWithBackoff('/api/pool/minerStats', {
-            retry: 2,
-            retryDelay: 3000,
-          });
         }
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error 
-          ? error.message 
-          : 'Unknown error occurred';
-        throw new Error(`API failed: ${errorMessage}`);
-      }
+      ) as ApiResponse;
 
-      // Validate responses
       if (!hashrateResponse?.data || hashrateResponse.error) {
-        throw new Error(hashrateResponse?.error || 'Invalid hashrate response');
+        throw new Error(hashrateResponse?.error || 'Invalid response');
       }
-
-      // Continue even if stats fail
-      const statsData = statsResponse?.data || {};
-
-      // Map API data to our Miner interface
-      const mappedMiners = hashrateResponse.data.map((miner: any) => ({
-        rank: miner.rank,
-        wallet: miner.wallet,
-        hashrate: miner.hashrate,
-        rewards48h: miner.rewards48h,
-        nachoRebates48h: miner.nachoRebates48h,
-        poolShare: miner.poolShare,
-        firstSeen: statsData[miner.wallet]?.firstSeen 
-          ? Math.floor((Date.now() / 1000 - statsData[miner.wallet].firstSeen) / (24 * 60 * 60)) 
-          : 0
-      }));
-
-      // Cache the new data
-      localStorage.setItem('topMinersData', JSON.stringify(mappedMiners));
-      localStorage.setItem('topMinersTimestamp', Date.now().toString());
 
       if (isSubscribed.current) {
-        setMiners(mappedMiners);
+        setMiners(hashrateResponse.data);
+        if (hashrateResponse.pagination) {
+          setTotalPages(hashrateResponse.pagination.pages);
+          setTotalMiners(hashrateResponse.pagination.total);
+        }
         setError(null);
+
+        // Only cache first page
+        if (currentPage === 1) {
+          localStorage.setItem('topMinersData', JSON.stringify(hashrateResponse.data));
+          localStorage.setItem('topMinersTimestamp', Date.now().toString());
+        }
       }
     } catch (error) {
       if (isSubscribed.current) {
@@ -246,6 +235,12 @@ export default function TopMinersCard() {
     });
   };
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    setIsLoading(true);
+    fetchDataRef.current();
+  };
+
   return (
     <div className="relative col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
@@ -259,81 +254,104 @@ export default function TopMinersCard() {
         ) : error ? (
           <div className="flex items-center justify-center h-[300px] text-red-500">{error}</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table-auto w-full dark:text-gray-300">
-              <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm">
-                <tr>
-                  <th className="p-2 whitespace-nowrap">
-                    <SortableHeader label="Rank" sortKey="rank" />
-                  </th>
-                  <th className="p-2 whitespace-nowrap">
-                    <SortableHeader label="Wallet" sortKey="wallet" />
-                  </th>
-                  <th className="p-2 whitespace-nowrap">
-                    <div className="flex justify-center">
-                      <SortableHeader label="48h Hashrate" sortKey="hashrate" />
-                    </div>
-                  </th>
-                  <th className="p-2 whitespace-nowrap">
-                    <div className="flex justify-center">
-                      <SortableHeader label="48h Rewards" sortKey="rewards48h" />
-                    </div>
-                  </th>
-                  <th className="p-2 whitespace-nowrap">
-                    <div className="flex justify-center">
-                      <SortableHeader label="48h Rebates" sortKey="nachoRebates48h" />
-                    </div>
-                  </th>
-                  <th className="p-2 whitespace-nowrap">
-                    <div className="flex justify-center">
-                      <SortableHeader label="Pool Share" sortKey="poolShare" />
-                    </div>
-                  </th>
-                  <th className="p-2 whitespace-nowrap">
-                    <div className="flex justify-center">
-                      <SortableHeader label="First Seen" sortKey="firstSeen" />
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
-                {sortedData.map((miner) => (
-                  <tr key={miner.wallet}>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-left font-medium">#{miner.rank}</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <Link 
-                        href={`/miner?wallet=${miner.wallet}`}
-                        className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
-                      >
-                        {miner.wallet}
-                      </Link>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center font-medium">{formatHashrate(miner.hashrate)}</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center text-green-500">
-                        {miner.rewards48h > 0 ? `${formatRewards(miner.rewards48h)} KAS` : '--'}
+          <>
+            <div className="overflow-x-auto">
+              <table className="table-auto w-full dark:text-gray-300">
+                <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm">
+                  <tr>
+                    <th className="p-2 whitespace-nowrap">
+                      <SortableHeader label="Rank" sortKey="rank" />
+                    </th>
+                    <th className="p-2 whitespace-nowrap">
+                      <SortableHeader label="Wallet" sortKey="wallet" />
+                    </th>
+                    <th className="p-2 whitespace-nowrap">
+                      <div className="flex justify-center">
+                        <SortableHeader label="48h Hashrate" sortKey="hashrate" />
                       </div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center text-gray-500 dark:text-gray-400">
-                        {miner.nachoRebates48h > 0 ? `${formatRewards(miner.nachoRebates48h)} NACHO` : '--'}
+                    </th>
+                    <th className="p-2 whitespace-nowrap">
+                      <div className="flex justify-center">
+                        <SortableHeader label="48h Rewards" sortKey="rewards48h" />
                       </div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center">{miner.poolShare.toFixed(2)}%</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center">{miner.firstSeen} days ago</div>
-                    </td>
+                    </th>
+                    <th className="p-2 whitespace-nowrap">
+                      <div className="flex justify-center">
+                        <SortableHeader label="48h Rebates" sortKey="nachoRebates48h" />
+                      </div>
+                    </th>
+                    <th className="p-2 whitespace-nowrap">
+                      <div className="flex justify-center">
+                        <SortableHeader label="Pool Share" sortKey="poolShare" />
+                      </div>
+                    </th>
+                    <th className="p-2 whitespace-nowrap">
+                      <div className="flex justify-center">
+                        <SortableHeader label="First Seen" sortKey="firstSeen" />
+                      </div>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
+                  {sortedData.map((miner) => (
+                    <tr key={miner.wallet}>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-left font-medium">#{miner.rank}</div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <Link 
+                          href={`/miner?wallet=${miner.wallet}`}
+                          className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                        >
+                          {miner.wallet}
+                        </Link>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center font-medium">{formatHashrate(miner.hashrate)}</div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center text-green-500">
+                          {miner.rewards48h > 0 ? `${formatRewards(miner.rewards48h)} KAS` : '--'}
+                        </div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center text-gray-500 dark:text-gray-400">
+                          {miner.nachoRebates48h > 0 ? `${formatRewards(miner.nachoRebates48h)} NACHO` : '--'}
+                        </div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center">{miner.poolShare.toFixed(2)}%</div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center">{miner.firstSeen} days ago</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-between items-center mt-4 px-4">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Page {currentPage} of {totalPages} ({totalMiners} miners)
+                </span>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
