@@ -66,8 +66,8 @@ export default function RecentBlocks() {
     };
 
     fetchData();
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchData, 300000);
+    // Refresh every 10 minutes
+    const interval = setInterval(fetchData, 600000);
     return () => clearInterval(interval);
   }, []);
 

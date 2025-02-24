@@ -60,7 +60,7 @@ export default function MinerTypes() {
     }
 
     fetchData()
-    const interval = setInterval(fetchData, 60000) // Refresh every 30 seconds instead of 10
+    const interval = setInterval(fetchData, 600000) // Refresh every 10 minutes
     return () => clearInterval(interval)
   }, [])
 
