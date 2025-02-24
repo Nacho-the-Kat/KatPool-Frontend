@@ -9,16 +9,13 @@ type SortKey = 'timestamp' | 'transactionHash' | 'kasAmount' | 'nachoAmount'
 
 interface Payout {
   walletAddress: string
-  kasAmount?: string
-  nachoAmount?: string
+  amount: number
   timestamp: number
   transactionHash: string
-  type: 'kas' | 'nacho'
 }
 
 interface AggregatedPayout {
-  kasAmount: number
-  nachoAmount: number
+  amount: number
   timestamp: number
   transactionHash: string
 }
@@ -30,8 +27,8 @@ const downloadCSV = (data: AggregatedPayout[]) => {
     ...data.map(payout => [
       new Date(payout.timestamp).toISOString(),
       payout.transactionHash,
-      payout.kasAmount.toFixed(8),
-      payout.nachoAmount.toFixed(8)
+      payout.amount.toFixed(8),
+      '0.00'
     ].join(','))
   ].join('\n')
 
@@ -58,27 +55,16 @@ export default function PoolPayoutsCard() {
         setIsLoading(true)
         const response = await $fetch('/api/pool/payouts')
         if (response.status === 'success') {
-          // Aggregate payouts by transaction hash
-          const aggregated = Object.values(
-            response.data.reduce((acc: Record<string, AggregatedPayout>, payout: Payout) => {
-              if (!acc[payout.transactionHash]) {
-                acc[payout.transactionHash] = {
-                  kasAmount: 0,
-                  nachoAmount: 0,
-                  timestamp: payout.timestamp,
-                  transactionHash: payout.transactionHash
-                }
-              }
-              if (payout.type === 'kas' && payout.kasAmount) {
-                acc[payout.transactionHash].kasAmount += Number(payout.kasAmount)
-              }
-              if (payout.type === 'nacho' && payout.nachoAmount) {
-                acc[payout.transactionHash].nachoAmount += Number(payout.nachoAmount)
-              }
-              return acc
-            }, {})
-          ) as AggregatedPayout[]
-          setPayouts(aggregated)
+          // Filter for KAS payouts and map to simpler structure
+          const kasPayouts = response.data
+            .filter((payout: any) => payout.type === 'kas')
+            .map((payout: any) => ({
+              amount: Number(payout.kasAmount || 0),
+              timestamp: payout.timestamp,
+              transactionHash: payout.transactionHash
+            }));
+
+          setPayouts(kasPayouts)
         }
       } catch (error) {
         console.error('Error fetching payouts:', error)
@@ -130,9 +116,9 @@ export default function PoolPayoutsCard() {
       case 'transactionHash':
         return a.transactionHash.localeCompare(b.transactionHash) * modifier
       case 'kasAmount':
-        return (a.kasAmount - b.kasAmount) * modifier
+        return (a.amount - b.amount) * modifier
       case 'nachoAmount':
-        return (a.nachoAmount - b.nachoAmount) * modifier
+        return 0 * modifier
       default:
         return 0
     }
@@ -219,13 +205,13 @@ export default function PoolPayoutsCard() {
                   </td>
                   <td className="p-2 whitespace-nowrap">
                     <div className="text-center text-green-500">
-                      {payout.kasAmount ? `${formatAmount(Number(payout.kasAmount))} KAS` : '--'}
+                      {payout.amount > 0 ? `${formatAmount(payout.amount)} KAS` : '--'}
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
                     <div className="text-center">
                       <span className="text-[13px] text-gray-500 dark:text-gray-400">
-                        {payout.nachoAmount > 0 ? `${formatAmount(payout.nachoAmount)} NACHO` : '--'}
+                        '0.00'
                       </span>
                     </div>
                   </td>
