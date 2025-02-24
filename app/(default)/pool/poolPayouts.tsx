@@ -30,27 +30,16 @@ export default function PoolPayouts() {
       try {
         const response = await $fetch('/api/pool/payouts')
         if (response.status === 'success') {
-          // Aggregate payouts by transaction hash
-          const aggregated = Object.values(
-            response.data.reduce((acc: Record<string, AggregatedPayout>, payout: Payout) => {
-              if (!acc[payout.transactionHash]) {
-                acc[payout.transactionHash] = {
-                  kasAmount: 0,
-                  nachoAmount: 0,
-                  timestamp: payout.timestamp,
-                  transactionHash: payout.transactionHash
-                }
-              }
-              if (payout.type === 'kas' && payout.kasAmount) {
-                acc[payout.transactionHash].kasAmount += Number(payout.kasAmount)
-              }
-              if (payout.type === 'nacho' && payout.nachoAmount) {
-                acc[payout.transactionHash].nachoAmount += Number(payout.nachoAmount)
-              }
-              return acc
-            }, {})
-          ) as AggregatedPayout[]
-          setPayouts(aggregated)
+          // Filter for KAS payouts only
+          const kasPayoutsOnly = response.data
+            .filter((payout: Payout) => payout.type === 'kas')
+            .map((payout: Payout) => ({
+              kasAmount: Number(payout.kasAmount || 0),
+              timestamp: payout.timestamp,
+              transactionHash: payout.transactionHash
+            }));
+          
+          setPayouts(kasPayoutsOnly)
         }
       } catch (error) {
         console.error('Error fetching pool payouts:', error)

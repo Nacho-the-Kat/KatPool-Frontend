@@ -229,8 +229,8 @@ export default function PayoutsCard() {
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
-                    <div className="text-center font-medium">
-                      {payout.type === 'kas' && payout.kasAmount ? formatAmount(Number(payout.kasAmount)) : '--'}
+                    <div className="text-center text-green-500">
+                      {payout.kasAmount ? `${formatAmount(Number(payout.kasAmount))} KAS` : '--'}
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
