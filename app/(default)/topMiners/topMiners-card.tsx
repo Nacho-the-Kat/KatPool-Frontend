@@ -18,6 +18,10 @@ interface Miner {
   firstSeen: number
 }
 
+interface MinerStats {
+  firstSeen: number
+}
+
 export default function TopMinersCard() {
   const [sortKey, setSortKey] = useState<SortKey>('rank')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
@@ -30,26 +34,43 @@ export default function TopMinersCard() {
       try {
         setIsLoading(true);
         
-        const hashrateResponse = await $fetch('/api/pool/topMiners', {
-          retry: 3,
-          retryDelay: 1000,
-          timeout: 10000,
-        });
+        const [hashrateResponse, statsResponse] = await Promise.all([
+          $fetch('/api/pool/topMiners', {
+            retry: 3,
+            retryDelay: 1000,
+            timeout: 10000,
+          }),
+          $fetch('/api/pool/minerStats', {
+            retry: 3,
+            retryDelay: 1000,
+            timeout: 10000,
+          })
+        ]);
 
         if (!hashrateResponse || hashrateResponse.error) {
           throw new Error(hashrateResponse?.error || 'Failed to fetch hashrate data');
         }
 
-        // Map API data to our simplified Miner interface
-        const mappedMiners = hashrateResponse.data.map((miner: any) => ({
-          rank: miner.rank,
-          wallet: miner.wallet,
-          hashrate: miner.hashrate,
-          rewards24h: miner.rewards24h,
-          nachoRebates: miner.nachoRebates || 0,
-          poolShare: miner.poolShare,
-          firstSeen: miner.firstSeen ? Math.floor((Date.now() / 1000 - miner.firstSeen) / (24 * 60 * 60)) : 0
-        }));
+        if (!statsResponse || statsResponse.error) {
+          throw new Error(statsResponse?.error || 'Failed to fetch stats data');
+        }
+
+        // Map API data to our Miner interface
+        const mappedMiners = hashrateResponse.data.map((miner: any) => {
+          const stats = statsResponse.data[miner.wallet] as MinerStats || {
+            firstSeen: 0
+          };
+
+          return {
+            rank: miner.rank,
+            wallet: miner.wallet,
+            hashrate: miner.hashrate,
+            rewards24h: miner.rewards24h,
+            nachoRebates: miner.nachoRebates,
+            poolShare: miner.poolShare,
+            firstSeen: stats.firstSeen ? Math.floor((Date.now() / 1000 - stats.firstSeen) / (24 * 60 * 60)) : 0
+          };
+        });
 
         setMiners(mappedMiners);
         setError(null);

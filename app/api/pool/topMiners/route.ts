@@ -24,7 +24,6 @@ interface MinerData {
   rank: number;
   rewards24h: number;
   nachoRebates: number;
-  firstSeen: number;
 }
 
 export async function GET() {
@@ -115,10 +114,7 @@ export async function GET() {
           poolShare: 0,
           rank: 0,
           rewards24h: rewardsMap.get(miner.metric.wallet_address) || 0,
-          nachoRebates: rebatesMap.get(miner.metric.wallet_address) || 0,
-          firstSeen: miner.metric.firstSeen 
-            ? Math.floor((Date.now() / 1000 - miner.metric.firstSeen) / (24 * 60 * 60))
-            : 0
+          nachoRebates: rebatesMap.get(miner.metric.wallet_address) || 0
         });
         poolTotalHashrate += averageHashrate;
       }
