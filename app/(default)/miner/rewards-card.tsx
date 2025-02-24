@@ -8,9 +8,11 @@ import { useNachoPrice } from './nacho-price-context'
 
 interface Payout {
   walletAddress: string
-  amount: number
+  kasAmount?: string
+  nachoAmount?: string
   timestamp: number
   transactionHash: string
+  type: 'kas' | 'nacho'
 }
 
 export default function AnalyticsCard02() {
@@ -247,11 +249,13 @@ export default function AnalyticsCard02() {
                   </td>
                   <td className="py-2">
                     <div className="font-medium text-right text-gray-800 dark:text-gray-100">
-                      {formatAmount(payout.amount)} KAS
+                      {payout.type === 'kas' && payout.kasAmount ? `${formatAmount(Number(payout.kasAmount))} KAS` : '--'}
                     </div>
                   </td>
                   <td className="py-2">
-                    <div className="font-medium text-right text-green-500">--</div>
+                    <div className="font-medium text-right text-green-500">
+                      {payout.type === 'nacho' && payout.nachoAmount ? `${formatAmount(Number(payout.nachoAmount))} NACHO` : '--'}
+                    </div>
                   </td>
                 </tr>
               ))}
