@@ -31,10 +31,16 @@ export default function TopMinersCard() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [miners, setMiners] = useState<Miner[]>([])
+  const [isFetching, setIsFetching] = useState(false)
 
   useEffect(() => {
+    let isSubscribed = true;
+    
     const fetchData = async () => {
+      if (isFetching) return;
+      
       try {
+        setIsFetching(true);
         setIsLoading(true);
 
         // Check cache first
@@ -44,34 +50,39 @@ export default function TopMinersCard() {
         if (cached && cachedTimestamp) {
           const timestamp = parseInt(cachedTimestamp);
           if (Date.now() - timestamp < CACHE_DURATION) {
-            // Use cached data if it's still fresh
-            setMiners(JSON.parse(cached));
-            setError(null);
-            setIsLoading(false);
+            if (isSubscribed) {
+              setMiners(JSON.parse(cached));
+              setError(null);
+              setIsLoading(false);
+            }
             return;
           }
         }
         
-        // Fetch fresh data if cache is stale or missing
         const [hashrateResponse, statsResponse] = await Promise.all([
           $fetch('/api/pool/topMiners', {
             retry: 3,
-            retryDelay: 1000,
-            timeout: 10000,
+            retryDelay: 2000,
+            timeout: 20000,
           }),
           $fetch('/api/pool/minerStats', {
             retry: 3,
-            retryDelay: 1000,
-            timeout: 10000,
+            retryDelay: 2000,
+            timeout: 20000,
           })
-        ]);
+        ]).catch(error => {
+          throw new Error(`API request failed: ${error.message}`);
+        });
 
-        if (!hashrateResponse || hashrateResponse.error) {
-          throw new Error(hashrateResponse?.error || 'Failed to fetch hashrate data');
+        if (!isSubscribed) return;
+
+        // Validate both responses independently
+        if (!hashrateResponse?.data || hashrateResponse.error) {
+          throw new Error(hashrateResponse?.error || 'Invalid hashrate response');
         }
 
-        if (!statsResponse || statsResponse.error) {
-          throw new Error(statsResponse?.error || 'Failed to fetch stats data');
+        if (!statsResponse?.data) {
+          throw new Error('Invalid stats response');
         }
 
         // Map API data to our Miner interface
@@ -95,19 +106,30 @@ export default function TopMinersCard() {
         localStorage.setItem('topMinersData', JSON.stringify(mappedMiners));
         localStorage.setItem('topMinersTimestamp', Date.now().toString());
 
-        setMiners(mappedMiners);
-        setError(null);
+        if (isSubscribed) {
+          setMiners(mappedMiners);
+          setError(null);
+        }
       } catch (error) {
-        console.error('Error fetching top miners:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load data');
+        if (isSubscribed) {
+          console.error('Error fetching top miners:', error);
+          setError(error instanceof Error ? error.message : 'Failed to load data');
+        }
       } finally {
-        setIsLoading(false);
+        if (isSubscribed) {
+          setIsLoading(false);
+          setIsFetching(false);
+        }
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 600000); // Still refresh every 10 minutes
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchData, 600000);
+    
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleSort = (key: SortKey) => {
