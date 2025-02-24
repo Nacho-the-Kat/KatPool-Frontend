@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 export const revalidate = 300; // 5 minutes since payments are infrequent
 
-interface Payment {
+interface KasPayment {
   id: number;
   wallet_address: string[];
   amount: string;
@@ -11,12 +11,22 @@ interface Payment {
   transaction_hash: string;
 }
 
+interface NachoPayment {
+  id: number;
+  wallet_address: string[];
+  nacho_amount: string;
+  timestamp: string;
+  transaction_hash: string;
+}
+
 interface ProcessedPayment {
   id: number;
   walletAddress: string;
-  amount: string; // Keep as string to maintain precision
+  kasAmount?: string;  // Amount in KAS
+  nachoAmount?: string;  // Amount in NACHO
   timestamp: number;
   transactionHash: string;
+  type: 'kas' | 'nacho';
 }
 
 export async function GET(request: Request) {
@@ -31,34 +41,53 @@ export async function GET(request: Request) {
       );
     }
 
-    const response = await fetch(`http://kas.katpool.xyz:8080/api/payments/${wallet}`);
+    // Fetch both KAS and NACHO payments in parallel
+    const [kasResponse, nachoResponse] = await Promise.all([
+      fetch(`http://kas.katpool.xyz:8080/api/payments/${wallet}`),
+      fetch(`http://kas.katpool.xyz:8080/api/nacho_payments/${wallet}`)
+    ]);
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!kasResponse.ok || !nachoResponse.ok) {
+      throw new Error(`HTTP error! KAS status: ${kasResponse.status}, NACHO status: ${nachoResponse.status}`);
     }
 
-    const data = await response.json();
+    const [kasData, nachoData] = await Promise.all([
+      kasResponse.json(),
+      nachoResponse.json()
+    ]);
 
-    // Process the payments but keep amounts in sompi
-    const processedPayments = data.map((payment: Payment) => ({
+    // Process KAS payments
+    const processedKasPayments: ProcessedPayment[] = kasData.map((payment: KasPayment) => ({
       id: payment.id,
       walletAddress: payment.wallet_address[0],
-      amount: payment.amount, // Keep original sompi amount as string
+      kasAmount: (Number(BigInt(payment.amount)) / 1e8).toFixed(8), // Convert sompi to KAS
       timestamp: new Date(payment.timestamp).getTime(),
-      transactionHash: payment.transaction_hash
+      transactionHash: payment.transaction_hash,
+      type: 'kas'
     }));
 
-    // Sort by timestamp descending (newest first)
-    processedPayments.sort((a: ProcessedPayment, b: ProcessedPayment) => b.timestamp - a.timestamp);
+    // Process NACHO payments
+    const processedNachoPayments: ProcessedPayment[] = nachoData.map((payment: NachoPayment) => ({
+      id: payment.id,
+      walletAddress: payment.wallet_address[0],
+      nachoAmount: (Number(BigInt(payment.nacho_amount)) / 1e8).toFixed(8), // Convert sompi to NACHO
+      timestamp: new Date(payment.timestamp).getTime(),
+      transactionHash: payment.transaction_hash,
+      type: 'nacho'
+    }));
+
+    // Combine and sort all payments by timestamp
+    const allPayments = [...processedKasPayments, ...processedNachoPayments]
+      .sort((a, b) => b.timestamp - a.timestamp);
 
     return NextResponse.json({
       status: 'success',
-      data: processedPayments
+      data: allPayments
     });
   } catch (error) {
-    console.error('Error fetching miner payments:', error);
+    console.error('Error fetching payments:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch miner payments' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch payments' },
       { status: 500 }
     );
   }

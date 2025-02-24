@@ -8,9 +8,11 @@ import { useNachoPrice } from './nacho-price-context'
 
 interface Payout {
   walletAddress: string
-  amount: number
+  kasAmount?: string
+  nachoAmount?: string
   timestamp: number
   transactionHash: string
+  type: 'kas' | 'nacho'
 }
 
 export default function AnalyticsCard02() {
@@ -88,14 +90,17 @@ export default function AnalyticsCard02() {
       if (!walletAddress) return;
 
       try {
-        const response = await $fetch('/api/pool/payouts')
+        const response = await $fetch(`/api/miner/payments?wallet=${walletAddress}`, {
+          retry: 3,
+          retryDelay: 1000,
+          timeout: 10000,
+        });
+
         if (response.status === 'success') {
-          // Filter payouts for this wallet and take the 4 most recent
-          const walletPayouts = response.data
-            .filter((payout: Payout) => payout.walletAddress === walletAddress)
-            .sort((a: Payout, b: Payout) => b.timestamp - a.timestamp)
-            .slice(0, 4);
-          setRecentPayouts(walletPayouts);
+          // Take the 4 most recent payouts - no need to filter by wallet since
+          // the API already returns only this wallet's payouts
+          const recentPayouts = response.data.slice(0, 4);
+          setRecentPayouts(recentPayouts);
         }
       } catch (error) {
         console.error('Error fetching payouts:', error)
@@ -144,25 +149,6 @@ export default function AnalyticsCard02() {
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
         <div className="flex justify-between items-center">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Recent Rewards</h2>
-          <div className="relative flex items-center">
-            <div className="group">
-              <button className="flex items-center justify-center w-6 h-6 rounded-full text-gray-400 hover:text-gray-500">
-                <span className="sr-only">View information</span>
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 16 16">
-                  <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z" />
-                </svg>
-              </button>
-              <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <div className="relative">
-                  <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 right-[-6px] top-1/2 -translate-y-1/2"></div>
-                  <div className="font-medium mb-1"><strong>About NACHO Rebates:</strong></div>
-                  <p className="mb-2">The Nacho rebate is a 0.25% pool fee refund, paid to you in $NACHO tokens. After each payout period, the pool automatically swaps one-third of the fees earned from $KAS to $NACHO and distributes them proportionally to Kat Pool miners. Rebates are paid within an hour of every rewards payout.</p>
-                  <p className="mb-2">Below, you can see your recent earnings and rebate payments. Use the "Full Payout History" button at the bottom to view the complete history of payouts for this wallet.</p>
-                  <p className="text-gray-400">This is our way of saying thank you for helping secure the Kaspa network. Meow 🐈‍⬛</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </header>
       <div className="grow px-5 py-4">
@@ -187,20 +173,31 @@ export default function AnalyticsCard02() {
                       <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z" />
                     </svg>
                   </button>
-                  <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 w-80 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <div className="relative">
                       <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 right-[-6px] top-1/2 -translate-y-1/2"></div>
-                      <div className="font-medium mb-1"><strong>About Pending NACHO Rebates:</strong></div>
+                      <div className="font-medium mb-2">
+                        <span className="text-primary-400">🎁 NACHO Rewards Program</span>
+                      </div>
                       <p className="mb-2">
-                        This is an estimate of your pending NACHO token rebates from recent mining activity. The actual amount may vary based on:
+                        Welcome to Kat Pool's unique rewards system! We're giving back mining fees to our loyal miners in $NACHO tokens. Here's how it works:
                       </p>
-                      <ul className="list-disc pl-4 mb-2 space-y-1">
-                        <li>Pool fee rate (0.75%)</li>
-                        <li>Your qualification status (100% or 33% rebate)</li>
-                        <li>Current KAS and NACHO token prices</li>
-                        <li>Swap execution prices</li>
+                      <ul className="list-disc pl-4 mb-3 space-y-1.5">
+                        <li>After each payout period, we automatically convert pool fees from KAS to NACHO</li>
+                        <li>These NACHO tokens are distributed proportionally to all qualifying miners</li>
+                        <li>Rebates are processed and paid seperately and after your KAS rewards</li>
                       </ul>
-                      <p className="text-gray-400">Rebates are distributed within an hour after each KAS payout.</p>
+                      <p className="mb-2">
+                        Your pending rebate estimate shown above is calculated based on:
+                      </p>
+                      <ul className="list-disc pl-4 mb-3 space-y-1">
+                        <li>Current pool fee rate (0.75%)</li>
+                        <li>Your qualification status (100% or 33%)</li>
+                        <li>Live KAS and NACHO token prices</li>
+                      </ul>
+                      <p className="text-gray-400 italic">
+                        Thank you for mining with Kat Pool! Together we're making Kaspa stronger. Meow 🐈‍⬛
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -236,7 +233,7 @@ export default function AnalyticsCard02() {
                       {formatTimestamp(payout.timestamp)}
                       <span className="mx-2">•</span>
                       <a
-                        href={`https://explorer.kaspa.org/txs/${payout.transactionHash}`}
+                        href={`https://kas.fyi/transaction/${payout.transactionHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:text-primary-500 dark:hover:text-primary-400"
@@ -247,11 +244,15 @@ export default function AnalyticsCard02() {
                   </td>
                   <td className="py-2">
                     <div className="font-medium text-right text-gray-800 dark:text-gray-100">
-                      {formatAmount(payout.amount)} KAS
+                      {payout.type === 'kas' && payout.kasAmount ? `${formatAmount(Number(payout.kasAmount))} KAS` : '--'}
                     </div>
                   </td>
                   <td className="py-2">
-                    <div className="font-medium text-right text-green-500">--</div>
+                    <div className="font-medium text-right text-green-500">
+                      <span className="text-[13px] text-gray-500 dark:text-gray-400">
+                        {payout.type === 'nacho' && payout.nachoAmount ? `${formatAmount(Number(payout.nachoAmount))} NACHO` : '--'}
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -265,7 +266,9 @@ export default function AnalyticsCard02() {
                     <div className="font-medium text-right text-gray-800 dark:text-gray-100">--</div>
                   </td>
                   <td className="py-2">
-                    <div className="font-medium text-right text-green-500">--</div>
+                    <div className="font-medium text-right">
+                      <span className="text-[13px] text-gray-500 dark:text-gray-400">--</span>
+                    </div>
                   </td>
                 </tr>
               ))}

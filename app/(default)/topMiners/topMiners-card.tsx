@@ -6,24 +6,24 @@ import { $fetch } from 'ofetch'
 import { formatHashrate } from '@/components/utils/utils'
 
 type SortDirection = 'asc' | 'desc'
-type SortKey = 'rank' | 'wallet' | 'hashrate' | 'workers' | 'shares24h' | 'rewards24h' | 'poolShare' | 'firstSeen'
+type SortKey = 'rank' | 'wallet' | 'hashrate' | 'rewards48h' | 'nachoRebates48h' | 'poolShare' | 'firstSeen'
 
 interface Miner {
   rank: number
   wallet: string
   hashrate: number
-  workers: number
-  shares24h: number
-  rewards24h: number
+  rewards48h: number
+  nachoRebates48h: number
   poolShare: number
   firstSeen: number
 }
 
 interface MinerStats {
-  totalShares: number
   firstSeen: number
-  activeWorkers: number
 }
+
+// Update cache duration to match auto-refresh interval
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 
 export default function TopMinersCard() {
   const [sortKey, setSortKey] = useState<SortKey>('rank')
@@ -36,20 +36,35 @@ export default function TopMinersCard() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        
-        // Fetch hashrates and pool shares using the new endpoint with improved averaging
-        const hashrateResponse = await $fetch('/api/pool/topMiners', {
-          retry: 3,
-          retryDelay: 1000,
-          timeout: 10000,
-        });
 
-        // Fetch additional stats (shares, workers, first seen)
-        const statsResponse = await $fetch('/api/pool/minerStats', {
-          retry: 3,
-          retryDelay: 1000,
-          timeout: 10000,
-        });
+        // Check cache first
+        const cached = localStorage.getItem('topMinersData');
+        const cachedTimestamp = localStorage.getItem('topMinersTimestamp');
+        
+        if (cached && cachedTimestamp) {
+          const timestamp = parseInt(cachedTimestamp);
+          if (Date.now() - timestamp < CACHE_DURATION) {
+            // Use cached data if it's still fresh
+            setMiners(JSON.parse(cached));
+            setError(null);
+            setIsLoading(false);
+            return;
+          }
+        }
+        
+        // Fetch fresh data if cache is stale or missing
+        const [hashrateResponse, statsResponse] = await Promise.all([
+          $fetch('/api/pool/topMiners', {
+            retry: 3,
+            retryDelay: 1000,
+            timeout: 10000,
+          }),
+          $fetch('/api/pool/minerStats', {
+            retry: 3,
+            retryDelay: 1000,
+            timeout: 10000,
+          })
+        ]);
 
         if (!hashrateResponse || hashrateResponse.error) {
           throw new Error(hashrateResponse?.error || 'Failed to fetch hashrate data');
@@ -62,22 +77,23 @@ export default function TopMinersCard() {
         // Map API data to our Miner interface
         const mappedMiners = hashrateResponse.data.map((miner: any) => {
           const stats = statsResponse.data[miner.wallet] as MinerStats || {
-            totalShares: 0,
-            firstSeen: 0,
-            activeWorkers: 0
+            firstSeen: 0
           };
 
           return {
             rank: miner.rank,
             wallet: miner.wallet,
             hashrate: miner.hashrate,
-            workers: stats.activeWorkers,
-            shares24h: miner.shares24h,
-            rewards24h: miner.rewards24h,
+            rewards48h: miner.rewards48h,
+            nachoRebates48h: miner.nachoRebates48h,
             poolShare: miner.poolShare,
             firstSeen: stats.firstSeen ? Math.floor((Date.now() / 1000 - stats.firstSeen) / (24 * 60 * 60)) : 0
           };
         });
+
+        // Cache the new data
+        localStorage.setItem('topMinersData', JSON.stringify(mappedMiners));
+        localStorage.setItem('topMinersTimestamp', Date.now().toString());
 
         setMiners(mappedMiners);
         setError(null);
@@ -90,8 +106,7 @@ export default function TopMinersCard() {
     };
 
     fetchData();
-    // Refresh every 10 minutes
-    const interval = setInterval(fetchData, 600000);
+    const interval = setInterval(fetchData, 600000); // Still refresh every 10 minutes
     return () => clearInterval(interval);
   }, []);
 
@@ -162,22 +177,17 @@ export default function TopMinersCard() {
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
-                      <SortableHeader label="24h Hashrate" sortKey="hashrate" />
+                      <SortableHeader label="48h Hashrate" sortKey="hashrate" />
                     </div>
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
-                      <SortableHeader label="Active Workers" sortKey="workers" />
+                      <SortableHeader label="48h Rewards" sortKey="rewards48h" />
                     </div>
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
-                      <SortableHeader label="24h Shares" sortKey="shares24h" />
-                    </div>
-                  </th>
-                  <th className="p-2 whitespace-nowrap">
-                    <div className="flex justify-center">
-                      <SortableHeader label="24h Rewards" sortKey="rewards24h" />
+                      <SortableHeader label="48h Rebates" sortKey="nachoRebates48h" />
                     </div>
                   </th>
                   <th className="p-2 whitespace-nowrap">
@@ -210,14 +220,13 @@ export default function TopMinersCard() {
                       <div className="text-center font-medium">{formatHashrate(miner.hashrate)}</div>
                     </td>
                     <td className="p-2 whitespace-nowrap">
-                      <div className="text-center">{miner.workers}</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center">{miner.shares24h.toLocaleString()}</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
                       <div className="text-center text-green-500">
-                        {miner.rewards24h > 0 ? `${formatRewards(miner.rewards24h)} KAS` : '--'}
+                        {miner.rewards48h > 0 ? `${formatRewards(miner.rewards48h)} KAS` : '--'}
+                      </div>
+                    </td>
+                    <td className="p-2 whitespace-nowrap">
+                      <div className="text-center text-gray-500 dark:text-gray-400">
+                        {miner.nachoRebates48h > 0 ? `${formatRewards(miner.nachoRebates48h)} NACHO` : '--'}
                       </div>
                     </td>
                     <td className="p-2 whitespace-nowrap">

@@ -14,7 +14,9 @@ const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delay = 1000) {
   for (let i = 0; i < retries; i++) {
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(url, {
+        ...options,
+      });
       
       if (response.status === 429) {
         // Rate limited - wait and retry
