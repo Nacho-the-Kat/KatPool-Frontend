@@ -17,6 +17,15 @@ interface NachoPayment {
   transaction_hash: string;
 }
 
+interface ProcessedPayment {
+  walletAddress: string;
+  kasAmount?: string;
+  nachoAmount?: string;
+  timestamp: number;
+  transactionHash: string;
+  type: 'kas' | 'nacho';
+}
+
 interface MinerData {
   wallet: string;
   hashrate: number;
@@ -41,48 +50,61 @@ export async function GET() {
     hashrateUrl.searchParams.append('step', step.toString());
 
     // Fetch hashrate data and both payment types
-    const [hashrateResponse, kasPayoutsResponse, nachoPayoutsResponse] = await Promise.all([
+    const [hashrateResponse, kasResponse, nachoResponse] = await Promise.all([
       fetch(hashrateUrl),
       fetch('http://kas.katpool.xyz:8080/api/pool/payouts'),
       fetch('http://kas.katpool.xyz:8080/api/pool/nacho_payouts')
     ]);
 
-    if (!hashrateResponse.ok || !kasPayoutsResponse.ok || !nachoPayoutsResponse.ok) {
-      throw new Error(`HTTP error! status: ${hashrateResponse.status}/${kasPayoutsResponse.status}/${nachoPayoutsResponse.status}`);
+    if (!hashrateResponse.ok || !kasResponse.ok || !nachoResponse.ok) {
+      throw new Error(`HTTP error! status: ${hashrateResponse.status}/${kasResponse.status}/${nachoResponse.status}`);
     }
 
-    const [hashrateData, kasPayouts, nachoPayouts] = await Promise.all([
+    const [hashrateData, kasData, nachoData] = await Promise.all([
       hashrateResponse.json(),
-      kasPayoutsResponse.json(),
-      nachoPayoutsResponse.json()
+      kasResponse.json(),
+      nachoResponse.json()
     ]);
 
     if (hashrateData.status !== 'success' || !hashrateData.data?.result) {
       throw new Error('Invalid hashrate response format');
     }
 
-    // Process KAS rewards for last 24h
+    // Process KAS payments
+    const processedKasPayments: ProcessedPayment[] = kasData.map((payout: KasPayment) => ({
+      walletAddress: payout.wallet_address[0],
+      kasAmount: (Number(BigInt(payout.amount)) / 1e8).toFixed(8),
+      timestamp: new Date(payout.timestamp).getTime(),
+      transactionHash: payout.transaction_hash,
+      type: 'kas'
+    }));
+
+    // Process NACHO payments
+    const processedNachoPayments: ProcessedPayment[] = nachoData.map((payout: NachoPayment) => ({
+      walletAddress: payout.wallet_address[0],
+      nachoAmount: (Number(BigInt(payout.nacho_amount)) / 1e8).toFixed(8),
+      timestamp: new Date(payout.timestamp).getTime(),
+      transactionHash: payout.transaction_hash,
+      type: 'nacho'
+    }));
+
+    // Combine all payments
+    const allPayments = [...processedKasPayments, ...processedNachoPayments];
+
+    // Calculate 24h totals for each wallet
     const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
     const rewardsMap = new Map<string, number>();
     const rebatesMap = new Map<string, number>();
 
-    // Process KAS payouts
-    kasPayouts.forEach((payout: KasPayment) => {
-      const timestamp = new Date(payout.timestamp).getTime();
-      if (timestamp >= twentyFourHoursAgo) {
-        const wallet = payout.wallet_address[0];
-        const amount = Number(BigInt(payout.amount)) / 1e8;
-        rewardsMap.set(wallet, (rewardsMap.get(wallet) || 0) + amount);
-      }
-    });
-
-    // Process NACHO payouts
-    nachoPayouts.forEach((payout: NachoPayment) => {
-      const timestamp = new Date(payout.timestamp).getTime();
-      if (timestamp >= twentyFourHoursAgo) {
-        const wallet = payout.wallet_address[0];
-        const amount = Number(BigInt(payout.nacho_amount)) / 1e8;
-        rebatesMap.set(wallet, (rebatesMap.get(wallet) || 0) + amount);
+    allPayments.forEach(payment => {
+      if (payment.timestamp >= twentyFourHoursAgo) {
+        const wallet = payment.walletAddress;
+        if (payment.type === 'kas' && payment.kasAmount) {
+          rewardsMap.set(wallet, (rewardsMap.get(wallet) || 0) + Number(payment.kasAmount));
+        }
+        if (payment.type === 'nacho' && payment.nachoAmount) {
+          rebatesMap.set(wallet, (rebatesMap.get(wallet) || 0) + Number(payment.nachoAmount));
+        }
       }
     });
 
