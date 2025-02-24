@@ -90,14 +90,17 @@ export default function AnalyticsCard02() {
       if (!walletAddress) return;
 
       try {
-        const response = await $fetch('/api/pool/payouts')
+        const response = await $fetch(`/api/miner/payments?wallet=${walletAddress}`, {
+          retry: 3,
+          retryDelay: 1000,
+          timeout: 10000,
+        });
+
         if (response.status === 'success') {
-          // Filter payouts for this wallet and take the 4 most recent
-          const walletPayouts = response.data
-            .filter((payout: Payout) => payout.walletAddress === walletAddress)
-            .sort((a: Payout, b: Payout) => b.timestamp - a.timestamp)
-            .slice(0, 4);
-          setRecentPayouts(walletPayouts);
+          // Take the 4 most recent payouts - no need to filter by wallet since
+          // the API already returns only this wallet's payouts
+          const recentPayouts = response.data.slice(0, 4);
+          setRecentPayouts(recentPayouts);
         }
       } catch (error) {
         console.error('Error fetching payouts:', error)
