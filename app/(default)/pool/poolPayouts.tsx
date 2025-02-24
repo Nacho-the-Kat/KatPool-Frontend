@@ -7,7 +7,8 @@ import { $fetch } from 'ofetch'
 
 interface Payout {
   walletAddress: string
-  amount: number
+  kasAmount?: string
+  nachoAmount?: string
   timestamp: number
   transactionHash: string
   type: 'kas' | 'nacho'
@@ -31,7 +32,7 @@ export default function PoolPayouts() {
           // Filter for KAS payouts only before aggregating
           const kasPayouts = response.data.filter((payout: Payout) => payout.type === 'kas');
           
-          // Aggregate payouts by transaction hash (unchanged from original)
+          // Aggregate payouts by transaction hash
           const aggregated = Object.values(
             kasPayouts.reduce((acc: Record<string, AggregatedPayout>, payout: Payout) => {
               if (!acc[payout.transactionHash]) {
@@ -41,7 +42,9 @@ export default function PoolPayouts() {
                   transactionHash: payout.transactionHash
                 }
               }
-              acc[payout.transactionHash].amount += payout.amount
+              // Convert kasAmount string to number
+              const amount = payout.kasAmount ? Number(payout.kasAmount) : 0
+              acc[payout.transactionHash].amount += amount
               return acc
             }, {})
           ) as AggregatedPayout[]
