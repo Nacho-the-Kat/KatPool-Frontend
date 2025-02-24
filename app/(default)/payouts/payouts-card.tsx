@@ -186,13 +186,7 @@ export default function PayoutsCard() {
                   <SortableHeader label="KAS Amount" sortKey="amount" />
                 </th>
                 <th className="p-2 whitespace-nowrap">
-                  <div className="font-semibold text-center">KRC20 Amount</div>
-                </th>
-                <th className="p-2 whitespace-nowrap">
                   <div className="font-semibold text-center">NACHO Rebate</div>
-                </th>
-                <th className="p-2 whitespace-nowrap">
-                  <div className="font-semibold text-center">Value (USD)</div>
                 </th>
               </tr>
             </thead>
@@ -222,17 +216,9 @@ export default function PayoutsCard() {
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
-                    <div className="text-center font-medium">
-                      --
-                    </div>
-                  </td>
-                  <td className="p-2 whitespace-nowrap">
                     <div className="text-center font-medium text-green-500">
                       --
                     </div>
-                  </td>
-                  <td className="p-2 whitespace-nowrap">
-                    <div className="text-center">--</div>
                   </td>
                 </tr>
               ))}
