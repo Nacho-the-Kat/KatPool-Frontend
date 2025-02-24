@@ -6,23 +6,15 @@ import { $fetch } from 'ofetch'
 import { formatHashrate } from '@/components/utils/utils'
 
 type SortDirection = 'asc' | 'desc'
-type SortKey = 'rank' | 'wallet' | 'hashrate' | 'workers' | 'shares24h' | 'rewards24h' | 'poolShare' | 'firstSeen'
+type SortKey = 'rank' | 'wallet' | 'hashrate' | 'rewards24h' | 'poolShare' | 'firstSeen'
 
 interface Miner {
   rank: number
   wallet: string
   hashrate: number
-  workers: number
-  shares24h: number
   rewards24h: number
   poolShare: number
   firstSeen: number
-}
-
-interface MinerStats {
-  totalShares: number
-  firstSeen: number
-  activeWorkers: number
 }
 
 export default function TopMinersCard() {
@@ -37,15 +29,7 @@ export default function TopMinersCard() {
       try {
         setIsLoading(true);
         
-        // Fetch hashrates and pool shares using the new endpoint with improved averaging
         const hashrateResponse = await $fetch('/api/pool/topMiners', {
-          retry: 3,
-          retryDelay: 1000,
-          timeout: 10000,
-        });
-
-        // Fetch additional stats (shares, workers, first seen)
-        const statsResponse = await $fetch('/api/pool/minerStats', {
           retry: 3,
           retryDelay: 1000,
           timeout: 10000,
@@ -55,29 +39,15 @@ export default function TopMinersCard() {
           throw new Error(hashrateResponse?.error || 'Failed to fetch hashrate data');
         }
 
-        if (!statsResponse || statsResponse.error) {
-          throw new Error(statsResponse?.error || 'Failed to fetch stats data');
-        }
-
-        // Map API data to our Miner interface
-        const mappedMiners = hashrateResponse.data.map((miner: any) => {
-          const stats = statsResponse.data[miner.wallet] as MinerStats || {
-            totalShares: 0,
-            firstSeen: 0,
-            activeWorkers: 0
-          };
-
-          return {
-            rank: miner.rank,
-            wallet: miner.wallet,
-            hashrate: miner.hashrate,
-            workers: stats.activeWorkers,
-            shares24h: miner.shares24h,
-            rewards24h: miner.rewards24h,
-            poolShare: miner.poolShare,
-            firstSeen: stats.firstSeen ? Math.floor((Date.now() / 1000 - stats.firstSeen) / (24 * 60 * 60)) : 0
-          };
-        });
+        // Map API data to our simplified Miner interface
+        const mappedMiners = hashrateResponse.data.map((miner: any) => ({
+          rank: miner.rank,
+          wallet: miner.wallet,
+          hashrate: miner.hashrate,
+          rewards24h: miner.rewards24h,
+          poolShare: miner.poolShare,
+          firstSeen: miner.firstSeen ? Math.floor((Date.now() / 1000 - miner.firstSeen) / (24 * 60 * 60)) : 0
+        }));
 
         setMiners(mappedMiners);
         setError(null);
@@ -90,7 +60,6 @@ export default function TopMinersCard() {
     };
 
     fetchData();
-    // Refresh every 10 minutes
     const interval = setInterval(fetchData, 600000);
     return () => clearInterval(interval);
   }, []);
@@ -167,16 +136,6 @@ export default function TopMinersCard() {
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
-                      <SortableHeader label="Active Workers" sortKey="workers" />
-                    </div>
-                  </th>
-                  <th className="p-2 whitespace-nowrap">
-                    <div className="flex justify-center">
-                      <SortableHeader label="24h Shares" sortKey="shares24h" />
-                    </div>
-                  </th>
-                  <th className="p-2 whitespace-nowrap">
-                    <div className="flex justify-center">
                       <SortableHeader label="24h Rewards" sortKey="rewards24h" />
                     </div>
                   </th>
@@ -208,12 +167,6 @@ export default function TopMinersCard() {
                     </td>
                     <td className="p-2 whitespace-nowrap">
                       <div className="text-center font-medium">{formatHashrate(miner.hashrate)}</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center">{miner.workers}</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center">{miner.shares24h.toLocaleString()}</div>
                     </td>
                     <td className="p-2 whitespace-nowrap">
                       <div className="text-center text-green-500">
