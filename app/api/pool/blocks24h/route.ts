@@ -20,12 +20,8 @@ interface MetricResult {
 
 export async function GET() {
   try {
-    // Calculate timestamps
-    const end = Math.floor(Date.now() / 1000);
-    const start = end - 24 * 60 * 60; // 24 hours ago
-
     const response = await fetch(
-      `http://kas.katpool.xyz:8080/api/v1/query?query=(last_over_time(miner_rewards[1d]))`
+      `http://kas.katpool.xyz:8080/api/v1/query?query=count(last_over_time(success_blocks_details[1d]))`
     );
 
     if (!response.ok) {
@@ -34,24 +30,19 @@ export async function GET() {
 
     const data = await response.json();
 
-    // Create a Set to store unique block hashes
-    const uniqueBlockHashes = new Set<string>();
-
-    // Process the response which matches the exact format
-    if (data?.status === 'success' && data?.data?.result) {
-      data.data.result.forEach((item: MetricResult) => {
-        if (item.metric?.block_hash) {
-          uniqueBlockHashes.add(item.metric.block_hash);
+    // Process the new response format
+    if (data?.status === 'success' && data?.data?.result?.[0]?.value?.[1]) {
+      const blocks24h = parseInt(data.data.result[0].value[1]);
+      
+      return NextResponse.json({
+        status: 'success',
+        data: {
+          totalBlocks24h: blocks24h
         }
       });
     }
 
-    return NextResponse.json({
-      status: 'success',
-      data: {
-        totalBlocks24h: uniqueBlockHashes.size
-      }
-    });
+    throw new Error('Invalid response format');
 
   } catch (error) {
     console.error('Error fetching 24h blocks:', error);
