@@ -180,7 +180,7 @@ export default function AnalyticsCard02() {
                         <span className="text-primary-400">🎁 NACHO Rewards Program</span>
                       </div>
                       <p className="mb-2">
-                        Welcome to Kat Pool's unique rewards system! We're giving back 0.25% of all mining fees to our loyal miners in $NACHO tokens. Here's how it works:
+                        Welcome to Kat Pool's unique rewards system! We're giving back mining fees to our loyal miners in $NACHO tokens. Here's how it works:
                       </p>
                       <ul className="list-disc pl-4 mb-3 space-y-1.5">
                         <li>After each payout period, we automatically convert pool fees from KAS to NACHO</li>
