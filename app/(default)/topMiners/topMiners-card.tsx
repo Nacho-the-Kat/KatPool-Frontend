@@ -22,6 +22,9 @@ interface MinerStats {
   firstSeen: number
 }
 
+// Update cache duration to match auto-refresh interval
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+
 export default function TopMinersCard() {
   const [sortKey, setSortKey] = useState<SortKey>('rank')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
@@ -33,7 +36,23 @@ export default function TopMinersCard() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+
+        // Check cache first
+        const cached = localStorage.getItem('topMinersData');
+        const cachedTimestamp = localStorage.getItem('topMinersTimestamp');
         
+        if (cached && cachedTimestamp) {
+          const timestamp = parseInt(cachedTimestamp);
+          if (Date.now() - timestamp < CACHE_DURATION) {
+            // Use cached data if it's still fresh
+            setMiners(JSON.parse(cached));
+            setError(null);
+            setIsLoading(false);
+            return;
+          }
+        }
+        
+        // Fetch fresh data if cache is stale or missing
         const [hashrateResponse, statsResponse] = await Promise.all([
           $fetch('/api/pool/topMiners', {
             retry: 3,
@@ -72,6 +91,10 @@ export default function TopMinersCard() {
           };
         });
 
+        // Cache the new data
+        localStorage.setItem('topMinersData', JSON.stringify(mappedMiners));
+        localStorage.setItem('topMinersTimestamp', Date.now().toString());
+
         setMiners(mappedMiners);
         setError(null);
       } catch (error) {
@@ -83,7 +106,7 @@ export default function TopMinersCard() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 600000);
+    const interval = setInterval(fetchData, 600000); // Still refresh every 10 minutes
     return () => clearInterval(interval);
   }, []);
 
