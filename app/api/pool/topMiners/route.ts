@@ -33,6 +33,7 @@ interface MinerData {
   rank: number;
   rewards24h: number;
   nachoRebates: number;
+  firstSeen: number;
 }
 
 export async function GET() {
@@ -50,24 +51,36 @@ export async function GET() {
     hashrateUrl.searchParams.append('step', step.toString());
 
     // Fetch hashrate data and both payment types
-    const [hashrateResponse, kasResponse, nachoResponse] = await Promise.all([
+    const [hashrateResponse, kasResponse, nachoResponse, statsResponse] = await Promise.all([
       fetch(hashrateUrl),
       fetch('http://kas.katpool.xyz:8080/api/pool/payouts'),
-      fetch('http://kas.katpool.xyz:8080/api/pool/nacho_payouts')
+      fetch('http://kas.katpool.xyz:8080/api/pool/nacho_payouts'),
+      fetch('http://kas.katpool.xyz:8080/api/pool/minerStats')
     ]);
 
-    if (!hashrateResponse.ok || !kasResponse.ok || !nachoResponse.ok) {
-      throw new Error(`HTTP error! status: ${hashrateResponse.status}/${kasResponse.status}/${nachoResponse.status}`);
+    if (!hashrateResponse.ok || !kasResponse.ok || !nachoResponse.ok || !statsResponse.ok) {
+      throw new Error(`HTTP error! status: ${hashrateResponse.status}/${kasResponse.status}/${nachoResponse.status}/${statsResponse.status}`);
     }
 
-    const [hashrateData, kasData, nachoData] = await Promise.all([
+    const [hashrateData, kasData, nachoData, statsData] = await Promise.all([
       hashrateResponse.json(),
       kasResponse.json(),
-      nachoResponse.json()
+      nachoResponse.json(),
+      statsResponse.json()
     ]);
 
     if (hashrateData.status !== 'success' || !hashrateData.data?.result) {
       throw new Error('Invalid hashrate response format');
+    }
+
+    // Create a map for first seen timestamps
+    const firstSeenMap = new Map<string, number>();
+    if (statsData.status === 'success') {
+      Object.entries(statsData.data).forEach(([wallet, stats]: [string, any]) => {
+        if (stats.firstSeen) {
+          firstSeenMap.set(wallet, stats.firstSeen);
+        }
+      });
     }
 
     // Process KAS payments
@@ -139,7 +152,10 @@ export async function GET() {
           poolShare: 0,
           rank: 0,
           rewards24h: rewardsMap.get(miner.metric.wallet_address) || 0,
-          nachoRebates: rebatesMap.get(miner.metric.wallet_address) || 0
+          nachoRebates: rebatesMap.get(miner.metric.wallet_address) || 0,
+          firstSeen: firstSeenMap.get(miner.metric.wallet_address) 
+            ? Math.floor((Date.now() / 1000 - firstSeenMap.get(miner.metric.wallet_address)!) / (24 * 60 * 60))
+            : 0
         });
         poolTotalHashrate += averageHashrate;
       }
