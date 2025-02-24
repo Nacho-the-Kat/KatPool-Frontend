@@ -111,8 +111,10 @@ export default function PayoutsCard() {
   }
 
   const formatAmount = (amount: number) => {
-    // Use a string-based approach to avoid floating point errors
-    return (Math.floor(amount * 100) / 100).toFixed(8)
+    return amount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
   }
 
   const sortedPayouts = [...payouts].sort((a, b) => {
