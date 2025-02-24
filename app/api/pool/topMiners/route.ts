@@ -36,6 +36,10 @@ interface MinerData {
   firstSeen: number;
 }
 
+interface MinerStats {
+  firstSeen: number;
+}
+
 export async function GET() {
   try {
     // Calculate time range for the last 24 hours
@@ -75,9 +79,9 @@ export async function GET() {
 
     // Create a map for first seen timestamps
     const firstSeenMap = new Map<string, number>();
-    if (statsData.status === 'success') {
+    if (statsData.status === 'success' && statsData.data) {
       Object.entries(statsData.data).forEach(([wallet, stats]: [string, any]) => {
-        if (stats.firstSeen) {
+        if (stats && typeof stats.firstSeen === 'number') {
           firstSeenMap.set(wallet, stats.firstSeen);
         }
       });
@@ -146,6 +150,7 @@ export async function GET() {
       const averageHashrate = trimmedValues.reduce((sum, value) => sum + value, 0) / trimmedValues.length;
 
       if (averageHashrate > 0) {
+        const firstSeenTimestamp = firstSeenMap.get(miner.metric.wallet_address);
         minerData.push({
           wallet: miner.metric.wallet_address,
           hashrate: averageHashrate,
@@ -153,8 +158,8 @@ export async function GET() {
           rank: 0,
           rewards24h: rewardsMap.get(miner.metric.wallet_address) || 0,
           nachoRebates: rebatesMap.get(miner.metric.wallet_address) || 0,
-          firstSeen: firstSeenMap.get(miner.metric.wallet_address) 
-            ? Math.floor((Date.now() / 1000 - firstSeenMap.get(miner.metric.wallet_address)!) / (24 * 60 * 60))
+          firstSeen: firstSeenTimestamp 
+            ? Math.floor((Date.now() / 1000 - firstSeenTimestamp) / (24 * 60 * 60))
             : 0
         });
         poolTotalHashrate += averageHashrate;
