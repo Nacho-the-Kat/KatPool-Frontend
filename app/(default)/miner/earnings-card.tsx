@@ -209,20 +209,30 @@ export default function AnalyticsCard04() {
   const calculateDailyEstimate = (payments: Payment[]): bigint => {
     if (payments.length === 0) return BigInt(0);
     
+    // Filter for KAS payments only
+    const kasPayments = payments.filter(p => p.type === 'kas' && p.kasAmount);
+    if (kasPayments.length === 0) return BigInt(0);
+    
     let weightedSum = BigInt(0);
     let weightSum = 0;
     
-    // Use up to last 7 payments (3.5 days) instead of 5 for better averaging
-    const recentPayouts = payments.slice(0, 7);
+    // Use up to last 7 payments
+    const recentPayouts = kasPayments.slice(0, 7);
     recentPayouts.forEach((payment, index) => {
-      // Slightly steeper decay to favor more recent payments
-      const weight = Math.exp(-0.6 * index); // Changed from -0.5 to -0.6
-      weightedSum += BigInt(Math.round(Number(payment.kasAmount || 0) * weight));
-      weightSum += weight;
+      const weight = Math.exp(-0.6 * index);
+      try {
+        // Convert string amount to BigInt safely
+        const amount = BigInt(Math.round(Number(payment.kasAmount) * 1e8));
+        weightedSum += amount * BigInt(Math.round(weight * 1e8)) / BigInt(1e8);
+        weightSum += weight;
+      } catch (error) {
+        console.error('Error processing payment amount:', error);
+      }
     });
     
+    if (weightSum === 0) return BigInt(0);
+    
     const weightedAvg = weightedSum / BigInt(Math.round(weightSum * 1e8)) * BigInt(1e8);
-    // Apply a 95% conservative factor to slightly undersell
     return (weightedAvg * BigInt(2) * BigInt(95)) / BigInt(100);
   };
 
