@@ -40,31 +40,58 @@ export async function GET() {
     hashrateUrl.searchParams.append('end', end.toString());
     hashrateUrl.searchParams.append('step', step.toString());
 
-    // Fetch both KAS and NACHO payout data
-    const [hashrateResponse, kasResponse, nachoResponse] = await Promise.all([
-      fetch(hashrateUrl),
-      fetch('http://kas.katpool.xyz:8080/api/pool/payouts'),
-      fetch('http://kas.katpool.xyz:8080/api/pool/nacho_payouts')
-    ]);
-
-    if (!hashrateResponse.ok || !kasResponse.ok || !nachoResponse.ok) {
-      throw new Error(`HTTP error! status: ${hashrateResponse.status}/${kasResponse.status}/${nachoResponse.status}`);
+    // First get hashrate data to know which wallets to query
+    const hashrateResponse = await fetch(hashrateUrl);
+    if (!hashrateResponse.ok) {
+      throw new Error(`HTTP error! Hashrate status: ${hashrateResponse.status}`);
     }
-
-    const [hashrateData, kasData, nachoData] = await Promise.all([
-      hashrateResponse.json(),
-      kasResponse.json(),
-      nachoResponse.json()
-    ]);
+    const hashrateData = await hashrateResponse.json();
 
     if (hashrateData.status !== 'success' || !hashrateData.data?.result) {
       throw new Error('Invalid hashrate response format');
     }
 
-    // Process rewards for last 24h
-    const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-    const rewardsMap = new Map<string, number>();
+    // Get list of active wallets
+    const activeWallets = hashrateData.data.result.map((miner: any) => miner.metric.wallet_address);
+
+    // Fetch KAS payouts and NACHO payments for each wallet
+    const [kasResponse, ...nachoResponses] = await Promise.all([
+      fetch('http://kas.katpool.xyz:8080/api/pool/payouts'),
+      ...activeWallets.map((wallet: string) =>
+        fetch(`http://kas.katpool.xyz:8080/api/nacho_payments/${wallet}`)
+      )
+    ]);
+
+    if (!kasResponse.ok) {
+      throw new Error(`HTTP error! KAS status: ${kasResponse.status}`);
+    }
+
+    // Process KAS data
+    const kasData = await kasResponse.json();
+
+    // Process NACHO data for each wallet
     const rebatesMap = new Map<string, number>();
+    const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+
+    await Promise.all(
+      nachoResponses.map(async (response, index) => {
+        if (response.ok) {
+          const nachoData = await response.json();
+          const wallet = activeWallets[index];
+          
+          nachoData.forEach((payout: NachoPayment) => {
+            const timestamp = new Date(payout.timestamp).getTime();
+            if (timestamp >= twentyFourHoursAgo) {
+              const amount = Number(BigInt(payout.nacho_amount)) / 1e8;
+              rebatesMap.set(wallet, (rebatesMap.get(wallet) || 0) + amount);
+            }
+          });
+        }
+      })
+    );
+
+    // Also need to restore KAS rewards processing
+    const rewardsMap = new Map<string, number>();
 
     // Process KAS rewards
     kasData.forEach((payout: KasPayment) => {
@@ -73,16 +100,6 @@ export async function GET() {
         const wallet = payout.wallet_address[0];
         const amount = Number(BigInt(payout.amount)) / 1e8;
         rewardsMap.set(wallet, (rewardsMap.get(wallet) || 0) + amount);
-      }
-    });
-
-    // Process NACHO rebates
-    nachoData.forEach((payout: NachoPayment) => {
-      const timestamp = new Date(payout.timestamp).getTime();
-      if (timestamp >= twentyFourHoursAgo) {
-        const wallet = payout.wallet_address[0];
-        const amount = Number(BigInt(payout.nacho_amount)) / 1e8;
-        rebatesMap.set(wallet, (rebatesMap.get(wallet) || 0) + amount);
       }
     });
 
