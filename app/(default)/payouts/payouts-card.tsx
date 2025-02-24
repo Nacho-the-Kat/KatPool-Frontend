@@ -221,7 +221,8 @@ export default function PayoutsCard() {
                         rel="noopener noreferrer"
                         className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
                       >
-                        {`${payout.transactionHash.slice(0, 8)}...${payout.transactionHash.slice(-8)}`}
+                        <span className="hidden md:inline">{payout.transactionHash}</span>
+                        <span className="md:hidden">{`${payout.transactionHash.slice(0, 8)}...${payout.transactionHash.slice(-8)}`}</span>
                       </a>
                     </div>
                   </td>
@@ -231,10 +232,8 @@ export default function PayoutsCard() {
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
-                    <div className="text-center">
-                      <span className="text-[13px] text-gray-500 dark:text-gray-400">
-                        {payout.type === 'nacho' && payout.nachoAmount ? `${formatAmount(Number(payout.nachoAmount))} NACHO` : '--'}
-                      </span>
+                    <div className="text-center font-medium">
+                      {payout.type === 'nacho' && payout.nachoAmount ? `${formatAmount(Number(payout.nachoAmount))} NACHO` : '--'}
                     </div>
                   </td>
                 </tr>
