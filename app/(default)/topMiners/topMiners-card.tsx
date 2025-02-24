@@ -6,13 +6,14 @@ import { $fetch } from 'ofetch'
 import { formatHashrate } from '@/components/utils/utils'
 
 type SortDirection = 'asc' | 'desc'
-type SortKey = 'rank' | 'wallet' | 'hashrate' | 'rewards24h' | 'poolShare' | 'firstSeen'
+type SortKey = 'rank' | 'wallet' | 'hashrate' | 'rewards24h' | 'nachoRebates' | 'poolShare' | 'firstSeen'
 
 interface Miner {
   rank: number
   wallet: string
   hashrate: number
   rewards24h: number
+  nachoRebates: number
   poolShare: number
   firstSeen: number
 }
@@ -45,6 +46,7 @@ export default function TopMinersCard() {
           wallet: miner.wallet,
           hashrate: miner.hashrate,
           rewards24h: miner.rewards24h,
+          nachoRebates: miner.nachoRebates || 0,
           poolShare: miner.poolShare,
           firstSeen: miner.firstSeen ? Math.floor((Date.now() / 1000 - miner.firstSeen) / (24 * 60 * 60)) : 0
         }));
@@ -141,6 +143,11 @@ export default function TopMinersCard() {
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
+                      <SortableHeader label="24h Rebates" sortKey="nachoRebates" />
+                    </div>
+                  </th>
+                  <th className="p-2 whitespace-nowrap">
+                    <div className="flex justify-center">
                       <SortableHeader label="Pool Share" sortKey="poolShare" />
                     </div>
                   </th>
@@ -171,6 +178,11 @@ export default function TopMinersCard() {
                     <td className="p-2 whitespace-nowrap">
                       <div className="text-center text-green-500">
                         {miner.rewards24h > 0 ? `${formatRewards(miner.rewards24h)} KAS` : '--'}
+                      </div>
+                    </td>
+                    <td className="p-2 whitespace-nowrap">
+                      <div className="text-center text-gray-500 dark:text-gray-400">
+                        {miner.nachoRebates > 0 ? `${formatRewards(miner.nachoRebates)} NACHO` : '--'}
                       </div>
                     </td>
                     <td className="p-2 whitespace-nowrap">

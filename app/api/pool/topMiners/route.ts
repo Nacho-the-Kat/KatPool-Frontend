@@ -3,20 +3,27 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 export const revalidate = 300; // 5 minutes
 
+interface KasPayment {
+  wallet_address: string[];
+  amount: string;
+  timestamp: string;
+  transaction_hash: string;
+}
+
+interface NachoPayment {
+  wallet_address: string[];
+  nacho_amount: string;
+  timestamp: string;
+  transaction_hash: string;
+}
+
 interface MinerData {
   wallet: string;
   hashrate: number;
   poolShare: number;
   rank: number;
   rewards24h: number;
-  shares24h: number;
-}
-
-interface Payout {
-  wallet_address: string[];
-  amount: string;
-  timestamp: string;
-  transaction_hash: string;
+  nachoRebates: number;
 }
 
 export async function GET() {
@@ -33,83 +40,49 @@ export async function GET() {
     hashrateUrl.searchParams.append('end', end.toString());
     hashrateUrl.searchParams.append('step', step.toString());
 
-    // Fetch shares data for all miners
-    const sharesUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
-    sharesUrl.searchParams.append('query', 'sum(added_miner_shares_1min_count) by (wallet_address)');
-    sharesUrl.searchParams.append('start', start.toString());
-    sharesUrl.searchParams.append('end', end.toString());
-    sharesUrl.searchParams.append('step', step.toString());
-
-    // Fetch payout data
-    const payoutsUrl = 'http://kas.katpool.xyz:8080/api/pool/payouts';
-
-    const [hashrateResponse, sharesResponse, payoutsResponse] = await Promise.all([
+    // Fetch hashrate data and both payment types
+    const [hashrateResponse, kasPayoutsResponse, nachoPayoutsResponse] = await Promise.all([
       fetch(hashrateUrl),
-      fetch(sharesUrl),
-      fetch(payoutsUrl)
+      fetch('http://kas.katpool.xyz:8080/api/pool/payouts'),
+      fetch('http://kas.katpool.xyz:8080/api/pool/nacho_payouts')
     ]);
 
-    if (!hashrateResponse.ok || !sharesResponse.ok || !payoutsResponse.ok) {
-      throw new Error(`HTTP error! status: ${hashrateResponse.status}/${sharesResponse.status}/${payoutsResponse.status}`);
+    if (!hashrateResponse.ok || !kasPayoutsResponse.ok || !nachoPayoutsResponse.ok) {
+      throw new Error(`HTTP error! status: ${hashrateResponse.status}/${kasPayoutsResponse.status}/${nachoPayoutsResponse.status}`);
     }
 
-    const [hashrateData, sharesData, payoutsData] = await Promise.all([
+    const [hashrateData, kasPayouts, nachoPayouts] = await Promise.all([
       hashrateResponse.json(),
-      sharesResponse.json(),
-      payoutsResponse.json()
+      kasPayoutsResponse.json(),
+      nachoPayoutsResponse.json()
     ]);
 
     if (hashrateData.status !== 'success' || !hashrateData.data?.result) {
       throw new Error('Invalid hashrate response format');
     }
 
-    if (sharesData.status !== 'success' || !sharesData.data?.result) {
-      throw new Error('Invalid shares response format');
-    }
-
-    // Process shares data to get 24h shares per wallet
-    const sharesMap = new Map<string, number>();
-    sharesData.data.result.forEach((miner: any) => {
-      const values = miner.values;
-      if (!values || values.length < 2) {
-        console.log(`Skipping miner ${miner.metric.wallet_address} - insufficient data points:`, values?.length || 0);
-        return;
-      }
-
-      let totalShares = 0;
-      // Calculate differences between consecutive points to handle counter resets
-      for (let i = 1; i < values.length; i++) {
-        const currentValue = Number(values[i][1]);
-        const previousValue = Number(values[i - 1][1]);
-        
-        // If current value is less than previous, assume counter reset
-        // In this case, just add the current value as those are new shares
-        if (currentValue < previousValue) {
-          console.log(`Counter reset detected for ${miner.metric.wallet_address}: ${previousValue} -> ${currentValue}`);
-          totalShares += currentValue;
-        } else {
-          // Otherwise, add the difference
-          const diff = Math.max(0, currentValue - previousValue);
-          if (diff > 0) {
-            totalShares += diff;
-          }
-        }
-      }
-
-      console.log(`24h shares for ${miner.metric.wallet_address}: ${totalShares} (from ${values.length} data points)`);
-      sharesMap.set(miner.metric.wallet_address, totalShares);
-    });
-
-    // Process payouts to get 24h rewards per wallet
+    // Process KAS rewards for last 24h
     const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
     const rewardsMap = new Map<string, number>();
+    const rebatesMap = new Map<string, number>();
 
-    payoutsData.forEach((payout: Payout) => {
+    // Process KAS payouts
+    kasPayouts.forEach((payout: KasPayment) => {
       const timestamp = new Date(payout.timestamp).getTime();
       if (timestamp >= twentyFourHoursAgo) {
         const wallet = payout.wallet_address[0];
-        const amount = Number(payout.amount) / 1e8; // Convert from satoshis to KAS
+        const amount = Number(payout.amount) / 1e8;
         rewardsMap.set(wallet, (rewardsMap.get(wallet) || 0) + amount);
+      }
+    });
+
+    // Process NACHO payouts
+    nachoPayouts.forEach((payout: NachoPayment) => {
+      const timestamp = new Date(payout.timestamp).getTime();
+      if (timestamp >= twentyFourHoursAgo) {
+        const wallet = payout.wallet_address[0];
+        const amount = Number(payout.nacho_amount) / 1e8;
+        rebatesMap.set(wallet, (rebatesMap.get(wallet) || 0) + amount);
       }
     });
 
@@ -141,10 +114,10 @@ export async function GET() {
         minerData.push({
           wallet: miner.metric.wallet_address,
           hashrate: averageHashrate,
-          poolShare: 0, // Will be calculated after total is known
-          rank: 0, // Will be assigned after sorting
+          poolShare: 0,
+          rank: 0,
           rewards24h: rewardsMap.get(miner.metric.wallet_address) || 0,
-          shares24h: sharesMap.get(miner.metric.wallet_address) || 0
+          nachoRebates: rebatesMap.get(miner.metric.wallet_address) || 0
         });
         poolTotalHashrate += averageHashrate;
       }
