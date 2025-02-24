@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(`https://api.kasplex.org/v1/krc20/address/${wallet}/token/NACHO`)
     const data = await response.json()
 
     return NextResponse.json({
