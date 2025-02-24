@@ -44,7 +44,7 @@ export async function GET() {
     }
 
     const response = await fetchWithRetry(
-      'https://api.coingecko.com/api/v3/simple/price?ids=nacho-the-kat&vs_currencies=usd',
+      'https://pro-api.coingecko.com/api/v3/simple/price?ids=nacho-the-kat&vs_currencies=usd',
       {
         headers: {
           'accept': 'application/json',
