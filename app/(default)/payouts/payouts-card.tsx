@@ -12,18 +12,21 @@ type SortKey = 'timestamp' | 'transactionHash' | 'amount'
 interface Payout {
   timestamp: number
   transactionHash: string
-  amount: number
   walletAddress: string
+  kasAmount?: string
+  nachoAmount?: string
+  type: 'kas' | 'nacho'
 }
 
 const downloadCSV = (data: Payout[]) => {
-  const headers = ['Time', 'Transaction Hash', 'Amount (KAS)', 'Wallet Address']
+  const headers = ['Time', 'Transaction Hash', 'KAS Amount', 'NACHO Amount', 'Wallet Address']
   const csvContent = [
     headers.join(','),
     ...data.map(payout => [
       new Date(payout.timestamp).toISOString(),
       payout.transactionHash,
-      payout.amount.toFixed(8),
+      payout.kasAmount || '0',
+      payout.nachoAmount || '0',
       payout.walletAddress
     ].join(','))
   ].join('\n')
@@ -67,14 +70,14 @@ export default function PayoutsCard() {
   const fetchPayouts = async (wallet: string) => {
     try {
       setIsLoading(true)
-      const response = await $fetch('/api/pool/payouts')
+      const response = await $fetch(`/api/miner/payments?wallet=${wallet}`, {
+        retry: 3,
+        retryDelay: 1000,
+        timeout: 10000,
+      })
       
       if (response.status === 'success') {
-        // Filter payouts for the specific wallet
-        const walletPayouts = response.data.filter(
-          (payout: Payout) => payout.walletAddress === wallet
-        )
-        setPayouts(walletPayouts)
+        setPayouts(response.data)
       }
     } catch (error) {
       console.error('Error fetching payouts:', error)
@@ -114,7 +117,19 @@ export default function PayoutsCard() {
 
   const sortedPayouts = [...payouts].sort((a, b) => {
     const modifier = sortDirection === 'asc' ? 1 : -1
-    return (a[sortKey] > b[sortKey] ? 1 : -1) * modifier
+    
+    switch (sortKey) {
+      case 'timestamp':
+        return (a.timestamp - b.timestamp) * modifier
+      case 'transactionHash':
+        return a.transactionHash.localeCompare(b.transactionHash) * modifier
+      case 'amount':
+        const aAmount = a.type === 'kas' ? Number(a.kasAmount || 0) : 0
+        const bAmount = b.type === 'kas' ? Number(b.kasAmount || 0) : 0
+        return (aAmount - bAmount) * modifier
+      default:
+        return 0
+    }
   })
 
   const SortIcon = ({ active, direction }: { active: boolean; direction: SortDirection }) => (
@@ -201,7 +216,7 @@ export default function PayoutsCard() {
                   <td className="p-2 whitespace-nowrap">
                     <div className="text-center">
                       <a 
-                        href={`https://explorer.kaspa.org/txs/${payout.transactionHash}`}
+                        href={`https://kas.fyi/transaction/${payout.transactionHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
@@ -212,12 +227,14 @@ export default function PayoutsCard() {
                   </td>
                   <td className="p-2 whitespace-nowrap">
                     <div className="text-center font-medium">
-                      {formatAmount(payout.amount)}
+                      {payout.type === 'kas' && payout.kasAmount ? formatAmount(Number(payout.kasAmount)) : '--'}
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
-                    <div className="text-center font-medium text-green-500">
-                      --
+                    <div className="text-center">
+                      <span className="text-[13px] text-gray-500 dark:text-gray-400">
+                        {payout.type === 'nacho' && payout.nachoAmount ? `${formatAmount(Number(payout.nachoAmount))} NACHO` : '--'}
+                      </span>
                     </div>
                   </td>
                 </tr>
