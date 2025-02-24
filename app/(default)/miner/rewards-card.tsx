@@ -257,7 +257,9 @@ export default function AnalyticsCard02() {
                   </td>
                   <td className="py-2">
                     <div className="font-medium text-right text-green-500">
-                      {payout.type === 'nacho' && payout.nachoAmount ? `${formatAmount(Number(payout.nachoAmount))} NACHO` : '--'}
+                      <span className="text-[13px] text-gray-500 dark:text-gray-400">
+                        {payout.type === 'nacho' && payout.nachoAmount ? `${formatAmount(Number(payout.nachoAmount))} NACHO` : '--'}
+                      </span>
                     </div>
                   </td>
                 </tr>
@@ -272,7 +274,9 @@ export default function AnalyticsCard02() {
                     <div className="font-medium text-right text-gray-800 dark:text-gray-100">--</div>
                   </td>
                   <td className="py-2">
-                    <div className="font-medium text-right text-green-500">--</div>
+                    <div className="font-medium text-right">
+                      <span className="text-[13px] text-gray-500 dark:text-gray-400">--</span>
+                    </div>
                   </td>
                 </tr>
               ))}
