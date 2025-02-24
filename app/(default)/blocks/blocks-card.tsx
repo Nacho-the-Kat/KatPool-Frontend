@@ -5,14 +5,12 @@ import { $fetch } from 'ofetch'
 import { format } from 'date-fns'
 
 type SortDirection = 'asc' | 'desc'
-type SortKey = 'timestamp' | 'daaScore' | 'reward' | 'blockHash'
+type SortKey = 'timestamp' | 'daaScore' | 'blockHash'
 
 interface Block {
   blockHash: string
   daaScore: string
   timestamp: string
-  reward?: string
-  fullReward?: string
 }
 
 export default function BlocksCard() {
@@ -36,32 +34,8 @@ export default function BlocksCard() {
           throw new Error(response?.error || 'Failed to fetch data');
         }
 
-        // Fetch reward amounts for each block
-        const blocksWithRewards = await Promise.all(
-          response.data.blocks.map(async (block: Block) => {
-            try {
-              const rewardResponse = await $fetch(`/api/pool/blockReward?blockHash=${block.blockHash}`, {
-                retry: 3,
-                retryDelay: 1000,
-                timeout: 10000,
-              });
-              return {
-                ...block,
-                reward: rewardResponse.data.amount,
-                fullReward: rewardResponse.data.fullAmount
-              };
-            } catch (error) {
-              console.error(`Error fetching reward for block ${block.blockHash}:`, error);
-              return {
-                ...block,
-                reward: '--',
-                fullReward: '--'
-              };
-            }
-          })
-        );
-
-        setBlocks(blocksWithRewards);
+        // Simply set the blocks directly, no need to fetch rewards
+        setBlocks(response.data.blocks);
         setError(null);
       } catch (error) {
         console.error('Error fetching blocks:', error);
@@ -94,8 +68,6 @@ export default function BlocksCard() {
         return (new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()) * modifier
       case 'daaScore':
         return (Number(a.daaScore) - Number(b.daaScore)) * modifier
-      case 'reward':
-        return ((a.reward === '--' ? 0 : Number(a.reward)) - (b.reward === '--' ? 0 : Number(b.reward))) * modifier
       case 'blockHash':
         return a.blockHash.localeCompare(b.blockHash) * modifier
       default:
@@ -168,9 +140,6 @@ export default function BlocksCard() {
                 <th className="p-2">
                   <SortableHeader label="DAA Score" sortKey="daaScore" className="justify-end" />
                 </th>
-                <th className="p-2">
-                  <SortableHeader label="Reward" sortKey="reward" className="justify-end" />
-                </th>
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -196,13 +165,6 @@ export default function BlocksCard() {
                   <td className="p-2">
                     <div className="text-right">
                       {block.daaScore}
-                    </div>
-                  </td>
-                  <td className="p-2">
-                    <div className="text-right font-medium text-green-500">
-                      <span title={block.fullReward !== '--' ? `Full amount: ${block.fullReward} KAS` : ''}>
-                        {block.reward} KAS
-                      </span>
                     </div>
                   </td>
                 </tr>
