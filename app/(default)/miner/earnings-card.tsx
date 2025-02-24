@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { $fetch } from 'ofetch'
+import { useNachoPrice } from './nacho-price-context'
 
 interface Payment {
   id: number;
@@ -37,7 +38,7 @@ export default function AnalyticsCard04() {
   const [error, setError] = useState<string | null>(null)
   const [dailyKas, setDailyKas] = useState<bigint | null>(null)
   const [kasPrice, setKasPrice] = useState<number | null>(null)
-  const [nachoPrice, setNachoPrice] = useState<number | null>(null)
+  const { price: nachoPrice, isLoading: nachoPriceLoading } = useNachoPrice()
   const [hasPayments, setHasPayments] = useState<boolean>(false)
   const [recentPayments, setRecentPayments] = useState<Payment[]>([])
   const [averagePayment, setAveragePayment] = useState<bigint | null>(null)
@@ -47,29 +48,49 @@ export default function AnalyticsCard04() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!walletAddress) return;
+      if (!walletAddress) {
+        setIsQualified(false); // Reset qualification when no wallet
+        return;
+      }
 
       try {
         setIsLoading(true);
-        const [paymentsRes, kasPriceRes, nachoPriceRes, hashrateRes, nachoBalanceRes, nachoNFTsRes] = await Promise.all([
-          $fetch(`/api/miner/payments?wallet=${walletAddress}`),
-          $fetch('/api/pool/price'),
-          $fetch('/api/pool/nachoPrice'),
-          $fetch(`/api/miner/currentHashrate?wallet=${walletAddress}`),
-          $fetch(`/api/pool/nachoBalance?wallet=${walletAddress}`),
-          $fetch(`/api/pool/nachoNFTs?wallet=${walletAddress}`)
+        // Separate qualification check to its own Promise.all for clarity
+        const [qualificationRes, otherDataRes] = await Promise.all([
+          // Qualification data
+          Promise.all([
+            $fetch(`/api/pool/nachoBalance?wallet=${walletAddress}`),
+            $fetch(`/api/pool/nachoNFTs?wallet=${walletAddress}`)
+          ]),
+          // Other data
+          Promise.all([
+            $fetch(`/api/miner/payments?wallet=${walletAddress}`),
+            $fetch('/api/pool/price'),
+            $fetch(`/api/miner/currentHashrate?wallet=${walletAddress}`),
+          ])
         ]);
 
-        // Check qualification status
+        const [nachoBalanceRes, nachoNFTsRes] = qualificationRes;
+        const [paymentsRes, kasPriceRes, hashrateRes] = otherDataRes;
+
+        // Check qualification status first
         const isQualifiedByTokens = nachoBalanceRes.status === 'success' && nachoBalanceRes.data.qualified;
         const isQualifiedByNFTs = nachoNFTsRes.status === 'success' && nachoNFTsRes.data.qualified;
+        
+        console.log('Qualification check:', { 
+          byTokens: isQualifiedByTokens, 
+          byNFTs: isQualifiedByNFTs,
+          tokenRes: nachoBalanceRes,
+          nftRes: nachoNFTsRes
+        });
+
         setIsQualified(isQualifiedByTokens || isQualifiedByNFTs);
 
+        // Process other data...
         if (paymentsRes.status === 'success') {
           setHasPayments(paymentsRes.data.length > 0);
           if (paymentsRes.data.length > 0) {
             setRecentPayments(paymentsRes.data);
-            
             const dailyEstimate = calculateDailyEstimate(paymentsRes.data);
             setDailyKas(dailyEstimate);
           } else {
@@ -79,10 +100,6 @@ export default function AnalyticsCard04() {
 
         if (kasPriceRes.status === 'success') {
           setKasPrice(kasPriceRes.data.price);
-        }
-
-        if (nachoPriceRes.status === 'success') {
-          setNachoPrice(nachoPriceRes.data.price);
         }
 
         if (hashrateRes.status === 'success') {
@@ -97,8 +114,6 @@ export default function AnalyticsCard04() {
         setIsQualified(false);
         setDailyKas(null);
         setKasPrice(null);
-        setNachoPrice(null);
-        setHasPayments(false);
         setNetworkDifficulty(null);
         setMinerHashrate(null);
       } finally {
@@ -107,7 +122,10 @@ export default function AnalyticsCard04() {
     };
 
     fetchData();
-  }, [walletAddress]);
+    // Add a refresh interval
+    const interval = setInterval(fetchData, 300000); // Refresh every 5 minutes
+    return () => clearInterval(interval);
+  }, [walletAddress]); // Only wallet address as dependency since it's the main trigger
 
   const formatKas = (amount: bigint | null) => {
     if (amount === null) return '--';

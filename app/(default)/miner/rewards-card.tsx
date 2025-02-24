@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { $fetch } from 'ofetch'
+import { useNachoPrice } from './nacho-price-context'
 
 interface Payout {
   walletAddress: string
@@ -21,7 +22,7 @@ export default function AnalyticsCard02() {
   const [recentPayouts, setRecentPayouts] = useState<Payout[]>([])
   const [pendingNachoRebate, setPendingNachoRebate] = useState<string>('--')
   const [kasPrice, setKasPrice] = useState<number | null>(null)
-  const [nachoPrice, setNachoPrice] = useState<number | null>(null)
+  const { price: nachoPrice, isLoading: nachoPriceLoading } = useNachoPrice()
 
   // Fetch pending balance
   useEffect(() => {
@@ -94,20 +95,19 @@ export default function AnalyticsCard02() {
     return () => clearInterval(interval);
   }, [walletAddress]);
 
-  // Add new useEffect for fetching NACHO rebate data
+  // Update NACHO rebate effect
   useEffect(() => {
     const fetchNachoRebate = async () => {
       if (!walletAddress) return;
 
       try {
-        const [rebateRes, kasPriceRes, nachoPriceRes] = await Promise.all([
+        const [rebateRes, kasPriceRes] = await Promise.all([
           $fetch(`/api/pool/nachoRebates?wallet=${walletAddress}`, {
             retry: 3,
             retryDelay: 1000,
             timeout: 10000,
           }),
-          $fetch('/api/pool/price'),
-          $fetch('/api/pool/nachoPrice')
+          $fetch('/api/pool/price')
         ]);
 
         if (!rebateRes || rebateRes.status !== 'success') {
@@ -118,10 +118,9 @@ export default function AnalyticsCard02() {
         const sompi = BigInt(rebateRes.data.sompi);
         const kasAmount = Number(sompi) / 1e8;
 
-        if (kasPriceRes.status === 'success' && nachoPriceRes.status === 'success') {
+        if (kasPriceRes.status === 'success' && nachoPrice !== null) {
           const kasPrice = kasPriceRes.data.price;
-          const nachoPrice = nachoPriceRes.data.price;
-
+          
           // Calculate NACHO amount
           const nachoAmount = (kasAmount * kasPrice) / nachoPrice;
           setPendingNachoRebate(nachoAmount.toFixed(3));
@@ -137,7 +136,7 @@ export default function AnalyticsCard02() {
     // Refresh every minute
     const interval = setInterval(fetchNachoRebate, 60000);
     return () => clearInterval(interval);
-  }, [walletAddress]);
+  }, [walletAddress, nachoPrice]);
 
   const formatAmount = (amount: number) => {
     return amount.toLocaleString('en-US', {
