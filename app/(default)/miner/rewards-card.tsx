@@ -24,50 +24,63 @@ export default function AnalyticsCard02() {
   const [kasPrice, setKasPrice] = useState<number | null>(null)
   const { price: nachoPrice, isLoading: nachoPriceLoading } = useNachoPrice()
 
-  // Fetch pending balance
+  // Replace both balance and rebate effects with a single one
   useEffect(() => {
-    const fetchBalance = async () => {
+    const fetchBalances = async () => {
       if (!walletAddress) return;
 
       try {
         setIsLoading(true);
-        const response = await $fetch(`/api/miner/balance?wallet=${walletAddress}`, {
-          retry: 3,
-          retryDelay: 1000,
-          timeout: 10000,
-        });
+        const [balanceRes, kasPriceRes] = await Promise.all([
+          $fetch(`/api/miner/combinedBalance?wallet=${walletAddress}`, {
+            retry: 3,
+            retryDelay: 1000,
+            timeout: 10000,
+          }),
+          $fetch('/api/pool/price')
+        ]);
 
-        if (!response || response.error) {
-          throw new Error(response?.error || 'Failed to fetch data');
+        if (!balanceRes || balanceRes.status !== 'success' || !balanceRes.data) {
+          throw new Error('Failed to fetch balance data');
         }
 
-        if (response.status !== 'success' || !response.data?.result?.[0]?.value?.[1]) {
+        // Set KAS pending balance with validation
+        try {
+          const kasAmount = Number(BigInt(balanceRes.data.pendingBalance)) / 1e8;
+          setPendingBalance(Number.isFinite(kasAmount) ? kasAmount.toFixed(2) : '--');
+        } catch (e) {
+          console.error('Error processing KAS balance:', e);
           setPendingBalance('--');
-          return;
         }
 
-        // Convert the string amount to BigInt and handle 8 decimal places
-        const rawAmount = BigInt(response.data.result[0].value[1]);
-        const amount = Number(rawAmount) / Math.pow(10, 8);
-        if (!Number.isFinite(amount)) {
-          throw new Error('Invalid amount received');
+        // Calculate NACHO rebate amount with validation
+        if (kasPriceRes.status === 'success' && nachoPrice !== null) {
+          try {
+            const rebateKasAmount = Number(BigInt(balanceRes.data.pendingRebate)) / 1e8;
+            const nachoAmount = (rebateKasAmount * kasPriceRes.data.price) / nachoPrice;
+            setPendingNachoRebate(Number.isFinite(nachoAmount) ? nachoAmount.toFixed(3) : '--');
+          } catch (e) {
+            console.error('Error processing NACHO rebate:', e);
+            setPendingNachoRebate('--');
+          }
         }
-        setPendingBalance(amount.toFixed(2));
+
         setError(null);
       } catch (error) {
-        console.error('Error fetching pending balance:', error);
+        console.error('Error fetching balances:', error);
         setError(error instanceof Error ? error.message : 'Failed to load data');
         setPendingBalance('ERR');
+        setPendingNachoRebate('ERR');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchBalance();
+    fetchBalances();
     // Refresh every minute
-    const interval = setInterval(fetchBalance, 60000);
+    const interval = setInterval(fetchBalances, 60000);
     return () => clearInterval(interval);
-  }, [walletAddress]);
+  }, [walletAddress, nachoPrice]);
 
   // Fetch recent payouts
   useEffect(() => {
@@ -94,49 +107,6 @@ export default function AnalyticsCard02() {
     const interval = setInterval(fetchPayouts, 60000);
     return () => clearInterval(interval);
   }, [walletAddress]);
-
-  // Update NACHO rebate effect
-  useEffect(() => {
-    const fetchNachoRebate = async () => {
-      if (!walletAddress) return;
-
-      try {
-        const [rebateRes, kasPriceRes] = await Promise.all([
-          $fetch(`/api/pool/nachoRebates?wallet=${walletAddress}`, {
-            retry: 3,
-            retryDelay: 1000,
-            timeout: 10000,
-          }),
-          $fetch('/api/pool/price')
-        ]);
-
-        if (!rebateRes || rebateRes.status !== 'success') {
-          throw new Error('Failed to fetch rebate data');
-        }
-
-        // Convert sompi to KAS while maintaining precision
-        const sompi = BigInt(rebateRes.data.sompi);
-        const kasAmount = Number(sompi) / 1e8;
-
-        if (kasPriceRes.status === 'success' && nachoPrice !== null) {
-          const kasPrice = kasPriceRes.data.price;
-          
-          // Calculate NACHO amount
-          const nachoAmount = (kasAmount * kasPrice) / nachoPrice;
-          setPendingNachoRebate(nachoAmount.toFixed(3));
-        }
-
-      } catch (error) {
-        console.error('Error fetching NACHO rebate:', error);
-        setPendingNachoRebate('ERR');
-      }
-    };
-
-    fetchNachoRebate();
-    // Refresh every minute
-    const interval = setInterval(fetchNachoRebate, 60000);
-    return () => clearInterval(interval);
-  }, [walletAddress, nachoPrice]);
 
   const formatAmount = (amount: number) => {
     return amount.toLocaleString('en-US', {
