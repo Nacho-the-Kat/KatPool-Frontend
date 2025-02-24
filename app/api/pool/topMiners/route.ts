@@ -71,7 +71,7 @@ export async function GET() {
       const timestamp = new Date(payout.timestamp).getTime();
       if (timestamp >= twentyFourHoursAgo) {
         const wallet = payout.wallet_address[0];
-        const amount = Number(payout.amount) / 1e8;
+        const amount = Number(BigInt(payout.amount)) / 1e8;
         rewardsMap.set(wallet, (rewardsMap.get(wallet) || 0) + amount);
       }
     });
@@ -81,7 +81,7 @@ export async function GET() {
       const timestamp = new Date(payout.timestamp).getTime();
       if (timestamp >= twentyFourHoursAgo) {
         const wallet = payout.wallet_address[0];
-        const amount = Number(payout.nacho_amount) / 1e8;
+        const amount = Number(BigInt(payout.nacho_amount)) / 1e8;
         rebatesMap.set(wallet, (rebatesMap.get(wallet) || 0) + amount);
       }
     });
