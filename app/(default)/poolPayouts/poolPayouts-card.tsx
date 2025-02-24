@@ -218,8 +218,8 @@ export default function PoolPayoutsCard() {
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
-                    <div className="text-center font-medium">
-                      {payout.kasAmount > 0 ? formatAmount(payout.kasAmount) : '--'}
+                    <div className="text-center text-green-500">
+                      {payout.kasAmount ? `${formatAmount(Number(payout.kasAmount))} KAS` : '--'}
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
