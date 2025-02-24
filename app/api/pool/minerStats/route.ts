@@ -22,6 +22,9 @@ interface ProcessedStats {
 }
 
 export async function GET() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
+
   try {
     const end = Math.floor(Date.now() / 1000);
     const start = 1735689600; // Jan 1 2025 at 12am midnight UTC
@@ -33,7 +36,12 @@ export async function GET() {
     url.searchParams.append('end', end.toString());
     url.searchParams.append('step', step.toString());
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'Accept-Encoding': 'gzip',
+      }
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -42,15 +50,12 @@ export async function GET() {
     const data = await response.json();
 
     if (data.status === 'success' && data.data?.result) {
-      const stats: ProcessedStats = {};
-
-      // First pass: Initialize data structures and collect miner IDs
-      data.data.result.forEach((result: MinerData) => {
+      const stats = data.data.result.reduce((acc: ProcessedStats, result: MinerData) => {
         const wallet = result.metric.wallet_address;
         const minerId = result.metric.miner_id;
         
-        if (!stats[wallet]) {
-          stats[wallet] = {
+        if (!acc[wallet]) {
+          acc[wallet] = {
             totalShares: 0,
             firstSeen: Infinity,
             activeWorkers: 0,
@@ -58,37 +63,34 @@ export async function GET() {
           };
         }
 
-        // Get the last values entry for total shares (cumulative total)
         if (result.values.length > 0) {
           const lastValue = Number(result.values[result.values.length - 1][1]);
-          stats[wallet].totalShares += lastValue;
-
-          // If the miner has any shares, count them as active
           if (lastValue > 0) {
-            stats[wallet].minerIds.add(minerId);
+            acc[wallet].totalShares += lastValue;
+            acc[wallet].minerIds.add(minerId);
+            acc[wallet].firstSeen = Math.min(
+              acc[wallet].firstSeen, 
+              result.values[0][0]
+            );
           }
         }
 
-        // Get the first values entry for first seen (oldest timestamp)
-        if (result.values.length > 0) {
-          const firstTimestamp = result.values[0][0];
-          stats[wallet].firstSeen = Math.min(stats[wallet].firstSeen, firstTimestamp);
-        }
-      });
-
-      // Second pass: Calculate active workers and clean up
-      const processedStats = Object.entries(stats).reduce((acc, [wallet, stat]) => {
-        acc[wallet] = {
-          totalShares: stat.totalShares,
-          firstSeen: stat.firstSeen,
-          activeWorkers: stat.minerIds.size
-        };
         return acc;
-      }, {} as { [wallet: string]: Omit<ProcessedStats[string], 'minerIds'> });
+      }, {});
 
+      // Single pass to format final output
       return NextResponse.json({
         status: 'success',
-        data: processedStats
+        data: Object.fromEntries(
+          (Object.entries(stats) as Array<[string, ProcessedStats[string]]>).map(([wallet, stat]) => [
+            wallet,
+            {
+              totalShares: stat.totalShares,
+              firstSeen: stat.firstSeen,
+              activeWorkers: stat.minerIds.size
+            }
+          ])
+        )
       });
     }
 
@@ -99,5 +101,7 @@ export async function GET() {
       { error: error instanceof Error ? error.message : 'Failed to fetch miner stats' },
       { status: 500 }
     );
+  } finally {
+    clearTimeout(timeout);
   }
 } 

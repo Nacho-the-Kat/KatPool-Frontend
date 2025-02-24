@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { $fetch } from 'ofetch'
 import { formatHashrate } from '@/components/utils/utils'
@@ -24,6 +24,45 @@ interface MinerStats {
 
 const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
 const CACHE_DURATION = REFRESH_INTERVAL - 10000; // Slightly less than refresh interval
+const STALE_WHILE_REVALIDATE = 5 * 60 * 1000; // 5 minutes
+
+const getCachedData = () => {
+  try {
+    const cached = localStorage.getItem('topMinersData');
+    const timestamp = localStorage.getItem('topMinersTimestamp');
+    
+    if (!cached || !timestamp) return null;
+    
+    const parsedTimestamp = parseInt(timestamp);
+    const age = Date.now() - parsedTimestamp;
+    
+    // Return data with freshness indicator
+    return {
+      data: JSON.parse(cached),
+      isStale: age >= CACHE_DURATION,
+      isTooOld: age >= (CACHE_DURATION + STALE_WHILE_REVALIDATE)
+    };
+  } catch (error) {
+    console.error('Cache read error:', error);
+    return null;
+  }
+};
+
+// Add retry helper
+const fetchWithBackoff = async (url: string, options: any, maxRetries = 2) => {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await $fetch(url, {
+        ...options,
+        timeout: 30000 * (attempt + 1), // Increase timeout with each retry
+      });
+    } catch (error) {
+      if (attempt === maxRetries) throw error;
+      const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
 
 export default function TopMinersCard() {
   const [sortKey, setSortKey] = useState<SortKey>('rank')
@@ -32,119 +71,108 @@ export default function TopMinersCard() {
   const [error, setError] = useState<string | null>(null)
   const [miners, setMiners] = useState<Miner[]>([])
   const [isFetching, setIsFetching] = useState(false)
+  const isSubscribed = useRef(true);
 
-  useEffect(() => {
-    let isSubscribed = true;
-    let timeoutId: NodeJS.Timeout;
+  // Lift fetchData out of useEffect and make it a ref to avoid recreation
+  const fetchDataRef = useRef(async () => {
+    if (isFetching) return;
     
-    const fetchData = async () => {
-      if (isFetching) return;
+    try {
+      // Check cache first
+      const cache = getCachedData();
       
-      try {
-        setIsFetching(true);
-
-        // Check cache first
-        const cached = localStorage.getItem('topMinersData');
-        const cachedTimestamp = localStorage.getItem('topMinersTimestamp');
+      // Use cache if available and not too old
+      if (cache && !cache.isTooOld) {
+        setMiners(cache.data);
+        setError(null);
         
-        if (cached && cachedTimestamp) {
-          const timestamp = parseInt(cachedTimestamp);
-          if (Date.now() - timestamp < CACHE_DURATION) {
-            if (isSubscribed) {
-              setMiners(JSON.parse(cached));
-              setError(null);
-              setIsLoading(false);
-              setIsFetching(false);
-            }
-            return;
-          }
+        // If data is stale, refresh in background
+        if (cache.isStale) {
+          setIsFetching(true);
+        } else {
+          return; // Fresh cache, no need to fetch
         }
+      } else {
+        setIsFetching(true);
+        setIsLoading(true);
+      }
 
-        // Sequential requests instead of parallel to avoid connection limits
-        let hashrateResponse;
-        let statsResponse;
+      // Sequential requests instead of parallel to avoid connection limits
+      let hashrateResponse;
+      let statsResponse;
 
-        try {
-          hashrateResponse = await $fetch('/api/pool/topMiners', {
+      try {
+        hashrateResponse = await fetchWithBackoff('/api/pool/topMiners', {
+          retry: 2,
+          retryDelay: 3000,
+        });
+        
+        if (hashrateResponse?.data && !hashrateResponse.error) {
+          statsResponse = await fetchWithBackoff('/api/pool/minerStats', {
             retry: 2,
             retryDelay: 3000,
-            timeout: 30000,
           });
-        } catch (error: unknown) {
-          const errorMessage = error instanceof Error 
-            ? error.message 
-            : 'Unknown error occurred';
-          throw new Error(`Hashrate API failed: ${errorMessage}`);
         }
-
-        // Only proceed with stats if hashrate succeeded
-        if (hashrateResponse?.data && !hashrateResponse.error) {
-          try {
-            statsResponse = await $fetch('/api/pool/minerStats', {
-              retry: 2,
-              retryDelay: 3000,
-              timeout: 30000,
-            });
-          } catch (error: unknown) {
-            const errorMessage = error instanceof Error 
-              ? error.message 
-              : 'Unknown error occurred';
-            throw new Error(`Stats API failed: ${errorMessage}`);
-          }
-        }
-
-        if (!isSubscribed) return;
-
-        // Validate responses
-        if (!hashrateResponse?.data || hashrateResponse.error) {
-          throw new Error(hashrateResponse?.error || 'Invalid hashrate response');
-        }
-
-        // Continue even if stats fail
-        const statsData = statsResponse?.data || {};
-
-        // Map API data to our Miner interface
-        const mappedMiners = hashrateResponse.data.map((miner: any) => ({
-          rank: miner.rank,
-          wallet: miner.wallet,
-          hashrate: miner.hashrate,
-          rewards48h: miner.rewards48h,
-          nachoRebates48h: miner.nachoRebates48h,
-          poolShare: miner.poolShare,
-          firstSeen: statsData[miner.wallet]?.firstSeen 
-            ? Math.floor((Date.now() / 1000 - statsData[miner.wallet].firstSeen) / (24 * 60 * 60)) 
-            : 0
-        }));
-
-        // Cache the new data
-        localStorage.setItem('topMinersData', JSON.stringify(mappedMiners));
-        localStorage.setItem('topMinersTimestamp', Date.now().toString());
-
-        if (isSubscribed) {
-          setMiners(mappedMiners);
-          setError(null);
-        }
-      } catch (error) {
-        if (isSubscribed) {
-          console.error('Error fetching top miners:', error);
-          setError(error instanceof Error ? error.message : 'Failed to load data');
-        }
-      } finally {
-        if (isSubscribed) {
-          setIsLoading(false);
-          setIsFetching(false);
-        }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : 'Unknown error occurred';
+        throw new Error(`API failed: ${errorMessage}`);
       }
-    };
+
+      // Validate responses
+      if (!hashrateResponse?.data || hashrateResponse.error) {
+        throw new Error(hashrateResponse?.error || 'Invalid hashrate response');
+      }
+
+      // Continue even if stats fail
+      const statsData = statsResponse?.data || {};
+
+      // Map API data to our Miner interface
+      const mappedMiners = hashrateResponse.data.map((miner: any) => ({
+        rank: miner.rank,
+        wallet: miner.wallet,
+        hashrate: miner.hashrate,
+        rewards48h: miner.rewards48h,
+        nachoRebates48h: miner.nachoRebates48h,
+        poolShare: miner.poolShare,
+        firstSeen: statsData[miner.wallet]?.firstSeen 
+          ? Math.floor((Date.now() / 1000 - statsData[miner.wallet].firstSeen) / (24 * 60 * 60)) 
+          : 0
+      }));
+
+      // Cache the new data
+      localStorage.setItem('topMinersData', JSON.stringify(mappedMiners));
+      localStorage.setItem('topMinersTimestamp', Date.now().toString());
+
+      if (isSubscribed.current) {
+        setMiners(mappedMiners);
+        setError(null);
+      }
+    } catch (error) {
+      if (isSubscribed.current) {
+        console.error('Error fetching top miners:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load data');
+      }
+    } finally {
+      if (isSubscribed.current) {
+        setIsLoading(false);
+        setIsFetching(false);
+      }
+    }
+  });
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
 
     // Initial fetch
-    fetchData();
+    fetchDataRef.current();
 
     // Setup refresh with setTimeout instead of setInterval
     const scheduleNextFetch = () => {
       timeoutId = setTimeout(() => {
-        fetchData().finally(() => {
-          if (isSubscribed) {
+        fetchDataRef.current().finally(() => {
+          if (isSubscribed.current) {
             scheduleNextFetch();
           }
         });
@@ -154,10 +182,27 @@ export default function TopMinersCard() {
     scheduleNextFetch();
     
     return () => {
-      isSubscribed = false;
+      isSubscribed.current = false;
       clearTimeout(timeoutId);
     };
   }, []);
+
+  // Recovery logic can now access fetchDataRef
+  useEffect(() => {
+    if (error) {
+      const cache = getCachedData();
+      if (cache?.data) {
+        setMiners(cache.data);
+      }
+      
+      const retryTimeout = setTimeout(() => {
+        setError(null);
+        fetchDataRef.current();
+      }, 30000);
+      
+      return () => clearTimeout(retryTimeout);
+    }
+  }, [error]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
