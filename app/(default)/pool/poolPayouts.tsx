@@ -7,13 +7,16 @@ import { $fetch } from 'ofetch'
 
 interface Payout {
   walletAddress: string
-  amount: number
+  kasAmount?: string
+  nachoAmount?: string
   timestamp: number
   transactionHash: string
+  type: 'kas' | 'nacho'
 }
 
 interface AggregatedPayout {
-  amount: number
+  kasAmount: number
+  nachoAmount: number
   timestamp: number
   transactionHash: string
 }
@@ -32,12 +35,18 @@ export default function PoolPayouts() {
             response.data.reduce((acc: Record<string, AggregatedPayout>, payout: Payout) => {
               if (!acc[payout.transactionHash]) {
                 acc[payout.transactionHash] = {
-                  amount: 0,
+                  kasAmount: 0,
+                  nachoAmount: 0,
                   timestamp: payout.timestamp,
                   transactionHash: payout.transactionHash
                 }
               }
-              acc[payout.transactionHash].amount += payout.amount
+              if (payout.type === 'kas' && payout.kasAmount) {
+                acc[payout.transactionHash].kasAmount += Number(payout.kasAmount)
+              }
+              if (payout.type === 'nacho' && payout.nachoAmount) {
+                acc[payout.transactionHash].nachoAmount += Number(payout.nachoAmount)
+              }
               return acc
             }, {})
           ) as AggregatedPayout[]
@@ -149,7 +158,15 @@ export default function PoolPayouts() {
                       <div className="self-center">
                         <span className="font-medium text-gray-800 dark:text-gray-100">Pool Payout</span>
                         <span className="text-gray-500 dark:text-gray-400"> • </span>
-                        <span className="text-green-500">{formatAmount(payout.amount)} KAS</span>
+                        <span className="text-green-500">{formatAmount(payout.kasAmount)} KAS</span>
+                        {payout.nachoAmount > 0 && (
+                          <>
+                            <span className="text-gray-500 dark:text-gray-400"> • </span>
+                            <span className="text-[13px] text-gray-500 dark:text-gray-400">
+                              {formatAmount(payout.nachoAmount)} NACHO
+                            </span>
+                          </>
+                        )}
                         <span className="text-gray-500 dark:text-gray-400"> • </span>
                         <a
                           href={`https://explorer.kaspa.org/txs/${payout.transactionHash}`}

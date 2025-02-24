@@ -190,16 +190,7 @@ export default function PoolPayoutsCard() {
                   <SortableHeader label="KAS Amount" sortKey="kasAmount" />
                 </th>
                 <th className="p-2 whitespace-nowrap">
-                  <SortableHeader label="NACHO Amount" sortKey="nachoAmount" />
-                </th>
-                <th className="p-2 whitespace-nowrap">
-                  <div className="font-semibold text-center">KRC20 Amount</div>
-                </th>
-                <th className="p-2 whitespace-nowrap">
-                  <div className="font-semibold text-center">NACHO Rebate</div>
-                </th>
-                <th className="p-2 whitespace-nowrap">
-                  <div className="font-semibold text-center">Value (USD)</div>
+                  <SortableHeader label="NACHO Rebate" sortKey="nachoAmount" />
                 </th>
               </tr>
             </thead>
@@ -219,13 +210,14 @@ export default function PoolPayoutsCard() {
                         rel="noopener noreferrer"
                         className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
                       >
-                        {`${payout.transactionHash.slice(0, 8)}...${payout.transactionHash.slice(-8)}`}
+                        <span className="hidden md:inline">{payout.transactionHash}</span>
+                        <span className="md:hidden">{`${payout.transactionHash.slice(0, 8)}...${payout.transactionHash.slice(-8)}`}</span>
                       </a>
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
                     <div className="text-center font-medium">
-                      {formatAmount(payout.kasAmount)}
+                      {payout.kasAmount > 0 ? formatAmount(payout.kasAmount) : '--'}
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap">
@@ -234,19 +226,6 @@ export default function PoolPayoutsCard() {
                         {payout.nachoAmount > 0 ? `${formatAmount(payout.nachoAmount)} NACHO` : '--'}
                       </span>
                     </div>
-                  </td>
-                  <td className="p-2 whitespace-nowrap">
-                    <div className="text-center font-medium">
-                      --
-                    </div>
-                  </td>
-                  <td className="p-2 whitespace-nowrap">
-                    <div className="text-center font-medium text-green-500">
-                      --
-                    </div>
-                  </td>
-                  <td className="p-2 whitespace-nowrap">
-                    <div className="text-center">--</div>
                   </td>
                 </tr>
               ))}
