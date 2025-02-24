@@ -11,12 +11,18 @@ interface NachoPrice {
 
 export async function GET() {
   try {
+    const apiKey = process.env.COINGECKO_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('CoinGecko API key not configured');
+    }
+
     const response = await fetch(
       'https://api.coingecko.com/api/v3/simple/price?ids=nacho-the-kat&vs_currencies=usd',
       {
         headers: {
           'accept': 'application/json',
-          'x-cg-demo-api-key': 'CG-f8E4yaD4zQYKtqHawS59TAnY'
+          'x-cg-pro-api-key': apiKey
         }
       }
     );
