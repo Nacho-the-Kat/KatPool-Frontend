@@ -24,6 +24,7 @@ interface MinerData {
   rank: number;
   rewards48h: number;
   nachoRebates48h: number;
+  firstSeen: number;
 }
 
 export async function GET(request: Request) {
@@ -46,18 +47,20 @@ export async function GET(request: Request) {
     hashrateUrl.searchParams.append('step', step.toString());
 
     // Parallel fetch for hashrate and KAS payouts
-    const [hashrateResponse, kasResponse] = await Promise.all([
+    const [hashrateResponse, kasResponse, statsResponse] = await Promise.all([
       fetch(hashrateUrl),
-      fetch('http://kas.katpool.xyz:8080/api/pool/payouts')
+      fetch('http://kas.katpool.xyz:8080/api/pool/payouts'),
+      fetch('/api/pool/minerStats') // Add minerStats fetch back
     ]);
 
     if (!hashrateResponse.ok || !kasResponse.ok) {
       throw new Error('Failed to fetch data');
     }
 
-    const [hashrateData, kasData] = await Promise.all([
+    const [hashrateData, kasData, statsData] = await Promise.all([
       hashrateResponse.json(),
-      kasResponse.json()
+      kasResponse.json(),
+      statsResponse.json().catch(() => ({ data: {} })) // Gracefully handle stats failure
     ]);
 
     if (hashrateData.status !== 'success' || !hashrateData.data?.result) {
@@ -84,14 +87,20 @@ export async function GET(request: Request) {
       const sortedValues = [...validValues].sort((a, b) => a - b);
       const medianHashrate = sortedValues[Math.floor(sortedValues.length / 2)];
 
+      const wallet = miner.metric.wallet_address;
+      const firstSeen = statsData?.data?.[wallet]?.firstSeen
+        ? Math.floor((Date.now() / 1000 - statsData.data[wallet].firstSeen) / (24 * 60 * 60))
+        : 0;
+
       if (medianHashrate > 0) {
-        minerMap.set(miner.metric.wallet_address, {
-          wallet: miner.metric.wallet_address,
+        minerMap.set(wallet, {
+          wallet: wallet,
           hashrate: medianHashrate,
           poolShare: 0,
           rank: 0,
           rewards48h: 0,
-          nachoRebates48h: 0
+          nachoRebates48h: 0,
+          firstSeen: firstSeen
         });
         poolTotalHashrate += medianHashrate;
       }
