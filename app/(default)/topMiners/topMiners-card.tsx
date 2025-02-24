@@ -6,14 +6,14 @@ import { $fetch } from 'ofetch'
 import { formatHashrate } from '@/components/utils/utils'
 
 type SortDirection = 'asc' | 'desc'
-type SortKey = 'rank' | 'wallet' | 'hashrate' | 'rewards24h' | 'nachoRebates' | 'poolShare' | 'firstSeen'
+type SortKey = 'rank' | 'wallet' | 'hashrate' | 'rewards48h' | 'nachoRebates48h' | 'poolShare' | 'firstSeen'
 
 interface Miner {
   rank: number
   wallet: string
   hashrate: number
-  rewards24h: number
-  nachoRebates: number
+  rewards48h: number
+  nachoRebates48h: number
   poolShare: number
   firstSeen: number
 }
@@ -65,8 +65,8 @@ export default function TopMinersCard() {
             rank: miner.rank,
             wallet: miner.wallet,
             hashrate: miner.hashrate,
-            rewards24h: miner.rewards24h,
-            nachoRebates: miner.nachoRebates,
+            rewards48h: miner.rewards48h,
+            nachoRebates48h: miner.nachoRebates48h,
             poolShare: miner.poolShare,
             firstSeen: stats.firstSeen ? Math.floor((Date.now() / 1000 - stats.firstSeen) / (24 * 60 * 60)) : 0
           };
@@ -154,17 +154,17 @@ export default function TopMinersCard() {
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
-                      <SortableHeader label="24h Hashrate" sortKey="hashrate" />
+                      <SortableHeader label="48h Hashrate" sortKey="hashrate" />
                     </div>
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
-                      <SortableHeader label="48h Rewards" sortKey="rewards24h" />
+                      <SortableHeader label="48h Rewards" sortKey="rewards48h" />
                     </div>
                   </th>
                   <th className="p-2 whitespace-nowrap">
                     <div className="flex justify-center">
-                      <SortableHeader label="48h Rebates" sortKey="nachoRebates" />
+                      <SortableHeader label="48h Rebates" sortKey="nachoRebates48h" />
                     </div>
                   </th>
                   <th className="p-2 whitespace-nowrap">
@@ -198,12 +198,12 @@ export default function TopMinersCard() {
                     </td>
                     <td className="p-2 whitespace-nowrap">
                       <div className="text-center text-green-500">
-                        {miner.rewards24h > 0 ? `${formatRewards(miner.rewards24h)} KAS` : '--'}
+                        {miner.rewards48h > 0 ? `${formatRewards(miner.rewards48h)} KAS` : '--'}
                       </div>
                     </td>
                     <td className="p-2 whitespace-nowrap">
                       <div className="text-center text-gray-500 dark:text-gray-400">
-                        {miner.nachoRebates > 0 ? `${formatRewards(miner.nachoRebates)} NACHO` : '--'}
+                        {miner.nachoRebates48h > 0 ? `${formatRewards(miner.nachoRebates48h)} NACHO` : '--'}
                       </div>
                     </td>
                     <td className="p-2 whitespace-nowrap">

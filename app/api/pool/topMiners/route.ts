@@ -22,8 +22,8 @@ interface MinerData {
   hashrate: number;
   poolShare: number;
   rank: number;
-  rewards24h: number;
-  nachoRebates: number;
+  rewards48h: number;
+  nachoRebates48h: number;
 }
 
 export async function GET() {
@@ -149,8 +149,8 @@ export async function GET() {
           hashrate: averageHashrate,
           poolShare: 0,
           rank: 0,
-          rewards24h: rewardsMap.get(miner.metric.wallet_address) || 0,
-          nachoRebates: rebatesMap.get(miner.metric.wallet_address) || 0
+          rewards48h: rewardsMap.get(miner.metric.wallet_address) || 0,
+          nachoRebates48h: rebatesMap.get(miner.metric.wallet_address) || 0
         });
         poolTotalHashrate += averageHashrate;
       }
