@@ -55,8 +55,8 @@ export async function GET(request: Request) {
     historicalUrl.searchParams.append('step', (historicalStepHours * 3600).toString());
 
     const [recentResponse, historicalResponse] = await Promise.all([
-      fetch(recentUrl, { next: { revalidate: 10 } }),
-      fetch(historicalUrl, { next: { revalidate: 10 } })
+      fetch(recentUrl),
+      fetch(historicalUrl)
     ]);
 
     if (!recentResponse.ok || !historicalResponse.ok) {

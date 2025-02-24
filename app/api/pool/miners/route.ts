@@ -16,9 +16,7 @@ export async function GET() {
     url.searchParams.append('end', end.toString());
     url.searchParams.append('step', step.toString());
 
-    const response = await fetch(url, {
-      next: { revalidate: 10 }
-    });
+    const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error('Failed to fetch data');

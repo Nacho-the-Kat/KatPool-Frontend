@@ -29,9 +29,7 @@ export async function GET(request: Request) {
     url.searchParams.append('end', end.toString());
     url.searchParams.append('step', step.toString());
 
-    const response = await fetch(url, {
-      next: { revalidate: 10 } // Cache for 10 seconds
-    });
+    const response = await fetch(url);
 
     if (!response.ok) {
       console.error('Pool API error:', {
