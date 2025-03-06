@@ -6,7 +6,7 @@ export const revalidate = 10;
 export async function GET() {
   try {
     const url = new URL('http://kas.katpool.xyz:8080/api/v1/query');
-    url.searchParams.append('query', 'active_workers_10m_count');
+    url.searchParams.append('query', 'active_workers_10m_count!=0');
 
     const response = await fetch(url);
 

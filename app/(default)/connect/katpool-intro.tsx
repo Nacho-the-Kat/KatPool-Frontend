@@ -28,7 +28,7 @@ export default function KatpoolIntro() {
             Let's get you set up and mining. Follow the steps below to point your ASIC to Kat Pool.
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-500">
-            IceRiver, Bitmain, and Goldshell ASICs are currently supported (Except for the IceRiver KS2Lite)
+            IceRiver, Bitmain, and Goldshell ASICs are currently supported
           </div>
         </div>
 
