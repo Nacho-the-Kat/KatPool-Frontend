@@ -4,8 +4,8 @@ import Image from 'next/image'
 import { useState } from 'react'
 
 const POOL_PORTS = [
-  { port: 1111, difficulty: 256, models: 'IceRiver KS0-KS0 Pro', hashrate: '100 GH/s - 200 GH/s' },
-  { port: 2222, difficulty: 1024, models: 'IceRiver KS0 Ultra', hashrate: '400 GH/s' },
+  { port: 1111, difficulty: 256, models: 'IceRiver KS0, KS0 Pro', hashrate: '100 GH/s - 200 GH/s' },
+  { port: 2222, difficulty: 1024, models: 'IceRiver KS0 Ultra', hashrate: '300 GH/s - 500 GH/s' },
   { port: 3333, difficulty: 4096, models: 'IceRiver KS1, KS2, KS2 Lite, KS7 Lite, Goldshell KA BOX, KA BOX PRO, E-KA1M', hashrate: '1 TH/s - 5.5TH/s' },
   { port: 4444, difficulty: 8192, models: 'IceRiver KS3, KS3L, KS3M', hashrate: '5 TH/s - 9 TH/s' },
   { port: 5555, difficulty: 16384, models: 'IceRiver KS5L, Bitmain KS3', hashrate: '9 TH/s - 12 TH/s' },
