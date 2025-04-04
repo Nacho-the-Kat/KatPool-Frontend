@@ -26,6 +26,12 @@ export default function AnalyticsCard02() {
   const [kasPrice, setKasPrice] = useState<number | null>(null)
   const { price: nachoPrice, isLoading: nachoPriceLoading } = useNachoPrice()
 
+  // Add debug log for nacho price
+  useEffect(() => {
+    console.log('Current NACHO Price:', nachoPrice);
+    console.log('NACHO Price Loading:', nachoPriceLoading);
+  }, [nachoPrice, nachoPriceLoading]);
+
   // Replace both balance and rebate effects with a single one
   useEffect(() => {
     const fetchBalances = async () => {
@@ -42,6 +48,9 @@ export default function AnalyticsCard02() {
           $fetch('/api/pool/price')
         ]);
 
+        console.log('Balance Response:', balanceRes);
+        console.log('KAS Price Response:', kasPriceRes);
+
         if (!balanceRes || balanceRes.status !== 'success' || !balanceRes.data) {
           throw new Error('Failed to fetch balance data');
         }
@@ -49,6 +58,7 @@ export default function AnalyticsCard02() {
         // Set KAS pending balance with validation
         try {
           const kasAmount = Number(BigInt(balanceRes.data.pendingBalance)) / 1e8;
+          console.log('Calculated KAS Amount:', kasAmount);
           setPendingBalance(Number.isFinite(kasAmount) ? kasAmount.toFixed(2) : '--');
         } catch (e) {
           console.error('Error processing KAS balance:', e);
@@ -59,12 +69,24 @@ export default function AnalyticsCard02() {
         if (kasPriceRes.status === 'success' && nachoPrice !== null) {
           try {
             const rebateKasAmount = Number(BigInt(balanceRes.data.pendingRebate)) / 1e8;
+            console.log('Rebate KAS Amount:', rebateKasAmount);
+            console.log('KAS Price:', kasPriceRes.data.price);
+            console.log('NACHO Price for calculation:', nachoPrice);
+            
             const nachoAmount = (rebateKasAmount * kasPriceRes.data.price) / nachoPrice;
+            console.log('Calculated NACHO Amount:', nachoAmount);
+            
             setPendingNachoRebate(Number.isFinite(nachoAmount) ? nachoAmount.toFixed(3) : '--');
           } catch (e) {
             console.error('Error processing NACHO rebate:', e);
             setPendingNachoRebate('--');
           }
+        } else {
+          console.log('Skipping NACHO calculation:', {
+            hasKasPrice: kasPriceRes.status === 'success',
+            hasNachoPrice: nachoPrice !== null
+          });
+          setPendingNachoRebate('--');
         }
 
         setError(null);
