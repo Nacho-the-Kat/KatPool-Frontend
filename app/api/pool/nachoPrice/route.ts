@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
-export const revalidate = 300; // Cache for 5 minutes instead of 1 minute
+export const revalidate = 3600; // Cache for 1 hour
 
 interface NachoPrice {
   'nacho-the-kat': {
@@ -68,7 +68,7 @@ export async function GET() {
       }
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
       },
     });
   } catch (error) {

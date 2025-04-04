@@ -26,6 +26,12 @@ export default function AnalyticsCard02() {
   const [kasPrice, setKasPrice] = useState<number | null>(null)
   const { price: nachoPrice, isLoading: nachoPriceLoading } = useNachoPrice()
 
+  // Add debug log for nacho price
+  useEffect(() => {
+    console.log('Current NACHO Price:', nachoPrice);
+    console.log('NACHO Price Loading:', nachoPriceLoading);
+  }, [nachoPrice, nachoPriceLoading]);
+
   // Replace both balance and rebate effects with a single one
   useEffect(() => {
     const fetchBalances = async () => {
@@ -56,11 +62,17 @@ export default function AnalyticsCard02() {
         }
 
         // Calculate NACHO rebate amount with validation
-        if (kasPriceRes.status === 'success' && nachoPrice !== null) {
+        if (kasPriceRes.status === 'success') {
           try {
             const rebateKasAmount = Number(BigInt(balanceRes.data.pendingRebate)) / 1e8;
-            const nachoAmount = (rebateKasAmount * kasPriceRes.data.price) / nachoPrice;
-            setPendingNachoRebate(Number.isFinite(nachoAmount) ? nachoAmount.toFixed(3) : '--');
+            
+            if (nachoPrice !== null && nachoPrice > 0) {
+              const nachoAmount = (rebateKasAmount * kasPriceRes.data.price) / nachoPrice;
+              setPendingNachoRebate(Number.isFinite(nachoAmount) ? nachoAmount.toFixed(3) : '--');
+            } else {
+              // If NACHO price is not available, show the KAS value instead
+              setPendingNachoRebate(`≈${rebateKasAmount.toFixed(2)} KAS`);
+            }
           } catch (e) {
             console.error('Error processing NACHO rebate:', e);
             setPendingNachoRebate('--');
@@ -161,10 +173,13 @@ export default function AnalyticsCard02() {
             <div>
               <div className="flex items-center justify-end">
                 <div className="text-xl font-bold text-gray-400 dark:text-gray-500 text-right">
-                  {Number(pendingNachoRebate).toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  })} NACHO
+                  {pendingNachoRebate.startsWith('≈') ? (
+                    <span title="NACHO price temporarily unavailable">
+                      {pendingNachoRebate}
+                    </span>
+                  ) : (
+                    `${pendingNachoRebate} NACHO`
+                  )}
                 </div>
                 <div className="group relative ml-2">
                   <button className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-500">
