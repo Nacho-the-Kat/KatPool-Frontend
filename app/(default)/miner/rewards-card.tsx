@@ -48,9 +48,6 @@ export default function AnalyticsCard02() {
           $fetch('/api/pool/price')
         ]);
 
-        console.log('Balance Response:', balanceRes);
-        console.log('KAS Price Response:', kasPriceRes);
-
         if (!balanceRes || balanceRes.status !== 'success' || !balanceRes.data) {
           throw new Error('Failed to fetch balance data');
         }
@@ -58,7 +55,6 @@ export default function AnalyticsCard02() {
         // Set KAS pending balance with validation
         try {
           const kasAmount = Number(BigInt(balanceRes.data.pendingBalance)) / 1e8;
-          console.log('Calculated KAS Amount:', kasAmount);
           setPendingBalance(Number.isFinite(kasAmount) ? kasAmount.toFixed(2) : '--');
         } catch (e) {
           console.error('Error processing KAS balance:', e);
@@ -66,27 +62,21 @@ export default function AnalyticsCard02() {
         }
 
         // Calculate NACHO rebate amount with validation
-        if (kasPriceRes.status === 'success' && nachoPrice !== null) {
+        if (kasPriceRes.status === 'success') {
           try {
             const rebateKasAmount = Number(BigInt(balanceRes.data.pendingRebate)) / 1e8;
-            console.log('Rebate KAS Amount:', rebateKasAmount);
-            console.log('KAS Price:', kasPriceRes.data.price);
-            console.log('NACHO Price for calculation:', nachoPrice);
             
-            const nachoAmount = (rebateKasAmount * kasPriceRes.data.price) / nachoPrice;
-            console.log('Calculated NACHO Amount:', nachoAmount);
-            
-            setPendingNachoRebate(Number.isFinite(nachoAmount) ? nachoAmount.toFixed(3) : '--');
+            if (nachoPrice !== null && nachoPrice > 0) {
+              const nachoAmount = (rebateKasAmount * kasPriceRes.data.price) / nachoPrice;
+              setPendingNachoRebate(Number.isFinite(nachoAmount) ? nachoAmount.toFixed(3) : '--');
+            } else {
+              // If NACHO price is not available, show the KAS value instead
+              setPendingNachoRebate(`≈${rebateKasAmount.toFixed(2)} KAS`);
+            }
           } catch (e) {
             console.error('Error processing NACHO rebate:', e);
             setPendingNachoRebate('--');
           }
-        } else {
-          console.log('Skipping NACHO calculation:', {
-            hasKasPrice: kasPriceRes.status === 'success',
-            hasNachoPrice: nachoPrice !== null
-          });
-          setPendingNachoRebate('--');
         }
 
         setError(null);
@@ -183,10 +173,13 @@ export default function AnalyticsCard02() {
             <div>
               <div className="flex items-center justify-end">
                 <div className="text-xl font-bold text-gray-400 dark:text-gray-500 text-right">
-                  {Number(pendingNachoRebate).toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  })} NACHO
+                  {pendingNachoRebate.startsWith('≈') ? (
+                    <span title="NACHO price temporarily unavailable">
+                      {pendingNachoRebate}
+                    </span>
+                  ) : (
+                    `${pendingNachoRebate} NACHO`
+                  )}
                 </div>
                 <div className="group relative ml-2">
                   <button className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-500">
