@@ -13,24 +13,18 @@ const POOL_PORTS = [
   { port: 8888, difficulty: 'Variable', models: 'All Models (User-defined difficulty)', hashrate: 'Any' },
 ]
 
-const getDifficultyRecommendation = (hashrate: string): string => {
-  // Convert hashrate to TH/s for comparison
-  const normalizedHashrate = hashrate.toLowerCase()
-  if (normalizedHashrate.includes('gh')) {
-    const gh = parseFloat(normalizedHashrate)
-    return Math.max(256, Math.pow(2, Math.floor(Math.log2(gh * 4)))).toString()
-  } else if (normalizedHashrate.includes('th')) {
-    const th = parseFloat(normalizedHashrate)
-    return Math.max(256, Math.pow(2, Math.floor(Math.log2(th * 4000)))).toString()
-  }
-  return '1024' // Default recommendation
+const getDifficultyRecommendation = (hashrate: number, unit: 'GH/s' | 'TH/s'): string => {
+  // Convert everything to GH/s for calculation
+  const hashRateInGH = unit === 'TH/s' ? hashrate * 1000 : hashrate
+  return Math.max(256, Math.pow(2, Math.floor(Math.log2(hashRateInGH * 4)))).toString()
 }
 
 export default function KatpoolIntro() {
   const [copySuccess, setCopySuccess] = useState(false)
   const [selectedPort, setSelectedPort] = useState<number | null>(null)
   const [showDifficultyHelp, setShowDifficultyHelp] = useState(false)
-  const [customHashrate, setCustomHashrate] = useState('')
+  const [hashrateValue, setHashrateValue] = useState('')
+  const [hashrateUnit, setHashrateUnit] = useState<'GH/s' | 'TH/s'>('TH/s')
   const [showCustomDifficulty, setShowCustomDifficulty] = useState(false)
 
   const handleCopy = async () => {
@@ -44,7 +38,22 @@ export default function KatpoolIntro() {
     }
   }
 
-  const recommendedDifficulty = getDifficultyRecommendation(customHashrate)
+  const handleHashrateChange = (value: string) => {
+    // Only allow numbers and decimal points
+    const filtered = value.replace(/[^\d.]/g, '')
+    // Prevent multiple decimal points
+    const parts = filtered.split('.')
+    if (parts.length > 2) {
+      return
+    }
+    setHashrateValue(filtered)
+  }
+
+  const isValidHashrate = hashrateValue !== '' && !isNaN(Number(hashrateValue)) && Number(hashrateValue) > 0
+
+  const recommendedDifficulty = isValidHashrate 
+    ? getDifficultyRecommendation(Number(hashrateValue), hashrateUnit)
+    : ''
 
   return (
     <div className="col-span-10 col-start-2 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
@@ -123,30 +132,47 @@ export default function KatpoolIntro() {
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm text-blue-700 dark:text-blue-400 mb-1">
-                        Enter your miner's hashrate (e.g., "5.5 TH/s" or "400 GH/s"):
+                        Enter your miner's hashrate:
                       </label>
                       <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={customHashrate}
-                          onChange={(e) => setCustomHashrate(e.target.value)}
-                          placeholder="Enter hashrate..."
-                          className="px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100 placeholder-blue-400 dark:placeholder-blue-600 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        />
+                        <div className="flex-grow flex gap-2">
+                          <input
+                            type="text"
+                            value={hashrateValue}
+                            onChange={(e) => handleHashrateChange(e.target.value)}
+                            placeholder="Enter number..."
+                            className="flex-grow px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100 placeholder-blue-400 dark:placeholder-blue-600 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          />
+                          <select
+                            value={hashrateUnit}
+                            onChange={(e) => setHashrateUnit(e.target.value as 'GH/s' | 'TH/s')}
+                            className="px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          >
+                            <option value="GH/s">GH/s</option>
+                            <option value="TH/s">TH/s</option>
+                          </select>
+                        </div>
                         <button
                           onClick={() => setShowCustomDifficulty(true)}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-                          disabled={!customHashrate}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            isValidHashrate
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                              : 'bg-blue-100 text-blue-400 cursor-not-allowed'
+                          }`}
+                          disabled={!isValidHashrate}
                         >
                           Calculate
                         </button>
                       </div>
+                      {hashrateValue !== '' && !isValidHashrate && (
+                        <p className="mt-1 text-xs text-red-500">Please enter a valid number greater than 0</p>
+                      )}
                     </div>
                     
-                    {showCustomDifficulty && customHashrate && (
+                    {showCustomDifficulty && isValidHashrate && (
                       <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
                         <div className="text-sm text-blue-800 dark:text-blue-300 space-y-2">
-                          <p>For your hashrate of <strong>{customHashrate}</strong>:</p>
+                          <p>For your hashrate of <strong>{hashrateValue} {hashrateUnit}</strong>:</p>
                           <p>Recommended difficulty: <strong>{recommendedDifficulty}</strong></p>
                           <p>To use this difficulty, set your password to: <code className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">d={recommendedDifficulty}</code></p>
                         </div>
