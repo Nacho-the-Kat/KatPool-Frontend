@@ -13,12 +13,28 @@ const POOL_PORTS = [
   { port: 8888, difficulty: 'Variable', models: 'All Models (User-defined difficulty)', hashrate: 'Any' },
 ]
 
+const getDifficultyRecommendation = (hashrate: string): string => {
+  // Convert hashrate to TH/s for comparison
+  const normalizedHashrate = hashrate.toLowerCase()
+  if (normalizedHashrate.includes('gh')) {
+    const gh = parseFloat(normalizedHashrate)
+    return Math.max(256, Math.pow(2, Math.floor(Math.log2(gh * 4)))).toString()
+  } else if (normalizedHashrate.includes('th')) {
+    const th = parseFloat(normalizedHashrate)
+    return Math.max(256, Math.pow(2, Math.floor(Math.log2(th * 4000)))).toString()
+  }
+  return '1024' // Default recommendation
+}
+
 export default function KatpoolIntro() {
   const [copySuccess, setCopySuccess] = useState(false)
-  const [selectedPort, setSelectedPort] = useState(8888)
+  const [selectedPort, setSelectedPort] = useState<number | null>(null)
   const [showDifficultyHelp, setShowDifficultyHelp] = useState(false)
+  const [customHashrate, setCustomHashrate] = useState('')
+  const [showCustomDifficulty, setShowCustomDifficulty] = useState(false)
 
   const handleCopy = async () => {
+    if (!selectedPort) return
     try {
       await navigator.clipboard.writeText(`stratum+tcp://kas.katpool.xyz:${selectedPort}`)
       setCopySuccess(true)
@@ -27,6 +43,8 @@ export default function KatpoolIntro() {
       console.error('Failed to copy text: ', err)
     }
   }
+
+  const recommendedDifficulty = getDifficultyRecommendation(customHashrate)
 
   return (
     <div className="col-span-10 col-start-2 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
@@ -55,7 +73,8 @@ export default function KatpoolIntro() {
               <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Find Your Miner Model</h3>
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
                 <p className="text-blue-700 dark:text-blue-300">
-                  First, identify your miner model from the table below. This will help you choose the correct port settings.
+                  First, identify your miner model from the table below and select the appropriate port. 
+                  {!selectedPort && " You must select a port to proceed with the setup."}
                 </p>
               </div>
               
@@ -97,102 +116,155 @@ export default function KatpoolIntro() {
                   </tbody>
                 </table>
               </div>
+
+              {selectedPort === 8888 && (
+                <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Custom Difficulty Calculator</div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm text-blue-700 dark:text-blue-400 mb-1">
+                        Enter your miner's hashrate (e.g., "5.5 TH/s" or "400 GH/s"):
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={customHashrate}
+                          onChange={(e) => setCustomHashrate(e.target.value)}
+                          placeholder="Enter hashrate..."
+                          className="px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100 placeholder-blue-400 dark:placeholder-blue-600 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                        <button
+                          onClick={() => setShowCustomDifficulty(true)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                          disabled={!customHashrate}
+                        >
+                          Calculate
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {showCustomDifficulty && customHashrate && (
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                        <div className="text-sm text-blue-800 dark:text-blue-300 space-y-2">
+                          <p>For your hashrate of <strong>{customHashrate}</strong>:</p>
+                          <p>Recommended difficulty: <strong>{recommendedDifficulty}</strong></p>
+                          <p>To use this difficulty, set your password to: <code className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">d={recommendedDifficulty}</code></p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-sm text-blue-700 dark:text-blue-400">
+                      <p className="font-semibold mb-1">How to choose your difficulty:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Higher difficulty = fewer shares but larger rewards per share</li>
+                        <li>Lower difficulty = more shares but smaller rewards per share</li>
+                        <li>Recommended: Set difficulty to ~4x your hashrate in GH/s</li>
+                        <li>Example: For 1 TH/s (1000 GH/s), use difficulty ≈ 4096</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Step 2 */}
-          <div className="relative pl-12">
-            <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">2</div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Configure Your Miner</h3>
-              
-              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-gray-700">
-                <div>
-                  <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Pool Address</div>
-                  <div className="flex items-center">
-                    <code className="flex-grow text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800 px-4 py-3 rounded-lg font-mono text-sm break-all border border-gray-200 dark:border-gray-700">
-                      stratum+tcp://kas.katpool.xyz:{selectedPort}
-                    </code>
-                    <button
-                      className="ml-3 px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2"
-                      onClick={handleCopy}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                      </svg>
-                      {copySuccess ? 'Copied!' : 'Copy'}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Wallet/Worker Format</div>
-                  <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <code className="text-primary-600 dark:text-primary-400 font-mono text-sm break-all">
-                      Your-KRC20-Kaspa-Address.Unique-Worker-Name
-                    </code>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    Replace with your actual KRC20 Kaspa address and choose a unique name for this worker
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Password</div>
-                    <button
-                      className="text-primary-500 hover:text-primary-600"
-                      onClick={() => setShowDifficultyHelp(!showDifficultyHelp)}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <code className="text-primary-600 dark:text-primary-400 font-mono text-sm">
-                      {selectedPort === 8888 ? 'd=<DESIRED_DIFFICULTY>' : 'x'}
-                    </code>
-                  </div>
-                  {showDifficultyHelp && selectedPort === 8888 && (
-                    <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                        For port 8888, you can set your own difficulty by replacing &lt;DESIRED_DIFFICULTY&gt; with a number.
-                        Example: d=1024
-                      </p>
+          {selectedPort && (
+            <div className="relative pl-12">
+              <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">2</div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Configure Your Miner</h3>
+                
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+                  <div>
+                    <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Pool Address</div>
+                    <div className="flex items-center">
+                      <code className="flex-grow text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800 px-4 py-3 rounded-lg font-mono text-sm break-all border border-gray-200 dark:border-gray-700">
+                        stratum+tcp://kas.katpool.xyz:{selectedPort}
+                      </code>
+                      <button
+                        className="ml-3 px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                        onClick={handleCopy}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        {copySuccess ? 'Copied!' : 'Copy'}
+                      </button>
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                <div className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">Important Notes:</div>
-                <ul className="list-disc pl-5 space-y-2 text-sm text-yellow-700 dark:text-yellow-400">
-                  <li>Only configure Pool1 with these settings. Leave Pool2 and Pool3 empty or use different pools for backup.</li>
-                  <li>After changing any settings, always restart your miner for the changes to take effect.</li>
-                  <li>The worker name is mandatory - make sure to include it after your wallet address.</li>
-                </ul>
+                  <div>
+                    <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Wallet/Worker Format</div>
+                    <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <code className="text-primary-600 dark:text-primary-400 font-mono text-sm break-all">
+                        Your-KRC20-Kaspa-Address.Unique-Worker-Name
+                      </code>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      Replace with your actual KRC20 Kaspa address and choose a unique name for this worker
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Password</div>
+                      <button
+                        className="text-primary-500 hover:text-primary-600"
+                        onClick={() => setShowDifficultyHelp(!showDifficultyHelp)}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <code className="text-primary-600 dark:text-primary-400 font-mono text-sm">
+                        {selectedPort === 8888 ? 'd=<DESIRED_DIFFICULTY>' : 'x'}
+                      </code>
+                    </div>
+                    {showDifficultyHelp && selectedPort === 8888 && (
+                      <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                          For port 8888, you can set your own difficulty by replacing &lt;DESIRED_DIFFICULTY&gt; with a number.
+                          Example: d=1024
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <div className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">Important Notes:</div>
+                  <ul className="list-disc pl-5 space-y-2 text-sm text-yellow-700 dark:text-yellow-400">
+                    <li>Only configure Pool1 with these settings. Leave Pool2 and Pool3 empty or use different pools for backup.</li>
+                    <li>After changing any settings, always restart your miner for the changes to take effect.</li>
+                    <li>The worker name is mandatory - make sure to include it after your wallet address.</li>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Step 3 */}
-          <div className="relative pl-12">
-            <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">3</div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Start Mining</h3>
-              <div className="space-y-4">
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <p className="text-green-700 dark:text-green-300">
-                    Save your configuration and restart your miner. Within a few minutes, you should see your worker appearing in your dashboard.
-                  </p>
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Need help? Join our Discord community for support.
+          {selectedPort && (
+            <div className="relative pl-12">
+              <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">3</div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Start Mining</h3>
+                <div className="space-y-4">
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                    <p className="text-green-700 dark:text-green-300">
+                      Save your configuration and restart your miner. Within a few minutes, you should see your worker appearing in your dashboard.
+                    </p>
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Need help? Join our Discord community for support.
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Video Tutorial Section - Commented out until video is ready */}
