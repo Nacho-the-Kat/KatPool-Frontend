@@ -3,14 +3,78 @@
 import Image from 'next/image'
 import { useState } from 'react'
 
-const POOL_PORTS = [
-  { port: 1111, difficulty: 256, models: 'IceRiver KS0, KS0 Pro', hashrate: '100 GH/s - 200 GH/s' },
-  { port: 2222, difficulty: 1024, models: 'IceRiver KS0 Ultra', hashrate: '300 GH/s - 500 GH/s' },
-  { port: 3333, difficulty: 4096, models: 'IceRiver KS1, KS2, KS2 Lite, KS7 Lite, Goldshell KA BOX, KA BOX PRO, E-KA1M', hashrate: '1 TH/s - 5.5TH/s' },
-  { port: 4444, difficulty: 8192, models: 'IceRiver KS3, KS3L, KS3M', hashrate: '5 TH/s - 9 TH/s' },
-  { port: 5555, difficulty: 16384, models: 'IceRiver KS5L, Bitmain KS3', hashrate: '9 TH/s - 12 TH/s' },
-  { port: 6666, difficulty: 32768, models: 'IceRiver KS5M, IceRiver KS7, Bitmain KS5, KS5Pro', hashrate: '15 TH/s - 30 TH/s' },
-  { port: 8888, difficulty: 'Variable', models: 'All Models (User-defined difficulty)', hashrate: 'Any' },
+interface ManufacturerModels {
+  manufacturer: string
+  models: string[]
+}
+
+interface PortConfig {
+  port: number
+  difficulty: number | 'Variable'
+  manufacturers: ManufacturerModels[]
+  hashrate: string
+}
+
+const POOL_PORTS: PortConfig[] = [
+  {
+    port: 1111,
+    difficulty: 256,
+    manufacturers: [
+      { manufacturer: 'IceRiver', models: ['KS0', 'KS0 Pro'] }
+    ],
+    hashrate: '100 GH/s - 200 GH/s'
+  },
+  {
+    port: 2222,
+    difficulty: 1024,
+    manufacturers: [
+      { manufacturer: 'IceRiver', models: ['KS0 Ultra'] }
+    ],
+    hashrate: '300 GH/s - 500 GH/s'
+  },
+  {
+    port: 3333,
+    difficulty: 4096,
+    manufacturers: [
+      { manufacturer: 'IceRiver', models: ['KS1', 'KS2', 'KS2 Lite', 'KS7 Lite'] },
+      { manufacturer: 'Goldshell', models: ['KA BOX', 'KA BOX PRO', 'E-KA1M'] }
+    ],
+    hashrate: '1 TH/s - 5.5TH/s'
+  },
+  {
+    port: 4444,
+    difficulty: 8192,
+    manufacturers: [
+      { manufacturer: 'IceRiver', models: ['KS3', 'KS3L', 'KS3M'] }
+    ],
+    hashrate: '5 TH/s - 9 TH/s'
+  },
+  {
+    port: 5555,
+    difficulty: 16384,
+    manufacturers: [
+      { manufacturer: 'IceRiver', models: ['KS5L'] },
+      { manufacturer: 'Bitmain', models: ['KS3'] }
+    ],
+    hashrate: '9 TH/s - 12 TH/s'
+  },
+  {
+    port: 6666,
+    difficulty: 32768,
+    manufacturers: [
+      { manufacturer: 'IceRiver', models: ['KS5M', 'KS7'] },
+      { manufacturer: 'Bitmain', models: ['KS5', 'KS5Pro'] }
+    ],
+    hashrate: '15 TH/s - 30 TH/s'
+  },
+  {
+    port: 8888,
+    difficulty: 'Variable',
+    manufacturers: [
+      { manufacturer: 'All Manufacturers', models: ['All Models (User-defined difficulty)'] }
+    ],
+    hashrate: 'Any'
+  }
 ]
 
 const getDifficultyRecommendation = (hashrate: number, unit: 'GH/s' | 'TH/s'): string => {
@@ -54,6 +118,19 @@ export default function KatpoolIntro() {
   const recommendedDifficulty = isValidHashrate 
     ? getDifficultyRecommendation(Number(hashrateValue), hashrateUnit)
     : ''
+
+  const renderManufacturers = (manufacturers: ManufacturerModels[]) => {
+    return (
+      <div className="space-y-1">
+        {manufacturers.map((mfg, idx) => (
+          <div key={idx} className={idx > 0 ? 'border-t border-gray-100 dark:border-gray-700 pt-1' : ''}>
+            <span className="font-medium">{mfg.manufacturer}:</span>{' '}
+            <span className="text-gray-600 dark:text-gray-400">{mfg.models.join(', ')}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="col-span-10 col-start-2 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
@@ -106,7 +183,7 @@ export default function KatpoolIntro() {
                       }`}>
                         <td className="px-4 py-4 font-mono font-medium text-primary-600 dark:text-primary-400">{port.port}</td>
                         <td className="px-4 py-4">{port.difficulty}</td>
-                        <td className="px-4 py-4 max-w-md">{port.models}</td>
+                        <td className="px-4 py-4 max-w-md">{renderManufacturers(port.manufacturers)}</td>
                         <td className="px-4 py-4">{port.hashrate}</td>
                         <td className="px-4 py-4">
                           <button
