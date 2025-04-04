@@ -4,11 +4,11 @@ import Image from 'next/image'
 import { useState } from 'react'
 
 const POOL_PORTS = [
-  { port: 1111, difficulty: 256, models: 'IceRiver KS0-KS0 Pro', hashrate: '100GH/s - 200 GH/s' },
-  { port: 2222, difficulty: 1024, models: 'IceRiver KS0 Ultra', hashrate: '400GH/s' },
-  { port: 3333, difficulty: 4096, models: 'IceRiver KS1-KS2-KS2 Lite, IceRiver KS7 Lite, Goldshell KA BOX,KA BOX PRO,E-KA1M', hashrate: '1TH/s - 5.5TH/s' },
-  { port: 4444, difficulty: 8192, models: 'IceRiver KS3L-KS3M-KS3 Pro-KS3', hashrate: '5TH/s - 9 TH/s' },
-  { port: 5555, difficulty: 16384, models: 'IceRiver KS5L, Bitmain KS3', hashrate: '9.4TH/s - 12 TH/s' },
+  { port: 1111, difficulty: 256, models: 'IceRiver KS0-KS0 Pro', hashrate: '100 GH/s - 200 GH/s' },
+  { port: 2222, difficulty: 1024, models: 'IceRiver KS0 Ultra', hashrate: '400 GH/s' },
+  { port: 3333, difficulty: 4096, models: 'IceRiver KS1-KS2-KS2 Lite, IceRiver KS7 Lite, Goldshell KA BOX,KA BOX PRO,E-KA1M', hashrate: '1 TH/s - 5.5TH/s' },
+  { port: 4444, difficulty: 8192, models: 'IceRiver KS3L-KS3M-KS3 Pro-KS3', hashrate: '5 TH/s - 9 TH/s' },
+  { port: 5555, difficulty: 16384, models: 'IceRiver KS5L, Bitmain KS3', hashrate: '9 TH/s - 12 TH/s' },
   { port: 6666, difficulty: 32768, models: 'IceRiver KS5M, IceRiver KS7, Bitmain KS5-KS5Pro', hashrate: '15 TH/s - 30 TH/s' },
   { port: 8888, difficulty: 'Variable', models: 'All Models (User-defined difficulty)', hashrate: 'Any' },
 ]
