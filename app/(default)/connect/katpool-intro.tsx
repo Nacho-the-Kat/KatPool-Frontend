@@ -198,7 +198,7 @@ export default function KatpoolIntro() {
                     <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Wallet/Worker Format</div>
                     <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700">
                       <code className="text-primary-600 dark:text-primary-400 font-mono text-sm break-all">
-                        Your-KRC20-Kaspa-Address.Unique-Worker-Name
+                        yourKaspaAddress.workerName
                       </code>
                     </div>
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
