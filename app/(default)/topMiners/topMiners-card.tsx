@@ -164,6 +164,9 @@ export default function TopMinersCard() {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
+    // TODO: refactore and remove later since its only localhost issue
+    // Explicitly set to true at the start
+    isSubscribed.current = true;
 
     // Initial fetch
     fetchDataRef.current();
