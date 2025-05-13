@@ -66,7 +66,6 @@ export default function TopMinersCard() {
           retry: 2,
           retryDelay: 3000,
         });
-        console.log('hashrateResponse', hashrateResponse);
         
         if (hashrateResponse?.data && !hashrateResponse.error) {
           statsResponse = await fetchWithBackoff('/api/pool/minerStats', {
@@ -74,7 +73,6 @@ export default function TopMinersCard() {
             retryDelay: 3000,
           });
         }
-        console.log('statsResponse', statsResponse);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error 
           ? error.message 
@@ -122,6 +120,8 @@ export default function TopMinersCard() {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
+    // TODO: refactore and remove later since its only localhost issue
+    // Explicitly set to true at the start
     isSubscribed.current = true;
 
     // Initial fetch
