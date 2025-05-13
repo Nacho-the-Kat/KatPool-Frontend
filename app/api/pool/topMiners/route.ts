@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
-// Cache TTL in seconds (9 minutes 50 seconds)
-const CACHE_TTL = 590;
+
+// In-memory cache for top miners data
+let cachedData: any[] | null = null;
+let lastCacheTime = 0;
+const CACHE_TTL = 590 * 1000; // 9 minutes 50 seconds in milliseconds
 
 interface KasPayment {
   wallet_address: string[];
@@ -34,12 +37,9 @@ export async function GET(request: Request) {
     const pageSize = parseInt(searchParams.get('pageSize') || '10');
     const skip = (page - 1) * pageSize;
 
-    // Check cache first using Cloudflare's Cache API
-    const cacheKey = new Request('https://katpool.xyz/api/pool/topMiners');
-    const cachedResponse = await caches.match(cacheKey);
-    
-    if (cachedResponse) {
-      const cachedData = await cachedResponse.json();
+    // Check if we have valid cached data
+    const now = Date.now();
+    if (cachedData && (now - lastCacheTime) < CACHE_TTL) {
       const paginatedData = {
         miners: cachedData.slice(skip, skip + pageSize),
         total: cachedData.length,
@@ -197,14 +197,9 @@ export async function GET(request: Request) {
       miner.rank = index + 1;
     });
 
-    // Cache the processed data using Cloudflare's Cache API
-    const cacheResponse = new Response(JSON.stringify(minerData), {
-      headers: {
-        'Cache-Control': `max-age=${CACHE_TTL}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    await (caches as any).default.put(cacheKey, cacheResponse);
+    // Cache the processed data
+    cachedData = minerData;
+    lastCacheTime = now;
 
     // Return paginated data
     const paginatedData = {
