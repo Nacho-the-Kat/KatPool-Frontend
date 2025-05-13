@@ -23,30 +23,6 @@ interface MinerStats {
 }
 
 const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
-const CACHE_DURATION = REFRESH_INTERVAL - 10000; // Slightly less than refresh interval
-const STALE_WHILE_REVALIDATE = 5 * 60 * 1000; // 5 minutes
-
-const getCachedData = () => {
-  try {
-    const cached = localStorage.getItem('topMinersData');
-    const timestamp = localStorage.getItem('topMinersTimestamp');
-    
-    if (!cached || !timestamp) return null;
-    
-    const parsedTimestamp = parseInt(timestamp);
-    const age = Date.now() - parsedTimestamp;
-    
-    // Return data with freshness indicator
-    return {
-      data: JSON.parse(cached),
-      isStale: age >= CACHE_DURATION,
-      isTooOld: age >= (CACHE_DURATION + STALE_WHILE_REVALIDATE)
-    };
-  } catch (error) {
-    console.error('Cache read error:', error);
-    return null;
-  }
-};
 
 // Add retry helper
 const fetchWithBackoff = async (url: string, options: any, maxRetries = 2) => {
@@ -78,24 +54,8 @@ export default function TopMinersCard() {
     if (isFetching) return;
     
     try {
-      // Check cache first
-      const cache = getCachedData();
-      
-      // Use cache if available and not too old
-      if (cache && !cache.isTooOld) {
-        setMiners(cache.data);
-        setError(null);
-        
-        // If data is stale, refresh in background
-        if (cache.isStale) {
-          setIsFetching(true);
-        } else {
-          return; // Fresh cache, no need to fetch
-        }
-      } else {
-        setIsFetching(true);
-        setIsLoading(true);
-      }
+      setIsFetching(true);
+      setIsLoading(true);
 
       // Sequential requests instead of parallel to avoid connection limits
       let hashrateResponse;
@@ -106,6 +66,7 @@ export default function TopMinersCard() {
           retry: 2,
           retryDelay: 3000,
         });
+        console.log('hashrateResponse', hashrateResponse);
         
         if (hashrateResponse?.data && !hashrateResponse.error) {
           statsResponse = await fetchWithBackoff('/api/pool/minerStats', {
@@ -113,6 +74,7 @@ export default function TopMinersCard() {
             retryDelay: 3000,
           });
         }
+        console.log('statsResponse', statsResponse);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error 
           ? error.message 
@@ -141,10 +103,6 @@ export default function TopMinersCard() {
           : 0
       }));
 
-      // Cache the new data
-      localStorage.setItem('topMinersData', JSON.stringify(mappedMiners));
-      localStorage.setItem('topMinersTimestamp', Date.now().toString());
-
       if (isSubscribed.current) {
         setMiners(mappedMiners);
         setError(null);
@@ -164,8 +122,6 @@ export default function TopMinersCard() {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    // TODO: refactore and remove later since its only localhost issue
-    // Explicitly set to true at the start
     isSubscribed.current = true;
 
     // Initial fetch
@@ -190,14 +146,9 @@ export default function TopMinersCard() {
     };
   }, []);
 
-  // Recovery logic can now access fetchDataRef
+  // Recovery logic
   useEffect(() => {
     if (error) {
-      const cache = getCachedData();
-      if (cache?.data) {
-        setMiners(cache.data);
-      }
-      
       const retryTimeout = setTimeout(() => {
         setError(null);
         fetchDataRef.current();

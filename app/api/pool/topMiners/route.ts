@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import NodeCache from 'node-cache';
 
 export const runtime = 'edge';
-export const revalidate = 300; // 5 minutes
+// Initialize cache with 1 minutes TTL
+const cache = new NodeCache({ stdTTL: 60 });
 
 interface KasPayment {
   wallet_address: string[];
@@ -28,6 +30,15 @@ interface MinerData {
 
 export async function GET() {
   try {
+    // Check cache first
+    const cachedData = cache.get('topMiners');
+    if (cachedData) {
+      return NextResponse.json({
+        status: 'success',
+        data: cachedData
+      });
+    }
+
     // Calculate time range for the last 48 hours
     const end = Math.floor(Date.now() / 1000);
     const start = end - (48 * 60 * 60);
@@ -169,6 +180,9 @@ export async function GET() {
     minerData.forEach((miner, index) => {
       miner.rank = index + 1;
     });
+
+    // Cache the processed data
+    cache.set('topMiners', minerData);
 
     return NextResponse.json({
       status: 'success',

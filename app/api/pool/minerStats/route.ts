@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import NodeCache from 'node-cache';
 
 export const runtime = 'edge';
-export const revalidate = 10;
+
+// Initialize cache with 1 minute TTL
+const cache = new NodeCache({ stdTTL: 60 });
 
 interface MinerData {
   metric: {
@@ -26,6 +29,15 @@ export async function GET() {
   const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
   try {
+    // Check cache first
+    const cachedData = cache.get('minerStats');
+    if (cachedData) {
+      return NextResponse.json({
+        status: 'success',
+        data: cachedData
+      });
+    }
+
     const end = Math.floor(Date.now() / 1000);
     const start = 1735689600; // Jan 1 2025 at 12am midnight UTC
     const step = 24 * 60 * 60; // 24 hours in seconds
@@ -79,18 +91,23 @@ export async function GET() {
       }, {});
 
       // Single pass to format final output
+      const formattedStats = Object.fromEntries(
+        (Object.entries(stats) as Array<[string, ProcessedStats[string]]>).map(([wallet, stat]) => [
+          wallet,
+          {
+            totalShares: stat.totalShares,
+            firstSeen: stat.firstSeen,
+            activeWorkers: stat.minerIds.size
+          }
+        ])
+      );
+
+      // Cache the processed data
+      cache.set('minerStats', formattedStats);
+
       return NextResponse.json({
         status: 'success',
-        data: Object.fromEntries(
-          (Object.entries(stats) as Array<[string, ProcessedStats[string]]>).map(([wallet, stat]) => [
-            wallet,
-            {
-              totalShares: stat.totalShares,
-              firstSeen: stat.firstSeen,
-              activeWorkers: stat.minerIds.size
-            }
-          ])
-        )
+        data: formattedStats
       });
     }
 
