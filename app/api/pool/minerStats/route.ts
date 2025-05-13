@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import NodeCache from 'node-cache';
 
 export const runtime = 'edge';
 
