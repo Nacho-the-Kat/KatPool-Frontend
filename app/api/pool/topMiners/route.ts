@@ -33,19 +33,28 @@ export async function GET() {
     const start = end - (48 * 60 * 60);
     const step = 300;
 
-    // Fetch hashrate data for all miners
+    // Prepare URLs for parallel requests
     const hashrateUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
     hashrateUrl.searchParams.append('query', 'sum(miner_hash_rate_GHps) by (wallet_address)');
     hashrateUrl.searchParams.append('start', start.toString());
     hashrateUrl.searchParams.append('end', end.toString());
     hashrateUrl.searchParams.append('step', step.toString());
 
-    // First get hashrate data to know which wallets to query
-    const hashrateResponse = await fetch(hashrateUrl);
+    // Make initial requests in parallel
+    const [hashrateResponse, kasResponse] = await Promise.all([
+      fetch(hashrateUrl),
+      fetch('http://kas.katpool.xyz:8080/api/pool/payouts')
+    ]);
+
     if (!hashrateResponse.ok) {
       throw new Error(`HTTP error! Hashrate status: ${hashrateResponse.status}`);
     }
+    if (!kasResponse.ok) {
+      throw new Error(`HTTP error! KAS status: ${kasResponse.status}`);
+    }
+
     const hashrateData = await hashrateResponse.json();
+    const kasData = await kasResponse.json();
 
     if (hashrateData.status !== 'success' || !hashrateData.data?.result) {
       throw new Error('Invalid hashrate response format');
@@ -54,15 +63,8 @@ export async function GET() {
     // Get list of active wallets
     const activeWallets = hashrateData.data.result.map((miner: any) => miner.metric.wallet_address);
 
-    // Fetch KAS payouts first
-    const kasResponse = await fetch('http://kas.katpool.xyz:8080/api/pool/payouts');
-    if (!kasResponse.ok) {
-      throw new Error(`HTTP error! KAS status: ${kasResponse.status}`);
-    }
-    const kasData = await kasResponse.json();
-
     // Process NACHO payments in batches
-    const BATCH_SIZE = 5;
+    const BATCH_SIZE = 10;
     const rebatesMap = new Map<string, number>();
     const fortyEightHoursAgo = Date.now() - (48 * 60 * 60 * 1000);
 
