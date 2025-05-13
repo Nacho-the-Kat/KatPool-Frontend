@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { $fetch } from 'ofetch'
@@ -34,7 +34,7 @@ const ROW_HEIGHT = 48; // Height of each table row in pixels
 const TABLE_HEADER_HEIGHT = 40; // Height of the table header in pixels
 const TABLE_PADDING = 24; // Total vertical padding of the table container
 
-export default function TopMinersCard() {
+function TopMinersCardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tableRef = useRef<HTMLDivElement>(null);
@@ -428,4 +428,25 @@ export default function TopMinersCard() {
       </div>
     </div>
   )
+}
+
+export default function TopMinersCard() {
+  return (
+    <Suspense fallback={
+      <div className="relative col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Leaders</h2>
+        </header>
+        <div className="p-3">
+          <div style={{ height: TABLE_HEADER_HEIGHT + (PAGE_SIZE * ROW_HEIGHT) + TABLE_PADDING, minHeight: TABLE_HEADER_HEIGHT + (PAGE_SIZE * ROW_HEIGHT) + TABLE_PADDING }}>
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <TopMinersCardContent />
+    </Suspense>
+  );
 }
