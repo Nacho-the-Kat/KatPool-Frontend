@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import NodeCache from 'node-cache';
 
 export const runtime = 'edge';
-// Initialize cache with 1 minutes TTL
-const cache = new NodeCache({ stdTTL: 60 });
+// Initialize cache with 9 minutes 50 seconds TTL
+// Top miner send request every 10 minutes
+const cache = new NodeCache({ stdTTL: 590 });
 
 interface KasPayment {
   wallet_address: string[];
@@ -28,14 +29,26 @@ interface MinerData {
   nachoRebates48h: number;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '10');
+    const skip = (page - 1) * pageSize;
+
     // Check cache first
     const cachedData = cache.get('topMiners');
     if (cachedData) {
+      const paginatedData = {
+        miners: (cachedData as any[]).slice(skip, skip + pageSize),
+        total: (cachedData as any[]).length,
+        page,
+        pageSize,
+        totalPages: Math.ceil((cachedData as any[]).length / pageSize)
+      };
       return NextResponse.json({
         status: 'success',
-        data: cachedData
+        data: paginatedData
       });
     }
 
@@ -79,6 +92,7 @@ export async function GET() {
     const rebatesMap = new Map<string, number>();
     const fortyEightHoursAgo = Date.now() - (48 * 60 * 60 * 1000);
 
+    // Process all wallets in batches of 10
     for (let i = 0; i < activeWallets.length; i += BATCH_SIZE) {
       const batch = activeWallets.slice(i, i + BATCH_SIZE);
       const batchResponses = await Promise.all(
@@ -117,7 +131,8 @@ export async function GET() {
       });
 
       // Add a small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // TODO: not sure if this is needed
+      // await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     // Debug log final rebates map
@@ -184,9 +199,18 @@ export async function GET() {
     // Cache the processed data
     cache.set('topMiners', minerData);
 
+    // Return paginated data
+    const paginatedData = {
+      miners: minerData.slice(skip, skip + pageSize),
+      total: minerData.length,
+      page,
+      pageSize,
+      totalPages: Math.ceil(minerData.length / pageSize)
+    };
+
     return NextResponse.json({
       status: 'success',
-      data: minerData
+      data: paginatedData
     });
   } catch (error) {
     console.error('Error fetching top miners:', error);
