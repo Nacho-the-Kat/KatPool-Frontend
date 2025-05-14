@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import NodeCache from 'node-cache';
 
 export const runtime = 'edge';
-// Initialize cache with 1 minutes TTL
-const cache = new NodeCache({ stdTTL: 60 });
+// In-memory cache object
+const cacheStore: { [key: string]: { data: any; expires: number } } = {};
+const CACHE_TTL = 60 * 1000 * 10 - 10000; // 9 minute 50 sec in milliseconds
 
 interface KasPayment {
   wallet_address: string[];
@@ -31,11 +31,12 @@ interface MinerData {
 export async function GET() {
   try {
     // Check cache first
-    const cachedData = cache.get('topMiners');
-    if (cachedData) {
+    const now = Date.now();
+    const cached = cacheStore['topMiners'];
+    if (cached && cached.expires > now) {
       return NextResponse.json({
         status: 'success',
-        data: cachedData
+        data: cached.data
       });
     }
 
@@ -179,7 +180,10 @@ export async function GET() {
     });
 
     // Cache the processed data
-    cache.set('topMiners', minerData);
+    cacheStore['topMiners'] = {
+      data: minerData,
+      expires: Date.now() + CACHE_TTL
+    };
 
     return NextResponse.json({
       status: 'success',

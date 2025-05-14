@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import NodeCache from 'node-cache';
 
 export const runtime = 'edge';
 
-// Initialize cache with 1 minute TTL
-const cache = new NodeCache({ stdTTL: 60 });
+// Simple in-memory cache object and TTL
+const cache: { [key: string]: { value: any; expires: number } } = {};
+const CACHE_TTL = 60 * 1000 * 10 - 10000; // 9 minute 50 sec in milliseconds
 
 interface MinerData {
   metric: {
@@ -29,12 +29,12 @@ export async function GET() {
   const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
   try {
-    // Check cache first
-    const cachedData = cache.get('minerStats');
-    if (cachedData) {
+    // Check cache first (manual TTL)
+    const cached = cache['minerStats'];
+    if (cached && cached.expires > Date.now()) {
       return NextResponse.json({
         status: 'success',
-        data: cachedData
+        data: cached.value
       });
     }
 
@@ -102,8 +102,11 @@ export async function GET() {
         ])
       );
 
-      // Cache the processed data
-      cache.set('minerStats', formattedStats);
+      // Cache the processed data with expiration
+      cache['minerStats'] = {
+        value: formattedStats,
+        expires: Date.now() + CACHE_TTL
+      };
 
       return NextResponse.json({
         status: 'success',
