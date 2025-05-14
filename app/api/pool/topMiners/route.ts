@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 // In-memory cache for top miners data
-let cachedData: any[] | null = null;
+let cachedData: MinerData[] | null = null;
 let lastCacheTime = 0;
 const CACHE_TTL = 590 * 1000; // 9 minutes 50 seconds in milliseconds
 
@@ -28,6 +28,15 @@ interface MinerData {
   rank: number;
   rewards48h: number;
   nachoRebates48h: number;
+}
+
+// Add type for hashrate result
+interface HashrateMiner {
+  metric: {
+    wallet_address: string;
+    [key: string]: string;
+  };
+  values: [number, string][];
 }
 
 export async function GET(request: Request) {
@@ -86,7 +95,7 @@ export async function GET(request: Request) {
     }
 
     // Get list of active wallets
-    const activeWallets = hashrateData.data.result.map((miner: any) => miner.metric.wallet_address);
+    const activeWallets = hashrateData.data.result.map((miner: HashrateMiner) => miner.metric.wallet_address);
 
     // Process NACHO payments in batches
     const BATCH_SIZE = 10;
@@ -157,7 +166,7 @@ export async function GET(request: Request) {
     const minerData: MinerData[] = [];
 
     // Process each miner's data
-    hashrateData.data.result.forEach((miner: any) => {
+    hashrateData.data.result.forEach((miner: HashrateMiner) => {
       const values = miner.values;
       if (!values || values.length === 0) return;
 
