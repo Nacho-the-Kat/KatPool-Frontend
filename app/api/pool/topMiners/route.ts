@@ -54,7 +54,7 @@ export async function GET() {
     // Make initial requests in parallel
     const [hashrateResponse, kasResponse] = await Promise.all([
       fetch(hashrateUrl),
-      fetch('http://kas.katpool.xyz:8080/api/pool/payouts')
+      fetch('http://kas.katpool.xyz:8080/api/pool/48hKASpayouts')
     ]);
 
     if (!hashrateResponse.ok) {
@@ -126,14 +126,11 @@ export async function GET() {
     // Also need to restore KAS rewards processing
     const rewardsMap = new Map<string, number>();
 
-    // Process KAS rewards
+    // Process KAS rewards (no need to filter by 48h, endpoint already does it)
     kasData.forEach((payout: KasPayment) => {
-      const timestamp = new Date(payout.timestamp).getTime();
-      if (timestamp >= fortyEightHoursAgo) {
-        const wallet = payout.wallet_address[0];
-        const amount = Number(BigInt(payout.amount)) / 1e8;
-        rewardsMap.set(wallet, (rewardsMap.get(wallet) || 0) + amount);
-      }
+      const wallet = payout.wallet_address[0];
+      const amount = Number(BigInt(payout.amount)) / 1e8;
+      rewardsMap.set(wallet, (rewardsMap.get(wallet) || 0) + amount);
     });
 
     // Calculate pool total hashrate and process miner data
