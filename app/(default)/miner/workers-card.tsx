@@ -227,7 +227,9 @@ export default function AnalyticsCard11() {
               </thead>
               {/* Table body */}
               <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
-                {workers.map((worker) => {
+                {workers
+                  .filter(worker => worker.hashrates.oneHour > 0)
+                  .map((worker) => {
                   const secondsSinceLastShare = Date.now() / 1000 - worker.lastShareTimestamp;
                   const isOnline = secondsSinceLastShare < 300; // 5 minutes
                   
