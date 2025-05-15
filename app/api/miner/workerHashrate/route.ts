@@ -64,6 +64,15 @@ export async function GET(request: Request) {
     // Process the results
     const workerData = new Map<string, any>();
 
+    // Filter out values where the metric is 0 - indicates no activity from the worker at that timestamp
+    responses.forEach((response) => {
+      response.data.data.result.forEach((metricEntry: { values: [number, string][] }) => {
+        metricEntry.values = metricEntry.values.filter(
+          ([_time, value]: [number, string]) => value !== '0'
+        );
+      });
+    });
+
     responses.forEach(({ key, data }) => {
       if (data.status !== 'success') return;
 
