@@ -116,7 +116,7 @@ export default function AnalyticsCard01() {
       ).sort((a: HashRateData, b: HashRateData) => a.timestamp - b.timestamp);
 
       // Calculate averages for different time periods
-      setTwoHourAvg(formatHashrateCompact(calculateTimeRangeAverage(averagesValues, 2)));
+      setTwoHourAvg(formatHashrateCompact(calculateTimeRangeAverage(averagesValues, 1)));
       setTwelveHourAvg(formatHashrateCompact(calculateTimeRangeAverage(averagesValues, 12)));
       setTwentyFourHourAvg(formatHashrateCompact(calculateTimeRangeAverage(averagesValues, 24)));
       setFortyEightHourAvg(formatHashrateCompact(calculateTimeRangeAverage(averagesValues, 48)));
@@ -316,7 +316,7 @@ export default function AnalyticsCard01() {
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{twoHourAvg}</div>
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Last 2h Avg</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Last 1h Avg</div>
             </div>
             <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-5" aria-hidden="true"></div>
           </div>
