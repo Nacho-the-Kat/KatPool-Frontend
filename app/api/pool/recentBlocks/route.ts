@@ -12,6 +12,7 @@ interface Block {
   blockHash: string;
   daaScore: string;
   timestamp: string;
+  miner_reward?: string;
 }
 
 export async function GET() {
@@ -38,6 +39,8 @@ export async function GET() {
       return {
         blockHash: block.block_hash,
         daaScore: daaScore,
+        // TODO: remove this once we have the new endpoint
+        miner_reward: '0',
         // Convert from milliseconds to ISO string for timestamp
         timestamp: new Date(Number(timestamp)).toISOString()
       };
@@ -45,6 +48,20 @@ export async function GET() {
 
     // Sort by timestamp (newest first) - maintaining existing sort behavior
     blocks.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // const blockdetails = await fetch('http://kas.katpool.xyz:8080/api/pool/blockdetails', {
+    //   cache: 'no-store',
+    // }).then(res => res.json());
+    // const formattedBlocks = blocks.map(block => {
+    //   const detail = blockdetails.find(
+    //     (elem: { mined_block_hash: string }) => elem.mined_block_hash === block.blockHash
+    //   );
+    
+    //   return {
+    //     ...block,
+    //     minerReward: detail?.miner_reward ?? '0', // default to '0' if not found
+    //   };
+    // });
 
     return NextResponse.json({
       status: 'success',
