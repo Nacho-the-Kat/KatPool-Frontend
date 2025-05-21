@@ -14,7 +14,7 @@ import 'chartjs-adapter-moment'
 // Import utilities
 import { tailwindConfig, formatThousands } from '@/components/utils/utils'
 
-Chart.register(BarController, BarElement, LinearScale, TimeScale, CategoryScale,Tooltip, Legend)
+Chart.register(BarController, BarElement, LinearScale, TimeScale, CategoryScale, Tooltip, Legend)
 
 interface BarChart03Props {
   data: ChartData
@@ -33,9 +33,9 @@ export default function BarChart03({
   const legend = useRef<HTMLUListElement>(null)
   const { theme } = useTheme()
   const darkMode = theme === 'dark'
-  const { textColor, gridColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors 
+  const { textColor, gridColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors
 
-  useEffect(() => {    
+  useEffect(() => {
     const ctx = canvas.current
     if (!ctx) return
     
@@ -77,8 +77,12 @@ export default function BarChart03({
               display: false,
             },
             ticks: {
-              autoSkipPadding: 48,
               maxRotation: 0,
+              minRotation: 0,
+              padding: 8,
+              font: {
+                size: 11
+              },
               color: darkMode ? textColor.dark : textColor.light,
             },
           },
@@ -91,12 +95,21 @@ export default function BarChart03({
             callbacks: {
               title: () => '',
               label: (context) => {
-                return `${context.dataset.label}: ${formatThousands(context.parsed.y)}`;
-              },
+                const value = context.parsed.y;
+                if (value === null || value === 0) {
+                  // Check if 'No shares' is already in the tooltip items
+                  const hasNoShares = context.chart.tooltip?.dataPoints?.some(
+                    (point: any) => point.datasetIndex < context.datasetIndex && 
+                    (point.parsed.y === null || point.parsed.y === 0)
+                  );
+                  return hasNoShares ? '' : 'No shares';
+                }
+                return `${context.dataset.label}: ${formatThousands(value)}`;
+              }
             },
             bodyColor: darkMode ? tooltipBodyColor.dark : tooltipBodyColor.light,
             backgroundColor: darkMode ? tooltipBgColor.dark : tooltipBgColor.light,
-            borderColor: darkMode ? tooltipBorderColor.dark : tooltipBorderColor.light,              
+            borderColor: darkMode ? tooltipBorderColor.dark : tooltipBorderColor.light,
           },
         },
         interaction: {
@@ -190,7 +203,7 @@ export default function BarChart03({
       </div>
       <div className="grow">
         <canvas ref={canvas} width={width} height={height}></canvas>
-      </div>    
+      </div>
     </>
   )
 }

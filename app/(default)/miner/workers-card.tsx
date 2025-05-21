@@ -107,11 +107,16 @@ export default function AnalyticsCard11() {
         }
 
         // Combine the data
-        const processedWorkers: WorkerData[] = Array.from(hashrateMap.entries()).map(([minerId, hashrates]) => ({
-          minerId,
-          lastShareTimestamp: timestampMap.get(minerId) || Date.now() / 1000,
-          hashrates,
-        }));
+        const processedWorkers: WorkerData[] = Array.from(hashrateMap.entries())
+          .map(([minerId, hashrates]) => ({
+            minerId,
+            lastShareTimestamp: timestampMap.get(minerId) || Date.now() / 1000,
+            hashrates,
+          }))
+          .filter(worker => {
+            const secondsSinceLastShare = Date.now() / 1000 - worker.lastShareTimestamp;
+            return secondsSinceLastShare < 3600; // Filter out workers inactive for more than 1 hour
+          });
 
         setWorkers(processedWorkers);
         setError(null);

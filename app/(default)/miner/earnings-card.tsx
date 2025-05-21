@@ -78,9 +78,9 @@ export default function AnalyticsCard04() {
         // Check qualification status first
         const isQualifiedByTokens = nachoBalanceRes.status === 'success' && nachoBalanceRes.data.qualified;
         const isQualifiedByNFTs = nachoNFTsRes.status === 'success' && nachoNFTsRes.data.qualified;
-        
-        console.log('Qualification check:', { 
-          byTokens: isQualifiedByTokens, 
+
+        console.log('Qualification check:', {
+          byTokens: isQualifiedByTokens,
           byNFTs: isQualifiedByNFTs,
           tokenRes: nachoBalanceRes,
           nftRes: nachoNFTsRes
@@ -92,9 +92,16 @@ export default function AnalyticsCard04() {
         if (paymentsRes.status === 'success') {
           setHasPayments(paymentsRes.data.length > 0);
           if (paymentsRes.data.length > 0) {
+            // get daily estimate based on last 7 payments
             setRecentPayments(paymentsRes.data);
             const dailyEstimate = calculateDailyEstimate(paymentsRes.data);
-            setDailyKas(dailyEstimate);
+
+            // get daily estimate based on current hashrate
+            const hashrate = await $fetch(`/api/miner/get5MinAverageHashrate?wallet=${walletAddress}`).then(res => res.data);
+            const dailyEstimateByHashrate = await calculateDailyEstimateByHashrate(hashrate);
+
+            // Set dailyKas to the maximum of both estimates
+            setDailyKas(dailyEstimate > dailyEstimateByHashrate ? dailyEstimate : dailyEstimateByHashrate);
           } else {
             setDailyKas(null);
           }
@@ -206,6 +213,23 @@ export default function AnalyticsCard04() {
     });
   };
 
+  const calculateDailyEstimateByHashrate = async (hashrateGH: number): Promise<bigint> => {
+    if (hashrateGH <= 0) return BigInt(0);
+
+    // TODO: hashrateResponse should remove/refactor api file on FE , hotfix to allow cors on backend
+    const totalHashrate = await fetch('/api/pool/24hAverageHashrate').then(res => res.json()).then(data => data.data.totalHashrate);
+    // TODO: totalKasPayouts24h should remove/refactor api file on FE , hotfix to  allow cors on backend
+    const totalKasPayouts24h: number = await fetch('/api/pool/24hTotalKASPayouts').then(res => res.json()).then(data => data.data.totalKASPayouts);
+
+    // Estimated KAS earned per GH/s per day by Katpool
+    const kasPerGhPerDay = totalKasPayouts24h / totalHashrate;
+    // Calculate estimated KAS for the hashrate
+    const estimatedKas = hashrateGH * kasPerGhPerDay;
+
+    // Convert to nanos (1 KAS = 1e8 nanos)
+    return BigInt(Math.round(estimatedKas * 1e8));
+  };
+
   const calculateDailyEstimate = (payments: Payment[]): bigint => {
     if (payments.length === 0) return BigInt(0);
     
@@ -239,7 +263,7 @@ export default function AnalyticsCard04() {
   const renderRow = (label: string, amount: bigint | null) => {
     const nachoRebate = calculateNachoRebate(amount);
     const usdValue = calculateUSDValue(amount, nachoRebate);
-    
+
     return (
       <tr>
         <td className="p-2">
@@ -258,37 +282,37 @@ export default function AnalyticsCard04() {
 
   const calculateHashrateAdjustedEstimate = (baseEstimate: bigint) => {
     if (!minerHashrate || !averagePayment) return baseEstimate;
-    
+
     const currentHashrateGhs = minerHashrate;
     const avgHashrateGhs = calculateAverageHashrate(recentPayments);
-    
+
     if (avgHashrateGhs === 0) return baseEstimate;
-    
+
     const adjustmentFactor = currentHashrateGhs / avgHashrateGhs;
     return BigInt(Math.round(Number(baseEstimate) * adjustmentFactor));
   };
 
   const calculateAverageHashrate = (payments: Payment[]): number => {
     if (payments.length < 2) return 0;
-    
+
     const hashrates: number[] = [];
     for (let i = 1; i < payments.length; i++) {
-      const interval = (payments[i-1].timestamp - payments[i].timestamp) / 1000;
+      const interval = (payments[i - 1].timestamp - payments[i].timestamp) / 1000;
       const amount = Number(payments[i].kasAmount || 0) / 1e8;
       if (interval > 0) {
         hashrates.push(amount / interval);
       }
     }
-    
-    return hashrates.length > 0 
-      ? hashrates.reduce((a, b) => a + b, 0) / hashrates.length 
+
+    return hashrates.length > 0
+      ? hashrates.reduce((a, b) => a + b, 0) / hashrates.length
       : 0;
   };
 
   // Fix type errors in calculateHashrateStability
   const calculateHashrateStability = async (wallet: string | null): Promise<number> => {
     if (!wallet) return 1;
-    
+
     const response = await $fetch(`/api/miner/workerHashrate?wallet=${wallet}`);
     if (response.status !== 'success') return 1;
 
@@ -300,23 +324,23 @@ export default function AnalyticsCard04() {
     const mean = values.reduce((a: number, b: number) => a + b, 0) / values.length;
     const variance = values.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
-    
+
     return 1 - (stdDev / mean) * 0.1;
   };
 
   // Modify getAdjustedEstimate to include difficulty trend
   const getAdjustedEstimate = async (baseEstimate: bigint) => {
     if (!walletAddress) return baseEstimate;
-    
+
     const [stabilityFactor, difficultyFactor] = await Promise.all([
       calculateHashrateStability(walletAddress),
       calculateDifficultyTrend()
     ]);
-    
+
     const hashrateAdjusted = calculateHashrateAdjustedEstimate(baseEstimate);
     return BigInt(Math.round(
-      Number(hashrateAdjusted) * 
-      stabilityFactor * 
+      Number(hashrateAdjusted) *
+      stabilityFactor *
       difficultyFactor
     ));
   };
@@ -370,16 +394,16 @@ export default function AnalyticsCard04() {
             <div className="group relative inline-block">
               <div className={`
                 px-2 py-1 rounded-full text-xs font-medium 
-                ${isQualified 
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                ${isQualified
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-700/30 dark:text-gray-400'
                 } 
                 flex items-center gap-1.5
               `}>
                 <span className={`
                   w-2 h-2 rounded-full 
-                  ${isQualified 
-                    ? 'bg-green-500 dark:bg-green-400' 
+                  ${isQualified
+                    ? 'bg-green-500 dark:bg-green-400'
                     : 'bg-gray-400 dark:bg-gray-500'
                   }
                 `}></span>
@@ -392,8 +416,8 @@ export default function AnalyticsCard04() {
                     <strong>{isQualified ? 'Elite Miner Status' : 'Standard Miner Status'}</strong>
                   </div>
                   <p className="mb-2">
-                    {isQualified 
-                      ? 'This wallet qualifies for 100% pool fee rebates by holding either 100M+ NACHO tokens or at least 1 NACHO NFT.' 
+                    {isQualified
+                      ? 'This wallet qualifies for 100% pool fee rebates by holding either 100M+ NACHO tokens or at least 1 NACHO NFT.'
                       : 'This wallet receives 33% pool fee rebates. Upgrade to Elite status by holding either 100M+ NACHO tokens or at least 1 NACHO NFT.'}
                   </p>
                   <div className="mt-3 pt-2 border-t border-gray-700">
@@ -419,8 +443,8 @@ export default function AnalyticsCard04() {
                   <div className="font-medium mb-1"><strong>How we calculate estimates:</strong></div>
                   <p className="mb-2">Daily estimates are based on your most recent payout amount, doubled to account for two 12-hour intervals. Daily estimates are then extrapolated to calculate remaining periods.</p>
                   <p className="mb-2">
-                    The <strong>NACHO rebate</strong> is a pool fee refund paid in $NACHO tokens. 
-                    Wallets holding 100M+ NACHO tokens or at least 1 NACHO NFT receive 100% of pool fees back. 
+                    The <strong>NACHO rebate</strong> is a pool fee refund paid in $NACHO tokens.
+                    Wallets holding 100M+ NACHO tokens or at least 1 NACHO NFT receive 100% of pool fees back.
                     Other wallets receive 33% of pool fees back.
                   </p>
                   <p className="mb-2">The <strong>USD value</strong> is calculated using the latest $KAS & $NACHO price from the Kaspa and CoinGecko APIs.</p>

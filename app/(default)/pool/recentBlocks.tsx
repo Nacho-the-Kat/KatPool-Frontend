@@ -10,7 +10,7 @@ interface Block {
   blockHash: string;
   daaScore: string;
   timestamp: string;
-  reward?: string;
+  miner_reward?: string;
 }
 
 export default function RecentBlocks() {
@@ -32,30 +32,8 @@ export default function RecentBlocks() {
           throw new Error(response?.error || 'Failed to fetch data');
         }
 
-        // Fetch reward amounts for each block
-        const blocksWithRewards = await Promise.all(
-          response.data.blocks.map(async (block: Block) => {
-            try {
-              const rewardResponse = await $fetch(`/api/pool/blockReward?blockHash=${block.blockHash}`, {
-                retry: 3,
-                retryDelay: 1000,
-                timeout: 10000,
-              });
-              return {
-                ...block,
-                reward: rewardResponse.data.amount
-              };
-            } catch (error) {
-              console.error(`Error fetching reward for block ${block.blockHash}:`, error);
-              return {
-                ...block,
-                reward: '--'
-              };
-            }
-          })
-        );
-
-        setBlocks(blocksWithRewards);
+        // blocks is an array of objects with blockHash, daaScore, timestamp, miner_reward
+        setBlocks([...response.data.blocks]);
         setError(null);
       } catch (error) {
         console.error('Error fetching blocks:', error);
@@ -128,8 +106,8 @@ export default function RecentBlocks() {
                               target="_blank"
                               rel="noopener noreferrer"
                             >{formatBlockHash(block.blockHash)}</a> found!
-                            {/* <span className="text-gray-500 dark:text-gray-400"> • Reward: </span> */}
-                            {/* <span className="text-green-500">{block.reward} KAS</span> */}
+                            <span className="text-gray-500 dark:text-gray-400"> • Reward: </span>
+                            <span className="text-green-500">{Number(block.miner_reward).toFixed(2)} KAS</span>
                           </div>
                           <div className="shrink-0 self-end ml-2">
                             <span className="text-gray-400 dark:text-gray-500">

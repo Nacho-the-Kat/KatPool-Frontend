@@ -121,7 +121,7 @@ export default function AnalyticsCard03() {
           const isToday = localDate.toDateString() === new Date().toDateString();
           
           const formatted = localDate.toLocaleDateString('en-US', { 
-            weekday: 'short',
+            // weekday: 'short',
             month: 'short',
             day: 'numeric'
           }).replace(',', '') + suffix;
@@ -129,10 +129,16 @@ export default function AnalyticsCard03() {
           return isToday ? `${formatted} (Today)` : formatted;
         });
 
-        setChartData({
+        // Filter out zero values before passing to chart
+        const filteredData = {
           labels,
-          datasets,
-        });
+          datasets: datasets.map(dataset => ({
+            ...dataset,
+            data: dataset.data.map(value => value === 0 ? null : value)
+          }))
+        };
+
+        setChartData(filteredData);
 
         setError(null);
       } catch (error) {

@@ -20,7 +20,7 @@ export default function AnalyticsCard01() {
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '180d' | '365d'>('7d')
   const [currentHashrate, setCurrentHashrate] = useState<string>('')
-  const [twoHourAvg, setTwoHourAvg] = useState<string>('')
+  const [oneHourAvg, setOneHourAvg] = useState<string>('')
   const [twelveHourAvg, setTwelveHourAvg] = useState<string>('')
   const [twentyFourHourAvg, setTwentyFourHourAvg] = useState<string>('')
   const [fortyEightHourAvg, setFortyEightHourAvg] = useState<string>('')
@@ -36,26 +36,28 @@ export default function AnalyticsCard01() {
     setTimeRange(range);
   };
 
-  const calculateTimeRangeAverage = (values: HashRateData[], hoursAgo: number): number => {
-    const cutoffTime = Date.now() / 1000 - (hoursAgo * 3600);
+  // TODO: keep in mind "ignoring any extreme outliers", current implementation is not doing that
+  // TODO: "ignoring any extreme outliers" inside the workerHashrate endpoint
+  // const calculateTimeRangeAverage = (values: HashRateData[], hoursAgo: number): number => {
+  //   const cutoffTime = Date.now() / 1000 - (hoursAgo * 3600);
     
-    // Get all values within the time range
-    const relevantValues = values.filter(v => v.timestamp >= cutoffTime && v.value >= 0);
-    if (relevantValues.length === 0) return 0;
+  //   // Get all values within the time range
+  //   const relevantValues = values.filter(v => v.timestamp >= cutoffTime && v.value >= 0);
+  //   if (relevantValues.length === 0) return 0;
 
-    // Calculate average, ignoring any extreme outliers (values more than 3 standard deviations from mean)
-    const mean = relevantValues.reduce((acc, val) => acc + val.value, 0) / relevantValues.length;
-    const stdDev = Math.sqrt(
-      relevantValues.reduce((acc, val) => acc + Math.pow(val.value - mean, 2), 0) / relevantValues.length
-    );
-    const validValues = relevantValues.filter(v => 
-      Math.abs(v.value - mean) <= 3 * stdDev && v.value > 0
-    );
+  //   // Calculate average, ignoring any extreme outliers (values more than 3 standard deviations from mean)
+  //   const mean = relevantValues.reduce((acc, val) => acc + val.value, 0) / relevantValues.length;
+  //   const stdDev = Math.sqrt(
+  //     relevantValues.reduce((acc, val) => acc + Math.pow(val.value - mean, 2), 0) / relevantValues.length
+  //   );
+  //   const validValues = relevantValues.filter(v => 
+  //     Math.abs(v.value - mean) <= 3 * stdDev && v.value > 0
+  //   );
 
-    return validValues.length > 0
-      ? validValues.reduce((acc, val) => acc + val.value, 0) / validValues.length
-      : 0;
-  };
+  //   return relevantValues.length > 0
+  //     ? relevantValues.reduce((acc, val) => acc + val.value, 0) / relevantValues.length
+  //     : 0;
+  // };
 
   const fetchData = async () => {
     if (!walletAddress) return;
@@ -63,13 +65,8 @@ export default function AnalyticsCard01() {
     try {
       setIsLoading(true);
 
-      const [currentResponse, averagesResponse, chartResponse] = await Promise.all([
+      const [currentResponse, chartResponse, workerHashrateResponse] = await Promise.all([
         $fetch(`/api/miner/currentHashrate?wallet=${walletAddress}`, {
-          retry: 3,
-          retryDelay: 1000,
-          timeout: 10000,
-        }),
-        $fetch(`/api/miner/averages?wallet=${walletAddress}`, {
           retry: 3,
           retryDelay: 1000,
           timeout: 10000,
@@ -78,8 +75,35 @@ export default function AnalyticsCard01() {
           retry: 3,
           retryDelay: 1000,
           timeout: 10000,
-        })
+        }),
+        $fetch(`/api/miner/workerHashrate?wallet=${walletAddress}`, {
+          retry: 3,
+          retryDelay: 1000,
+          timeout: 10000,
+        }),
       ]);
+
+      // Sum up all time period values from all workers
+      const totals = {
+        fiveMin: 0,
+        fifteenMin: 0,
+        oneHour: 0,
+        twelveHour: 0,
+        twentyFourHour: 0,
+        fortyEightHour: 0,
+      };
+
+      if (workerHashrateResponse?.data?.result) {
+        // Loop through each worker and sum their values
+        workerHashrateResponse.data.result.forEach((worker: any) => {
+          if (worker.averages.fiveMin) totals.fiveMin += worker.averages.fiveMin;
+          if (worker.averages.fifteenMin) totals.fifteenMin += worker.averages.fifteenMin;
+          if (worker.averages.oneHour) totals.oneHour += worker.averages.oneHour;
+          if (worker.averages.twelveHour) totals.twelveHour += worker.averages.twelveHour;
+          if (worker.averages.twentyFourHour) totals.twentyFourHour += worker.averages.twentyFourHour;
+          if (worker.averages.fortyEightHour) totals.fortyEightHour += worker.averages.fortyEightHour;
+        });
+      }
 
       // Handle current hashrate
       if (!currentResponse || currentResponse.error) {
@@ -94,32 +118,11 @@ export default function AnalyticsCard01() {
         setCurrentHashrate('0 H/s');
       }
 
-      // Handle averages data
-      if (!averagesResponse || averagesResponse.error) {
-        throw new Error(averagesResponse?.error || 'Failed to fetch data');
-      }
-
-      if (!averagesResponse.status || averagesResponse.status !== 'success') {
-        throw new Error('Invalid response status');
-      }
-
-      if (!averagesResponse.data?.result?.[0]?.values) {
-        throw new Error('Missing values data');
-      }
-
-      // Parse the averages data
-      const averagesValues: HashRateData[] = averagesResponse.data.result[0].values.map(
-        ([timestamp, value]: [number, string]) => ({
-          timestamp,
-          value: Number(value)
-        })
-      ).sort((a: HashRateData, b: HashRateData) => a.timestamp - b.timestamp);
-
       // Calculate averages for different time periods
-      setTwoHourAvg(formatHashrateCompact(calculateTimeRangeAverage(averagesValues, 2)));
-      setTwelveHourAvg(formatHashrateCompact(calculateTimeRangeAverage(averagesValues, 12)));
-      setTwentyFourHourAvg(formatHashrateCompact(calculateTimeRangeAverage(averagesValues, 24)));
-      setFortyEightHourAvg(formatHashrateCompact(calculateTimeRangeAverage(averagesValues, 48)));
+      setOneHourAvg(formatHashrateCompact(totals.oneHour));
+      setTwelveHourAvg(formatHashrateCompact(totals.oneHour));
+      setTwentyFourHourAvg(formatHashrateCompact(totals.oneHour));
+      setFortyEightHourAvg(formatHashrateCompact(totals.oneHour));
 
       // Handle chart data
       if (!chartResponse || chartResponse.error) {
@@ -314,9 +317,9 @@ export default function AnalyticsCard01() {
           <div className="flex items-center py-2">
             <div className="mr-5">
               <div className="flex items-center">
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{twoHourAvg}</div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{oneHourAvg}</div>
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Last 2h Avg</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Last 1h Avg</div>
             </div>
             <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-5" aria-hidden="true"></div>
           </div>

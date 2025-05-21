@@ -18,6 +18,10 @@ interface TimeWindow {
 }
 
 const timeWindows: Record<string, TimeWindow> = {
+  '5min': {
+    duration: 15 * 60,
+    step: 20    // 20-sec intervals for 5 min (15 points)
+  },
   '15min': {
     duration: 15 * 60,
     step: 60    // 1-minute intervals for 15 min (15 points)
@@ -33,6 +37,10 @@ const timeWindows: Record<string, TimeWindow> = {
   '24h': {
     duration: 24 * 60 * 60,
     step: 1800  // 30-minute intervals for 24 hours (48 points)
+  },
+  '48h': {
+    duration: 24 * 60 * 60,
+    step: 3600  // 1-hour intervals for 48 hours (48 points)
   }
 };
 
@@ -64,6 +72,15 @@ export async function GET(request: Request) {
     // Process the results
     const workerData = new Map<string, any>();
 
+    // Filter out values where the metric is 0 - indicates no activity from the worker at that timestamp
+    responses.forEach((response) => {
+      response.data.data.result.forEach((metricEntry: { values: [number, string][] }) => {
+        metricEntry.values = metricEntry.values.filter(
+          ([_time, value]: [number, string]) => value !== '0'
+        );
+      });
+    });
+
     responses.forEach(({ key, data }) => {
       if (data.status !== 'success') return;
 
@@ -73,10 +90,12 @@ export async function GET(request: Request) {
           workerData.set(minerId, {
             metric: worker.metric,
             averages: {
+              fiveMin: 0,
               fifteenMin: 0,
               oneHour: 0,
               twelveHour: 0,
-              twentyFourHour: 0
+              twentyFourHour: 0,
+              fortyEightHour: 0
             }
           });
         }
@@ -89,9 +108,12 @@ export async function GET(request: Request) {
         const avg = sum / values.length;
 
         // Map the key to the correct average field
-        const averageField = key === '15min' ? 'fifteenMin' :
+        const averageField = key === '5min' ? 'fiveMin' :
+                           key === '15min' ? 'fifteenMin' :
                            key === '1h' ? 'oneHour' :
-                           key === '12h' ? 'twelveHour' : 'twentyFourHour';
+                           key === '12h' ? 'twelveHour' :
+                           key === '24h' ? 'twentyFourHour' :
+                           'fortyEightHour';
 
         workerData.get(minerId).averages[averageField] = avg;
       });

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
-export const revalidate = 10;
+
+// Simple in-memory cache object and TTL
+const cache: { [key: string]: { value: any; expires: number } } = {};
+const CACHE_TTL = 60 * 1000 * 10 - 10000; // 9 minute 50 sec in milliseconds
 
 interface MinerData {
   metric: {
@@ -26,6 +29,15 @@ export async function GET() {
   const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
   try {
+    // Check cache first (manual TTL)
+    const cached = cache['minerStats'];
+    if (cached && cached.expires > Date.now()) {
+      return NextResponse.json({
+        status: 'success',
+        data: cached.value
+      });
+    }
+
     const end = Math.floor(Date.now() / 1000);
     const start = 1735689600; // Jan 1 2025 at 12am midnight UTC
     const step = 24 * 60 * 60; // 24 hours in seconds
@@ -79,18 +91,26 @@ export async function GET() {
       }, {});
 
       // Single pass to format final output
+      const formattedStats = Object.fromEntries(
+        (Object.entries(stats) as Array<[string, ProcessedStats[string]]>).map(([wallet, stat]) => [
+          wallet,
+          {
+            totalShares: stat.totalShares,
+            firstSeen: stat.firstSeen,
+            activeWorkers: stat.minerIds.size
+          }
+        ])
+      );
+
+      // Cache the processed data with expiration
+      cache['minerStats'] = {
+        value: formattedStats,
+        expires: Date.now() + CACHE_TTL
+      };
+
       return NextResponse.json({
         status: 'success',
-        data: Object.fromEntries(
-          (Object.entries(stats) as Array<[string, ProcessedStats[string]]>).map(([wallet, stat]) => [
-            wallet,
-            {
-              totalShares: stat.totalShares,
-              firstSeen: stat.firstSeen,
-              activeWorkers: stat.minerIds.size
-            }
-          ])
-        )
+        data: formattedStats
       });
     }
 

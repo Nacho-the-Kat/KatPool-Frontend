@@ -17,6 +17,45 @@ const TIME_RANGES: Record<string, TimeRange> = {
   '365d': { days: 365, recentStepMinutes: 5, historicalStepHours: 24 }
 };
 
+function filterOutAnomalies(
+  historicalData: {
+    metric: { wallet_address: string };
+    values: [number, string][];
+  }[]
+) {
+  return historicalData.map(({ metric, values }) => {
+    const cleanedValues: [number, string][] = [];
+
+    for (let i = 0; i < values.length; i++) {
+      const surrounding: number[] = [];
+
+      // Collect 4 values before and 4 values after (excluding the current value)
+      for (let j = i - 4; j <= i + 4; j++) {
+        if (j === i || j < 0 || j >= values.length) continue;
+        surrounding.push(parseFloat(values[j][1]));
+      }
+
+      // If not enough data points, keep the value
+      if (surrounding.length < 8) {
+        cleanedValues.push(values[i]);
+        continue;
+      }
+
+      const surroundingAvg =
+        surrounding.reduce((sum, val) => sum + val, 0) / surrounding.length;
+
+      const currentVal = parseFloat(values[i][1]);
+
+      // Keep only non-spikes
+      if (currentVal <= surroundingAvg * 2.5) {
+        cleanedValues.push(values[i]);
+      }
+    }
+
+    return { metric, values: cleanedValues };
+  });
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -74,10 +113,11 @@ export async function GET(request: Request) {
       historicalResponse.json()
     ]);
 
+    const filteredHistoricalData = await filterOutAnomalies(historicalData.data.result);
     // Merge the datasets
     if (recentData.status === 'success' && historicalData.status === 'success') {
       const mergedResult = recentData.data.result.map((series: any) => {
-        const historicalSeries = historicalData.data.result.find(
+        const historicalSeries = filteredHistoricalData.find(
           (h: any) => h.metric.wallet_address === series.metric.wallet_address
         );
         
