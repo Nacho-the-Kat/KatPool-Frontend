@@ -98,7 +98,7 @@ export default function AnalyticsCard04() {
 
             // get daily estimate based on current hashrate
             const hashrate = await get5MinAverageHashrate(walletAddress);
-            const dailyEstimateByHashrate = calculateDailyEstimateByHashrate(hashrate);
+            const dailyEstimateByHashrate = await calculateDailyEstimateByHashrate(hashrate);
 
             // Set dailyKas to the maximum of both estimates
             setDailyKas(dailyEstimate > dailyEstimateByHashrate ? dailyEstimate : dailyEstimateByHashrate);
@@ -244,13 +244,18 @@ export default function AnalyticsCard04() {
     });
   };
 
-  const calculateDailyEstimateByHashrate = (hashrateGH: number): bigint => {
+  const calculateDailyEstimateByHashrate = async (hashrateGH: number): Promise<bigint> => {
     if (hashrateGH <= 0) return BigInt(0);
 
-    // Estimated KAS earned per GH/s per day by Katpool
-    // TODO: Get this from the monitor API
-    const kasPerGhPerDay = 0.15; // Example: 0.15 KAS/GH/day
+    const url = new URL('http://kas.katpool.xyz:8080/api/v1/query');
+    url.searchParams.append('query', 'avg_over_time(pool_hash_rate_GHps[24h])');
+    const response = await fetch(url).then(result => result.json());
+    const totalHashrate = response.data.result?.[0]?.value?.[1];
+    // TODO: should remove api file on FE , change allow cors on backend
+    const totalKasPayouts24h: number = await fetch('/api/pool/24hTotalKASPayouts').then(res => res.json()).then(data => data.data.totalKASPayouts);
 
+    // Estimated KAS earned per GH/s per day by Katpool
+    const kasPerGhPerDay = totalKasPayouts24h / totalHashrate;
     // Calculate estimated KAS for the hashrate
     const estimatedKas = hashrateGH * kasPerGhPerDay;
 

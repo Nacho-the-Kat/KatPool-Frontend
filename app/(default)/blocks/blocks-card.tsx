@@ -5,12 +5,13 @@ import { $fetch } from 'ofetch'
 import { format } from 'date-fns'
 
 type SortDirection = 'asc' | 'desc'
-type SortKey = 'timestamp' | 'daaScore' | 'blockHash'
+type SortKey = 'timestamp' | 'daaScore' | 'blockHash' | 'miner_reward'
 
 interface Block {
   blockHash: string
   daaScore: string
   timestamp: string
+  miner_reward?: string
 }
 
 export default function BlocksCard() {
@@ -70,6 +71,8 @@ export default function BlocksCard() {
         return (Number(a.daaScore) - Number(b.daaScore)) * modifier
       case 'blockHash':
         return a.blockHash.localeCompare(b.blockHash) * modifier
+      case 'miner_reward':
+        return Number(a.miner_reward)
       default:
         return 0
     }
@@ -140,6 +143,9 @@ export default function BlocksCard() {
                 <th className="p-2">
                   <SortableHeader label="DAA Score" sortKey="daaScore" className="justify-end" />
                 </th>
+                <th className="p-2">
+                  <SortableHeader label="Miner Reward" sortKey="miner_reward" className="justify-end" />
+                </th>
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -165,6 +171,11 @@ export default function BlocksCard() {
                   <td className="p-2">
                     <div className="text-right">
                       {block.daaScore}
+                    </div>
+                  </td>
+                  <td className="p-2">
+                    <div className="text-right">
+                      {block.miner_reward ? `${Number(block.miner_reward).toFixed(2)} KAS` : '-'}
                     </div>
                   </td>
                 </tr>
