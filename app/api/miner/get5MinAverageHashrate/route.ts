@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+export const runtime = 'edge';
+export const revalidate = 10;
+
 // TODO: this logic is relative copy of averages route, should be refactored
 export async function GET(request: Request) {
   try {
