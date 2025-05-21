@@ -39,8 +39,8 @@ export async function GET() {
       return {
         blockHash: block.block_hash,
         daaScore: daaScore,
-        // TODO: remove this once we have the new endpoint
-        miner_reward: '0',
+        // Sompi to KAS
+        miner_reward: Number(block.miner_reward) / 100000000,
         // Convert from milliseconds to ISO string for timestamp
         timestamp: new Date(Number(timestamp)).toISOString()
       };

@@ -75,9 +75,8 @@ export async function GET() {
     // Get list of active wallets
     const activeWallets = hashrateData.data.result.map((miner: any) => miner.metric.wallet_address);
 
-    // TODO: change enpoint once we have the new endpoint deployed
     // NACHO payments grouped by wallet for last 48 hours
-    const rebatesMap = await fetch('http://localhost:9301/api/pool/48hNACHOPayouts').then(res => res.json());
+    const rebatesMap = await fetch('http://kas.katpool.xyz:8080/api/pool/48hNACHOPayouts').then(res => res.json());
     // Also need to restore KAS rewards processing
     const rewardsMap = new Map<string, number>();
 

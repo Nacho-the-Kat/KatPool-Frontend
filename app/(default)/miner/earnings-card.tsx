@@ -251,13 +251,11 @@ export default function AnalyticsCard04() {
     url.searchParams.append('query', 'avg_over_time(pool_hash_rate_GHps[24h])');
     const response = await fetch(url).then(result => result.json());
     const totalHashrate = response.data.result?.[0]?.value?.[1];
-    // TODO: change this once we have the new endpoint deployed
-    // const totalKasPayouts = await $fetch('http://localhost:9301/api/pool/24hTotalKASpayouts');
-    // TODO: remove this once we have the new endpoint deployed
-    const totalKasPayouts = 257125980805/1e8;
+    // TODO: should remove api file on FE , change allow cors on backend
+    const totalKasPayouts24h: number = await fetch('/api/pool/24hTotalKASPayouts').then(res => res.json()).then(data => data.data.totalKASPayouts);
 
     // Estimated KAS earned per GH/s per day by Katpool
-    const kasPerGhPerDay = totalKasPayouts / totalHashrate;
+    const kasPerGhPerDay = totalKasPayouts24h / totalHashrate;
     // Calculate estimated KAS for the hashrate
     const estimatedKas = hashrateGH * kasPerGhPerDay;
 
