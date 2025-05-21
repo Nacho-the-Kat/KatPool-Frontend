@@ -97,8 +97,7 @@ export default function AnalyticsCard04() {
             const dailyEstimate = calculateDailyEstimate(paymentsRes.data);
 
             // get daily estimate based on current hashrate
-            const hashrateResponse = await $fetch(`/api/miner/get5MinAverageHashrate?wallet=${walletAddress}`);
-            const hashrate = hashrateResponse.status === 'success' ? hashrateResponse.data : 0;
+            const hashrate = await $fetch(`/api/miner/get5MinAverageHashrate?wallet=${walletAddress}`).then(res => res.data);
             const dailyEstimateByHashrate = await calculateDailyEstimateByHashrate(hashrate);
 
             // Set dailyKas to the maximum of both estimates
@@ -218,8 +217,7 @@ export default function AnalyticsCard04() {
     if (hashrateGH <= 0) return BigInt(0);
 
     // TODO: hashrateResponse should remove/refactor api file on FE , hotfix to allow cors on backend
-    const hashrateResponse = await fetch('/api/pool/24hAverageHashrate').then(res => res.json()).then(data => data.data.totalHashrate);
-    const totalHashrate = hashrateResponse.data.totalHashrate;
+    const totalHashrate = await fetch('/api/pool/24hAverageHashrate').then(res => res.json()).then(data => data.data.totalHashrate);
     // TODO: totalKasPayouts24h should remove/refactor api file on FE , hotfix to  allow cors on backend
     const totalKasPayouts24h: number = await fetch('/api/pool/24hTotalKASPayouts').then(res => res.json()).then(data => data.data.totalKASPayouts);
 
