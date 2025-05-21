@@ -97,7 +97,8 @@ export default function AnalyticsCard04() {
             const dailyEstimate = calculateDailyEstimate(paymentsRes.data);
 
             // get daily estimate based on current hashrate
-            const hashrate = await get5MinAverageHashrate(walletAddress);
+            const hashrateResponse = await $fetch(`/api/miner/get5MinAverageHashrate?wallet=${walletAddress}`);
+            const hashrate = hashrateResponse.status === 'success' ? hashrateResponse.data : 0;
             const dailyEstimateByHashrate = await calculateDailyEstimateByHashrate(hashrate);
 
             // Set dailyKas to the maximum of both estimates
@@ -145,37 +146,6 @@ export default function AnalyticsCard04() {
     const formattedInteger = parseInt(integerPart).toLocaleString('en-US');
     return `${formattedInteger}.${decimalPart.slice(0, 2)}`;
   };
-
-  const get5MinAverageHashrate = async (wallet: string) => {
-    const end = Math.floor(Date.now() / 1000);
-    const start = end - 5 * 60; // Last 5 minutes
-    const step = 15; // 15-second intervals
-
-    const url = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
-    url.searchParams.append(
-      'query',
-      `sum(miner_hash_rate_GHps{wallet_address="${wallet}"}) by (wallet_address)`
-    );
-    url.searchParams.append('start', start.toString());
-    url.searchParams.append('end', end.toString());
-    url.searchParams.append('step', step.toString());
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    let filteredValues: number[] = [];
-
-    // Filter out 0 values, miner is offline
-    if (data.data?.result?.[0]?.values?.length > 0) {
-      filteredValues = data.data.result[0].values
-        .map(([, value]: [number, string]) => Number(value))
-        .filter((v: number) => v !== 0);
-    }
-
-    const sum = filteredValues.reduce((acc, val) => acc + val, 0);
-    const average = filteredValues.length > 0 ? sum / filteredValues.length : 0;
-    return average;
-  }
 
   const calculateAmount = (baseAmount: bigint | null, multiplier: number) => {
     if (baseAmount === null) return null;
