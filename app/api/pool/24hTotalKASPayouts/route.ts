@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+export const runtime = 'edge';
+export const revalidate = 10;
+
 export async function GET() {
   try {
 
