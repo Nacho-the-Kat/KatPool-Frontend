@@ -115,7 +115,7 @@ export async function GET() {
           poolShare: 0,
           rank: 0,
           rewards48h: rewardsMap.get(miner.metric.wallet_address) || 0,
-          nachoRebates48h: rebatesMap[miner.metric.wallet_address] || 0
+          nachoRebates48h: rebatesMap[miner.metric.wallet_address] / 1e8 || 0
         });
         poolTotalHashrate += averageHashrate;
       }
