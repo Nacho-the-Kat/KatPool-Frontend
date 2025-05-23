@@ -90,15 +90,29 @@ export default function KatpoolIntro() {
   const [hashrateValue, setHashrateValue] = useState('')
   const [hashrateUnit, setHashrateUnit] = useState<'GH/s' | 'TH/s'>('TH/s')
   const [showCustomDifficulty, setShowCustomDifficulty] = useState(false)
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
 
   // New state for asset_code, chain_type, and username
   const [assetCode, setAssetCode] = useState('KAS')
   const [chainType, setChainType] = useState('ethereum')
   const [username, setUsername] = useState('')
+  const [usernameError, setUsernameError] = useState(false)
 
   const handleSave = () => {
+    // Validate username
+    if (!username.trim()) {
+      setUsernameError(true)
+      return
+    }
+    setUsernameError(false)
+    
     // Here you can add the logic to save the selections
     console.log('Saving selections:', { assetCode, chainType, username })
+    setShowUpdateModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowUpdateModal(false)
   }
 
   const handleCopy = async () => {
@@ -164,7 +178,12 @@ export default function KatpoolIntro() {
         <div className="relative pl-12 mb-8">
           <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">1</div>
           <div>
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Select Asset, Chain, and Username</h3>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Uphold Payout Setup</h3>
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+              <p className="text-blue-700 dark:text-blue-300">
+                Your mining rewards will be sent to your Uphold account. You can update your payout settings at any time on this page.
+              </p>
+            </div>
             <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row gap-6 items-center">
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">Asset</label>
@@ -193,13 +212,24 @@ export default function KatpoolIntro() {
                 </select>
               </div>
               <div className="flex flex-col">
-                <label className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">Username</label>
+                <label className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Username <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={username}
-                  onChange={e => setUsername(e.target.value)}
+                  onChange={e => {
+                    setUsername(e.target.value)
+                    if (e.target.value.trim()) {
+                      setUsernameError(false)
+                    }
+                  }}
                   placeholder="Enter username"
-                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className={`px-4 py-2 rounded-lg border ${
+                    usernameError 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 dark:border-gray-700 focus:ring-primary-500'
+                  } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
                 />
               </div>
               <div className="flex flex-col">
@@ -214,6 +244,35 @@ export default function KatpoolIntro() {
             </div>
           </div>
         </div>
+
+        {/* Update Success Modal */}
+        {showUpdateModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Uphold payout settings updated</h3>
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Asset:</span>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">{assetCode}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Chain Type:</span>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">{chainType}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Username:</span>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">{username}</span>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseModal}
+                className="w-full px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Instructions Section */}
         <div className="mt-8 space-y-8">
@@ -366,7 +425,7 @@ export default function KatpoolIntro() {
                     <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Wallet/Worker Format</div>
                     <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700">
                       <code className="text-primary-600 dark:text-primary-400 font-mono text-sm break-all">
-                        yourKaspaAddress.workerName
+                        username.workerName
                       </code>
                     </div>
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
