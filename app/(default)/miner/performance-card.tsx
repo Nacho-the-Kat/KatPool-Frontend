@@ -26,12 +26,6 @@ export default function AnalyticsCard01() {
   const [fortyEightHourAvg, setFortyEightHourAvg] = useState<string>('')
   const [chartData, setChartData] = useState<any>(null)
 
-  const menuItems = [
-    { label: 'Last 30 Days', value: '30d' },
-    { label: 'Last 3 Months', value: '90d' },
-    { label: 'Last 6 Months', value: '180d' },
-  ];
-
   const handleRangeChange = (range: '7d' | '30d' | '90d' | '180d' | '365d') => {
     setTimeRange(range);
   };
@@ -65,7 +59,12 @@ export default function AnalyticsCard01() {
     try {
       setIsLoading(true);
 
-      const [currentResponse, chartResponse, workerHashrateResponse] = await Promise.all([
+      const [minerHashrateResponse, currentResponse, chartResponse, workerHashrateResponse] = await Promise.all([
+        $fetch(`/api/miner/averages?wallet=${walletAddress}`, {
+          retry: 3,
+          retryDelay: 1000,
+          timeout: 10000,
+        }),
         $fetch(`/api/miner/currentHashrate?wallet=${walletAddress}`, {
           retry: 3,
           retryDelay: 1000,
@@ -119,10 +118,10 @@ export default function AnalyticsCard01() {
       }
 
       // Calculate averages for different time periods
-      setOneHourAvg(formatHashrateCompact(totals.oneHour));
-      setTwelveHourAvg(formatHashrateCompact(totals.oneHour));
-      setTwentyFourHourAvg(formatHashrateCompact(totals.oneHour));
-      setFortyEightHourAvg(formatHashrateCompact(totals.oneHour));
+      setOneHourAvg(formatHashrate(minerHashrateResponse.data['1h']));
+      setTwelveHourAvg(formatHashrate(minerHashrateResponse.data['5min']));
+      setTwentyFourHourAvg(formatHashrate(minerHashrateResponse.data['24h']));
+      setFortyEightHourAvg(formatHashrate(minerHashrateResponse.data['48h']));
 
       // Handle chart data
       if (!chartResponse || chartResponse.error) {
