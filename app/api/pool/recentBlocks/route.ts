@@ -4,21 +4,30 @@ export const runtime = 'edge';
 export const revalidate = 10;
 
 interface BlockMetric {
-  block_hash: string;
-  [key: string]: string; // For the dynamic DAA score key
+  mined_block_hash: string;
+  miner_id: string;
+  pool_address: string;
+  reward_block_hash: string;
+  wallet: string;
+  daa_score: string;
+  miner_reward: string;
+  timestamp: string;
 }
 
 interface Block {
   blockHash: string;
   daaScore: string;
   timestamp: string;
-  miner_reward?: string;
+  miner_reward: number;
+  minerId: string;
+  poolAddress: string;
+  wallet: string;
 }
 
 export async function GET() {
   try {
     const response = await fetch(
-      'http://kas.katpool.xyz:8080/api/pool/miningPoolStats'
+      'http://localhost:9301/api/blockdetails?currentPage=1&perPage=10'
     );
 
     if (!response.ok) {
@@ -26,27 +35,21 @@ export async function GET() {
     }
 
     const data = await response.json();
-
-    if (!data?.blocks || !Array.isArray(data.blocks)) {
-      throw new Error('Invalid response format');
-    }
-
+    
     // Transform the blocks data to match the expected format
-    const blocks: Block[] = data.blocks.map((block: BlockMetric) => {
-      // Extract the DAA score (key) and timestamp (value) from the first entry
-      const [[daaScore, timestamp]] = Object.entries(block).filter(([key]) => key !== 'block_hash');
-      
+    const blocks: Block[] = data.data.map((block: BlockMetric) => {
       return {
-        blockHash: block.block_hash,
-        daaScore: daaScore,
-        // Sompi to KAS
-        miner_reward: Number(block.miner_reward) / 100000000,
-        // Convert from milliseconds to ISO string for timestamp
-        timestamp: new Date(Number(timestamp)).toISOString()
+        blockHash: block.mined_block_hash,
+        daaScore: block.daa_score,
+        miner_reward: Number(block.miner_reward) / 100000000, // Convert from Sompi to KAS
+        timestamp: block.timestamp,
+        minerId: block.miner_id,
+        poolAddress: block.pool_address,
+        wallet: block.wallet
       };
     });
 
-    // Sort by timestamp (newest first) - maintaining existing sort behavior
+    // Sort by timestamp (newest first)
     blocks.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     // const blockdetails = await fetch('http://kas.katpool.xyz:8080/api/pool/blockdetails', {
@@ -66,7 +69,8 @@ export async function GET() {
     return NextResponse.json({
       status: 'success',
       data: {
-        blocks
+        blocks,
+        pagination: data.pagination
       }
     });
 

@@ -1,56 +1,45 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { $fetch } from 'ofetch'
+import { useState } from 'react'
 import { format } from 'date-fns'
+import { useRouter } from 'next/navigation'
 
 type SortDirection = 'asc' | 'desc'
 type SortKey = 'timestamp' | 'daaScore' | 'blockHash' | 'miner_reward'
 
 interface Block {
   blockHash: string
+  miner_id: string
+  pool_address: string
+  reward_block_hash: string
+  wallet: string
   daaScore: string
+  miner_reward: string
   timestamp: string
-  miner_reward?: string
 }
 
-export default function BlocksCard() {
-  const [blocks, setBlocks] = useState<Block[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+interface BlocksCardProps {
+  currentPage: number
+  itemsPerPage: number
+  onPageChange: (page: number) => void
+  totalItems: number
+  blocks: Block[]
+  isLoading: boolean
+  error: string | null
+}
+
+export default function BlocksCard({ 
+  currentPage, 
+  itemsPerPage, 
+  onPageChange, 
+  totalItems,
+  blocks,
+  isLoading,
+  error
+}: BlocksCardProps) {
+  const router = useRouter()
   const [sortKey, setSortKey] = useState<SortKey>('timestamp')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await $fetch('/api/pool/recentBlocks', {
-          retry: 3,
-          retryDelay: 1000,
-          timeout: 10000,
-        });
-
-        if (!response || response.error) {
-          throw new Error(response?.error || 'Failed to fetch data');
-        }
-
-        // Simply set the blocks directly, no need to fetch rewards
-        setBlocks(response.data.blocks);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching blocks:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-    // Refresh every 10 minutes
-    const interval = setInterval(fetchData, 600000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -60,23 +49,17 @@ export default function BlocksCard() {
       setSortDirection('desc')
     }
   }
+  console.log('blocks', blocks);
 
-  const sortedData = [...blocks].sort((a, b) => {
-    const modifier = sortDirection === 'asc' ? 1 : -1
-    
-    switch (sortKey) {
-      case 'timestamp':
-        return (new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()) * modifier
-      case 'daaScore':
-        return (Number(a.daaScore) - Number(b.daaScore)) * modifier
-      case 'blockHash':
-        return a.blockHash.localeCompare(b.blockHash) * modifier
-      case 'miner_reward':
-        return Number(a.miner_reward)
-      default:
-        return 0
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      router.push(`/blocks?page=${newPage}`)
+      onPageChange(newPage)
     }
-  })
+  }
 
   const SortIcon = ({ active, direction }: { active: boolean; direction: SortDirection }) => (
     <span className={`ml-1 inline-block ${active ? 'text-primary-500' : 'text-gray-400'}`}>
@@ -125,8 +108,27 @@ export default function BlocksCard() {
 
   return (
     <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
-      <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+      <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 flex justify-between items-center">
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">Found Blocks</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
       </header>
       
       <div className="p-3">
@@ -149,7 +151,7 @@ export default function BlocksCard() {
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
-              {sortedData.map((block) => (
+              {blocks.map((block) => (
                 <tr key={block.blockHash}>
                   <td className="p-2">
                     <div className="text-left">
@@ -159,7 +161,7 @@ export default function BlocksCard() {
                   <td className="p-2">
                     <div className="text-left">
                       <a 
-                        href={`https://explorer.kaspa.org/blocks/${block.blockHash}`}
+                        href={`https://explorer.kaspa.org/blocks/${block.mined_block_hash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
