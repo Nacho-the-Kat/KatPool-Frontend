@@ -22,7 +22,7 @@ const POOL_PORTS: PortConfig[] = [
     manufacturers: [
       { manufacturer: 'IceRiver', models: ['KS0', 'KS0 Pro'] }
     ],
-    hashrate: '100 GH/s - 200 GH/s'
+    hashrate: '100 GH/s - 250 GH/s'
   },
   {
     port: 2222,
@@ -30,7 +30,7 @@ const POOL_PORTS: PortConfig[] = [
     manufacturers: [
       { manufacturer: 'IceRiver', models: ['KS0 Ultra'] }
     ],
-    hashrate: '300 GH/s - 500 GH/s'
+    hashrate: '300 GH/s - 800 GH/s'
   },
   {
     port: 3333,
@@ -62,10 +62,19 @@ const POOL_PORTS: PortConfig[] = [
     port: 6666,
     difficulty: 32768,
     manufacturers: [
-      { manufacturer: 'IceRiver', models: ['KS5M', 'KS7'] },
+      { manufacturer: 'IceRiver', models: ['KS5M'] },
       { manufacturer: 'Bitmain', models: ['KS5', 'KS5Pro'] }
     ],
-    hashrate: '15 TH/s - 30 TH/s'
+    hashrate: '14 TH/s - 25 TH/s'
+  },
+  {
+    port: 7777,
+    difficulty: 65536,
+    manufacturers: [
+      { manufacturer: 'IceRiver', models: ['KS7'] },
+      { manufacturer: 'Bitmain', models: ['KS7'] }
+    ],
+    hashrate: '30 TH/s - 50 TH/s'
   },
   {
     port: 8888,
