@@ -48,6 +48,7 @@ export async function GET(request: Request) {
         timestamp: block.timestamp,
         minerId: block.miner_id,
         poolAddress: block.pool_address,
+        reward_block_hash: block.reward_block_hash,
         wallet: block.wallet
       };
     });
