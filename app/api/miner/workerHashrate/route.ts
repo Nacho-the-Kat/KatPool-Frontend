@@ -121,7 +121,6 @@ export async function GET(request: Request) {
 
     // Convert Map to array for response
     const processedResult = Array.from(workerData.values());
-
     return NextResponse.json({
       status: 'success',
       data: {

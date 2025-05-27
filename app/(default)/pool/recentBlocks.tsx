@@ -11,6 +11,7 @@ interface Block {
   daaScore: string;
   timestamp: string;
   miner_reward?: string;
+  reward_block_hash: string;
 }
 
 export default function RecentBlocks() {
@@ -22,7 +23,7 @@ export default function RecentBlocks() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await $fetch('/api/pool/recentBlocks', {
+        const response = await $fetch('/api/pool/recentBlocks?page=1&perPage=10', {
           retry: 3,
           retryDelay: 1000,
           timeout: 10000,
@@ -31,9 +32,11 @@ export default function RecentBlocks() {
         if (!response || response.error) {
           throw new Error(response?.error || 'Failed to fetch data');
         }
-
-        // blocks is an array of objects with blockHash, daaScore, timestamp, miner_reward
-        setBlocks([...response.data.blocks]);
+        // Filter out blocks with no reward_block_hash
+        const blocksWithRewardBlockHash = response.data.blocks.filter((block: Block) => block.reward_block_hash);
+       
+        // blocks is an array of objects with blockHash, daaScore, timestamp, miner_reward, reward_block_hash
+        setBlocks([...blocksWithRewardBlockHash]);
         setError(null);
       } catch (error) {
         console.error('Error fetching blocks:', error);
