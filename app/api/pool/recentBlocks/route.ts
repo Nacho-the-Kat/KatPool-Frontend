@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     const perPage = searchParams.get('perPage');
 
     const response = await fetch(
-      `http://localhost:9301/api/blockdetails?currentPage=${page}&perPage=${perPage}`
+      `http://kas.katpool.xyz:8080/api/pool/blockdetails?currentPage=${page}&perPage=${perPage}`
     );
 
     if (!response.ok) {
