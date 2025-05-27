@@ -11,16 +11,15 @@ interface BlockData {
 export async function GET() {
   try {
     const response = await fetch(
-      'http://kas.katpool.xyz:8080/api/pool/miningPoolStats'
+      'http://kas.katpool.xyz:8080/api/pool/blockdetails?currentPage=1&perPage=1000'
     );
 
     if (!response.ok) {
       throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
-
-    if (!data?.blocks || !Array.isArray(data.blocks)) {
+    const data = await response.json().then(data => data.data);
+    if (!data || !Array.isArray(data)) {
       throw new Error('Invalid response format');
     }
 
@@ -28,15 +27,9 @@ export async function GET() {
     const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
 
     // Count blocks with timestamps in the last 24 hours
-    const blocks24h = data.blocks.reduce((count: number, block: BlockData) => {
-      // Get timestamp from the first non-block_hash entry
-      const [[, timestamp]] = Object.entries(block).filter(([key]) => key !== 'block_hash');
-      
-      // If timestamp is within last 24 hours, increment counter
-      if (Number(timestamp) >= twentyFourHoursAgo) {
-        return count + 1;
-      }
-      return count;
+    const blocks24h = data.reduce((count: number, block: BlockData) => {
+      const blockTimestamp = new Date(block.timestamp).getTime();
+      return blockTimestamp >= twentyFourHoursAgo ? count + 1 : count;
     }, 0);
 
     return NextResponse.json({
