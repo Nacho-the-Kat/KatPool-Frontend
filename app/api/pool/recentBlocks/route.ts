@@ -24,10 +24,14 @@ interface Block {
   wallet: string;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get('page');
+    const perPage = searchParams.get('perPage');
+
     const response = await fetch(
-      'http://localhost:9301/api/blockdetails?currentPage=1&perPage=10'
+      `http://localhost:9301/api/blockdetails?currentPage=${page}&perPage=${perPage}`
     );
 
     if (!response.ok) {
@@ -35,7 +39,6 @@ export async function GET() {
     }
 
     const data = await response.json();
-    
     // Transform the blocks data to match the expected format
     const blocks: Block[] = data.data.map((block: BlockMetric) => {
       return {

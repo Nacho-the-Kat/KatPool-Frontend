@@ -22,7 +22,7 @@ export default function RecentBlocks() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await $fetch('/api/pool/recentBlocks', {
+        const response = await $fetch('/api/pool/recentBlocks?page=1&perPage=10', {
           retry: 3,
           retryDelay: 1000,
           timeout: 10000,

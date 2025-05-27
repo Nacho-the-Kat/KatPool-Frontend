@@ -4,9 +4,6 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 
-type SortDirection = 'asc' | 'desc'
-type SortKey = 'timestamp' | 'daaScore' | 'blockHash' | 'miner_reward'
-
 interface Block {
   blockHash: string
   miner_id: string
@@ -22,6 +19,7 @@ interface BlocksCardProps {
   currentPage: number
   itemsPerPage: number
   onPageChange: (page: number) => void
+  onItemsPerPageChange: (itemsPerPage: number) => void
   totalItems: number
   blocks: Block[]
   isLoading: boolean
@@ -31,25 +29,14 @@ interface BlocksCardProps {
 export default function BlocksCard({ 
   currentPage, 
   itemsPerPage, 
-  onPageChange, 
+  onPageChange,
+  onItemsPerPageChange,
   totalItems,
   blocks,
   isLoading,
   error
 }: BlocksCardProps) {
   const router = useRouter()
-  const [sortKey, setSortKey] = useState<SortKey>('timestamp')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
-
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortKey(key)
-      setSortDirection('desc')
-    }
-  }
-  console.log('blocks', blocks);
 
   const totalPages = Math.ceil(totalItems / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -60,22 +47,6 @@ export default function BlocksCard({
       onPageChange(newPage)
     }
   }
-
-  const SortIcon = ({ active, direction }: { active: boolean; direction: SortDirection }) => (
-    <span className={`ml-1 inline-block ${active ? 'text-primary-500' : 'text-gray-400'}`}>
-      {direction === 'asc' ? '↑' : '↓'}
-    </span>
-  )
-
-  const SortableHeader = ({ label, sortKey: key, className = '' }: { label: string; sortKey: SortKey; className?: string }) => (
-    <div 
-      className={`font-semibold cursor-pointer hover:text-primary-500 flex items-center ${className}`}
-      onClick={() => handleSort(key)}
-    >
-      {label}
-      <SortIcon active={sortKey === key} direction={sortDirection} />
-    </div>
-  )
 
   const formatBlockHash = (hash: string) => {
     return hash;
@@ -137,16 +108,16 @@ export default function BlocksCard({
             <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm">
               <tr>
                 <th className="p-2">
-                  <SortableHeader label="Time" sortKey="timestamp" className="justify-start" />
+                  <div className="font-semibold text-left">Time</div>
                 </th>
                 <th className="p-2">
-                  <SortableHeader label="Block Hash" sortKey="blockHash" className="justify-start" />
+                  <div className="font-semibold text-left">Block Hash</div>
                 </th>
                 <th className="p-2">
-                  <SortableHeader label="DAA Score" sortKey="daaScore" className="justify-end" />
+                  <div className="font-semibold text-right">DAA Score</div>
                 </th>
                 <th className="p-2">
-                  <SortableHeader label="Miner Reward" sortKey="miner_reward" className="justify-end" />
+                  <div className="font-semibold text-right">Miner Reward</div>
                 </th>
               </tr>
             </thead>
@@ -161,7 +132,7 @@ export default function BlocksCard({
                   <td className="p-2">
                     <div className="text-left">
                       <a 
-                        href={`https://explorer.kaspa.org/blocks/${block.mined_block_hash}`}
+                        href={`https://explorer.kaspa.org/blocks/${block.blockHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
@@ -184,6 +155,42 @@ export default function BlocksCard({
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="border-t border-gray-100 dark:border-gray-700/60 mt-4" />
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 dark:text-gray-300">Show:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+              className="px-2 pr-7 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Records</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>

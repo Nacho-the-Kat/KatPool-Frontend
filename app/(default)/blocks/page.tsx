@@ -68,6 +68,11 @@ export default function Blocks() {
     return () => clearInterval(interval)
   }, [currentPage, pagination.perPage])
 
+  const handleItemsPerPageChange = (newPerPage: number) => {
+    setPagination((prev) => ({ ...prev, perPage: newPerPage }));
+    setCurrentPage(1);
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
       {/* Page header */}
@@ -83,6 +88,7 @@ export default function Blocks() {
           currentPage={currentPage}
           itemsPerPage={pagination.perPage}
           onPageChange={setCurrentPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
           totalItems={pagination.totalCount}
           blocks={blocks}
           isLoading={isLoading}
