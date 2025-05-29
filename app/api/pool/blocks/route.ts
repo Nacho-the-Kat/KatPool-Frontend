@@ -6,18 +6,18 @@ export const revalidate = 10;
 export async function GET() {
   try {
     const response = await fetch(
-      `http://kas.katpool.xyz:8080/api/v1/query?query=count(last_over_time(success_blocks_details[10y]))`
+      'http://kas.katpool.xyz:8080/api/pool/blockdetails?currentPage=1&perPage=10'
     );
 
     if (!response.ok) {
-      throw new Error('Failed to fetch data');
+      throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json().then(data => data.pagination);
 
     // Process the new response format
-    if (data?.status === 'success' && data?.data?.result?.[0]?.value?.[1]) {
-      const totalBlocks = parseInt(data.data.result[0].value[1]);
+    if (data?.totalCount) {
+      const totalBlocks = parseInt(data.totalCount);
       
       return NextResponse.json({
         status: 'success',
