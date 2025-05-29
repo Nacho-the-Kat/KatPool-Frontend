@@ -16,7 +16,7 @@ export async function GET() {
     const data = await response.json().then(data => data.pagination);
 
     // Process the new response format
-    if (data.totalCount) {
+    if (data?.totalCount) {
       const totalBlocks = parseInt(data.totalCount);
       
       return NextResponse.json({
