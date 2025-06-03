@@ -19,7 +19,7 @@ function calculateAverages(values: [number, string][]) {
   const counts: { [key: string]: number } = {};
   for (const key in intervals) {
     sums[key] = 0;
-    counts[key] = 0;
+    counts[key] = 1;
   }
 
   for (const [timestamp, valueStr] of values) {

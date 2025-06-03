@@ -114,9 +114,8 @@ export default function AnalyticsCard11() {
             hashrates,
           }))
           .filter(worker => {
-            const secondsSinceLastShare = Date.now() / 1000 - worker.lastShareTimestamp;
-            return secondsSinceLastShare < 3600; // Filter out workers inactive for more than 1 hour
-          });
+            return worker.hashrates.fifteenMin > 0;
+          })
 
         setWorkers(processedWorkers);
         setError(null);
