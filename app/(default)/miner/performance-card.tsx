@@ -119,7 +119,6 @@ export default function AnalyticsCard01() {
 
       // Calculate averages for different time periods
       setOneHourAvg(formatHashrate(minerHashrateResponse.data['1h']));
-      setTwelveHourAvg(formatHashrate(minerHashrateResponse.data['5min']));
       setTwelveHourAvg(formatHashrate(minerHashrateResponse.data['12h']));
       setTwentyFourHourAvg(formatHashrate(minerHashrateResponse.data['24h']));
       setFortyEightHourAvg(formatHashrate(minerHashrateResponse.data['48h']));
