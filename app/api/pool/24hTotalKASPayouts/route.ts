@@ -5,8 +5,8 @@ export const revalidate = 10;
 
 export async function GET() {
   try {
-
-    const response = await fetch('http://kas.katpool.xyz:8080/api/pool/24hTotalKASPayouts');
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const response = await fetch(`${baseUrl}/api/pool/24hTotalKASPayouts`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);

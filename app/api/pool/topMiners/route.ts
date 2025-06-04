@@ -45,6 +45,8 @@ export async function GET() {
     const start = end - (48 * 60 * 60);
     const step = 300;
 
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+
     // Prepare URLs for parallel requests
     const hashrateUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
     hashrateUrl.searchParams.append('query', 'sum(miner_hash_rate_GHps) by (wallet_address)');
@@ -55,7 +57,7 @@ export async function GET() {
     // Make initial requests in parallel
     const [hashrateResponse, kasResponse] = await Promise.all([
       fetch(hashrateUrl),
-      fetch('http://kas.katpool.xyz:8080/api/pool/48hKASpayouts')
+      fetch(`${baseUrl}/api/pool/48hKASpayouts`)
     ]);
 
     if (!hashrateResponse.ok) {
@@ -76,7 +78,7 @@ export async function GET() {
     const activeWallets = hashrateData.data.result.map((miner: any) => miner.metric.wallet_address);
 
     // NACHO payments grouped by wallet for last 48 hours
-    const rebatesMap = await fetch('http://kas.katpool.xyz:8080/api/pool/48hNACHOPayouts').then(res => res.json());
+    const rebatesMap = await fetch(`${baseUrl}/api/pool/48hNACHOPayouts`).then(res => res.json());
     // Also need to restore KAS rewards processing
     const rewardsMap = new Map<string, number>();
 

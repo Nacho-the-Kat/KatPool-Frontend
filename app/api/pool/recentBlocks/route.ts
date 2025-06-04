@@ -26,12 +26,13 @@ interface Block {
 
 export async function GET(request: Request) {
   try {
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
     const { searchParams } = new URL(request.url);
-    const page = searchParams.get('page');
-    const perPage = searchParams.get('perPage');
+    const page = searchParams.get('page') || '1';
+    const perPage = searchParams.get('perPage') || '10';
 
     const response = await fetch(
-      `http://kas.katpool.xyz:8080/api/pool/blockdetails?currentPage=${page}&perPage=${perPage}`
+      `${baseUrl}/api/pool/blockdetails?currentPage=${page}&perPage=${perPage}`
     );
 
     if (!response.ok) {

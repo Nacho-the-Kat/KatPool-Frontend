@@ -28,10 +28,12 @@ interface ProcessedPayment {
 
 export async function GET(request: Request) {
   try {
-    // Fetch both KAS and NACHO payments in parallel
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+    
+    // Fetch both KAS and NACHO payouts in parallel
     const [kasResponse, nachoResponse] = await Promise.all([
-      fetch('http://kas.katpool.xyz:8080/api/pool/payouts'),
-      fetch('http://kas.katpool.xyz:8080/api/pool/nacho_payouts')
+      fetch(`${baseUrl}/api/pool/payouts`),
+      fetch(`${baseUrl}/api/pool/nacho_payouts`)
     ]);
 
     if (!kasResponse.ok || !nachoResponse.ok) {

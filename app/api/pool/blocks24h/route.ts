@@ -10,8 +10,9 @@ interface BlockData {
 
 export async function GET() {
   try {
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
     const response = await fetch(
-      'http://kas.katpool.xyz:8080/api/pool/blockdetails?currentPage=1&perPage=1000'
+      `${baseUrl}/api/pool/blockdetails?currentPage=1&perPage=1000`
     );
 
     if (!response.ok) {
