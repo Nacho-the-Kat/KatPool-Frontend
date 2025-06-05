@@ -7,7 +7,6 @@ export async function middleware(request: NextRequest) {
   const startTime = Date.now()
   const url = request.url
   const method = request.method
-  const headers = Object.fromEntries(request.headers)
   const path = request.nextUrl.pathname
   const requestId = uuidv4()
   
@@ -19,7 +18,7 @@ export async function middleware(request: NextRequest) {
   logger.info(`request : ${method} ${path}`, {
     method,
     url,
-    headers,
+    headers: requestHeaders,
     path,
     requestId,
   })
@@ -35,13 +34,8 @@ export async function middleware(request: NextRequest) {
     const endTime = Date.now()
     const duration = endTime - startTime
 
-    // Set requestId in response headers
-    response.headers.set('x-request-id', requestId)
-
-    // Log response
     logger.info(`response: ${method} ${path} - ${response.status}`, {
       status: response.status,
-      statusText: response.statusText,
       duration,
       url,
       path,
@@ -50,7 +44,6 @@ export async function middleware(request: NextRequest) {
 
     return response
   } catch (error) {
-    // Log error
     logger.error(`response: ${method} ${path} - Error`, {
       type: 'ERROR',
       url,

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -10,9 +11,17 @@ interface BlockData {
 
 export async function GET() {
   try {
+    const headersList = headers();
+    const requestId = headersList.get('x-request-id');
+    
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
     const response = await fetch(
-      `${baseUrl}/api/pool/blockdetails?currentPage=1&perPage=1000`
+      `${baseUrl}/api/pool/blockdetails?currentPage=1&perPage=1000`,
+      {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      }
     );
 
     if (!response.ok) {

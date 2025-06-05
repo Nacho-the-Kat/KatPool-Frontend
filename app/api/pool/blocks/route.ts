@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
 
 export const runtime = 'edge';
 export const revalidate = 10;
 
 export async function GET() {
   try {
+    const headersList = headers();
+    const requestId = headersList.get('x-request-id');
+
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
     const response = await fetch(
-      `${baseUrl}/api/pool/blockdetails?currentPage=1&perPage=10`
+      `${baseUrl}/api/pool/blockdetails?currentPage=1&perPage=10`,
+      {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      }
     );
 
     if (!response.ok) {
@@ -25,6 +34,10 @@ export async function GET() {
         data: {
           totalBlocks: totalBlocks
         }
+      }, {
+        headers: {
+          'x-request-id': requestId || '',
+        },
       });
     }
 
@@ -34,7 +47,12 @@ export async function GET() {
     console.error('Error fetching total blocks:', error);
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch total blocks' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'x-request-id': headers().get('x-request-id') || '',
+        },
+      }
     );
   }
 } 

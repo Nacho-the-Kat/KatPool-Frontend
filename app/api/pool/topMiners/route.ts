@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export const runtime = 'edge';
 // In-memory cache object
@@ -30,6 +31,9 @@ interface MinerData {
 
 export async function GET() {
   try {
+    const headersList = headers();
+    const requestId = headersList.get('x-request-id');
+
     // Check cache first
     const now = Date.now();
     const cached = cacheStore['topMiners'];
@@ -56,8 +60,16 @@ export async function GET() {
 
     // Make initial requests in parallel
     const [hashrateResponse, kasResponse] = await Promise.all([
-      fetch(hashrateUrl),
-      fetch(`${baseUrl}/api/pool/48hKASpayouts`)
+      fetch(hashrateUrl, {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      }),
+      fetch(`${baseUrl}/api/pool/48hKASpayouts`, {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      })
     ]);
 
     if (!hashrateResponse.ok) {
@@ -78,7 +90,11 @@ export async function GET() {
     const activeWallets = hashrateData.data.result.map((miner: any) => miner.metric.wallet_address);
 
     // NACHO payments grouped by wallet for last 48 hours
-    const rebatesMap = await fetch(`${baseUrl}/api/pool/48hNACHOPayouts`).then(res => res.json());
+    const rebatesMap = await fetch(`${baseUrl}/api/pool/48hNACHOPayouts`, {
+      headers: {
+        'x-request-id': requestId || '',
+      },
+    }).then(res => res.json());
     // Also need to restore KAS rewards processing
     const rewardsMap = new Map<string, number>();
 
