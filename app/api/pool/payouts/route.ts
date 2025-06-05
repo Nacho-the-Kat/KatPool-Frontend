@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -28,10 +29,23 @@ interface ProcessedPayment {
 
 export async function GET(request: Request) {
   try {
-    // Fetch both KAS and NACHO payments in parallel
+    const headersList = headers();
+    const requestId = headersList.get('x-request-id');
+    
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+    
+    // Fetch both KAS and NACHO payouts in parallel
     const [kasResponse, nachoResponse] = await Promise.all([
-      fetch('http://kas.katpool.xyz:8080/api/pool/payouts'),
-      fetch('http://kas.katpool.xyz:8080/api/pool/nacho_payouts')
+      fetch(`${baseUrl}/api/pool/payouts`, {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      }),
+      fetch(`${baseUrl}/api/pool/nacho_payouts`, {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      })
     ]);
 
     if (!kasResponse.ok || !nachoResponse.ok) {

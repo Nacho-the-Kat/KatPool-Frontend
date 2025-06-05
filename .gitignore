@@ -37,6 +37,7 @@ next-env.d.ts
 
 # local env files
 .env*.local 
+.env
 
 package-lock.json
 KASPA-EMISSION-SCHEDULE (1).pdf
