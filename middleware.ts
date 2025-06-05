@@ -11,6 +11,10 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
   const requestId = uuidv4()
   
+  // Set requestId in request headers
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-request-id', requestId)
+  
   // Log request
   logger.info(`request : ${method} ${path}`, {
     method,
@@ -21,10 +25,18 @@ export async function middleware(request: NextRequest) {
   })
 
   try {
-    // Continue with the request
-    const response = await NextResponse.next()
+    // Continue with the request, passing the modified headers
+    const response = await NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
+    
     const endTime = Date.now()
     const duration = endTime - startTime
+
+    // Set requestId in response headers
+    response.headers.set('x-request-id', requestId)
 
     // Log response
     logger.info(`response: ${method} ${path} - ${response.status}`, {
