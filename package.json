@@ -11,6 +11,7 @@
   "dependencies": {
     "@headlessui/react": "^2.1.1",
     "@heroicons/react": "^2.2.0",
+    "@maxmind/geoip2-node": "^6.1.0",
     "@radix-ui/react-popover": "^1.1.2",
     "@types/node": "^22.10.1",
     "@types/react": "^18.2.0",
