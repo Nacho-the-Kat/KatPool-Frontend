@@ -142,19 +142,20 @@ export default function KatpoolIntro() {
   useEffect(() => {
     const detectLocation = async () => {
       try {
-        // This endpoint is limited to 45 requests per minute from an IP address
-        const response = await fetch('http://ip-api.com/json')
+        const response = await fetch('https://ipinfo.io/json')
         const data = await response.json()
         
-        if (data.lat && data.lon) {
+        if (data.loc) {
+          const [lat, lon] = data.loc.split(',').map(Number)
+          
           // Find closest location based on coordinates
           let closestLocation = LOCATIONS[0]
           let minDistance = Infinity
           
           for (const location of LOCATIONS) {
             const distance = calculateDistance(
-              data.lat,
-              data.lon,
+              lat,
+              lon,
               location.latitude,
               location.longitude
             )

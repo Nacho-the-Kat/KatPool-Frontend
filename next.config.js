@@ -7,14 +7,14 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self' http://ip-api.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+            value: "default-src 'self' https://ipinfo.io; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
           }
         ],
       },
     ]
   },
   images: {
-    domains: ['ip-api.com'],
+    domains: ['ipinfo.io'],
   },
 }
 
