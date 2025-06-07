@@ -18,6 +18,12 @@ interface PortConfig {
 interface Location {
   name: string
   domain: string
+  city: string
+  country: string
+  latitude: number
+  longitude: number
+  userCity?: string
+  userCountry?: string
 }
 
 const POOL_PORTS: PortConfig[] = [
@@ -92,14 +98,27 @@ const POOL_PORTS: PortConfig[] = [
 ]
 
 const LOCATIONS: Location[] = [
-  { name: 'North America West', domain: 'na-west.katpool.xyz' },
-  { name: 'North America East', domain: 'na-east.katpool.xyz' },
-  { name: 'Europe', domain: 'eu.katpool.xyz' },
-  { name: 'Asia', domain: 'ap.katpool.xyz' },
-  { name: 'Oceania', domain: 'au.katpool.xyz' },
-  { name: 'South America', domain: 'sa.katpool.xyz' },
-  { name: 'China', domain: 'hkg.katpool.xyz' }
+  { name: 'North America West', domain: 'na-west.katpool.xyz', city: 'San Francisco', country: 'USA', latitude: 37.7749, longitude: -122.4194 },
+  { name: 'North America East', domain: 'na-east.katpool.xyz', city: 'New York City', country: 'USA', latitude: 40.7128, longitude: -74.0060 },
+  { name: 'Europe', domain: 'eu.katpool.xyz', city: 'Frankfurt', country: 'Germany', latitude: 50.1109, longitude: 8.6821 },
+  { name: 'Asia', domain: 'ap.katpool.xyz', city: 'Singapore', country: 'Singapore', latitude: 1.3521, longitude: 103.8198 },
+  { name: 'Oceania', domain: 'au.katpool.xyz', city: 'Sydney', country: 'Australia', latitude: -33.8688, longitude: 151.2093 },
+  { name: 'South America', domain: 'sa.katpool.xyz', city: 'São Paulo', country: 'Brazil', latitude: -23.5505, longitude: -46.6333 },
+  { name: 'China', domain: 'hkg.katpool.xyz', city: 'Hong Kong', country: 'China', latitude: 22.3193, longitude: 114.1694 }
 ]
+
+// Function to calculate distance between two points using Haversine formula
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
 
 const getDifficultyRecommendation = (hashrate: number, unit: 'GH/s' | 'TH/s'): string => {
   // Convert everything to GH/s for calculation
@@ -123,33 +142,44 @@ export default function KatpoolIntro() {
   useEffect(() => {
     const detectLocation = async () => {
       try {
-        const response = await fetch('https://ipapi.co/json/')
+        // This endpoint is limited to 45 requests per minute from an IP address
+        const response = await fetch('http://ip-api.com/json')
         const data = await response.json()
         
-        // Map country/region to appropriate location
-        let detectedLocation: Location | null = null
-        
-        if (data.continent_code === 'NA') {
-          detectedLocation = data.longitude < -100 
-            ? LOCATIONS[0] // NA West
-            : LOCATIONS[1] // NA East
-        } else if (data.continent_code === 'EU') {
-          detectedLocation = LOCATIONS[2] // Europe
-        } else if (data.continent_code === 'AS') {
-          detectedLocation = data.country_code === 'CN'
-            ? LOCATIONS[6] // China
-            : LOCATIONS[3] // Asia
-        } else if (data.continent_code === 'OC') {
-          detectedLocation = LOCATIONS[4] // Oceania
-        } else if (data.continent_code === 'SA') {
-          detectedLocation = LOCATIONS[5] // South America
-        }
+        if (data.lat && data.lon) {
+          // Find closest location based on coordinates
+          let closestLocation = LOCATIONS[0]
+          let minDistance = Infinity
+          
+          for (const location of LOCATIONS) {
+            const distance = calculateDistance(
+              data.lat,
+              data.lon,
+              location.latitude,
+              location.longitude
+            )
+            
+            if (distance < minDistance) {
+              minDistance = distance
+              closestLocation = location
+            }
+          }
 
-        setUserLocation(detectedLocation || LOCATIONS[0]) // Default to NA West if can't determine
-        setSelectedLocation(detectedLocation || LOCATIONS[0])
+          // Store both user's location and closest server
+          setUserLocation({
+            ...closestLocation,
+            userCity: data.city,
+            userCountry: data.country
+          })
+          setSelectedLocation(closestLocation)
+        } else {
+          // Fallback if location data is not available
+          setUserLocation(LOCATIONS[0])
+          setSelectedLocation(LOCATIONS[0])
+        }
       } catch (error) {
         console.error('Error detecting location:', error)
-        setUserLocation(LOCATIONS[0]) // Default to NA West on error
+        setUserLocation(LOCATIONS[0])
         setSelectedLocation(LOCATIONS[0])
       } finally {
         setIsLoadingLocation(false)
@@ -234,7 +264,13 @@ export default function KatpoolIntro() {
                       <div>
                         <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Select Location</div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          {userLocation ? `We've detected you're closest to ${userLocation.name}. You can change this if needed.` : 'Please select your preferred mining location.'}
+                          {userLocation ? (
+                            <>
+                              We've detected you're in {userLocation.userCity}, {userLocation.userCountry} and you're closest to {userLocation.city}, {userLocation.country}. You can change this if needed.
+                            </>
+                          ) : (
+                            'Please select your preferred mining location.'
+                          )}
                         </p>
                         <select
                           value={selectedLocation?.domain || ''}
