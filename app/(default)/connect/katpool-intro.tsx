@@ -353,7 +353,7 @@ export default function KatpoolIntro() {
                     >
                       <div className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">UpHold</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Coming soon - Enhanced features and rewards
+                        Coming soon - Enhanced features
                       </div>
                     </button>
                   </div>
