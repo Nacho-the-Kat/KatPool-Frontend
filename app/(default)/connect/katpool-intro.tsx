@@ -583,6 +583,21 @@ export default function KatpoolIntro() {
             </div>
           )}
         </div>
+
+        {/* Video Tutorial Section - Commented out until video is ready */}
+        {/* <div className="mt-12 border-t border-gray-200 dark:border-gray-700/60 pt-8">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Video Tutorial</h3>
+          <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-900/50 rounded-lg overflow-hidden">
+            <iframe
+              className="w-full h-full"
+              src="about:blank"
+              title="Kat Pool Setup Tutorial"
+              style={{ border: 0 }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </div> */}
       </div>
     </div>
   )
