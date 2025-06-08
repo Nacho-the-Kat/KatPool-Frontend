@@ -233,18 +233,18 @@ export default function KatpoolIntro() {
 
   return (
     <div className="col-span-10 col-start-2 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
-      <div className="px-8 py-6">
+      <div className="px-4 sm:px-8 py-6">
         {/* Header Section */}
         <div className="border-b border-gray-200 dark:border-gray-700/60 pb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+            <div className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
               👋 Welcome to Kat Pool!
             </div>
-            <div className="px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-sm font-medium rounded-full">
+            <div className="px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-sm font-medium rounded-full w-fit">
               Easy Setup Guide
             </div>
           </div>
-          <div className="text-lg text-gray-600 dark:text-gray-400">
+          <div className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
             Follow this simple guide to start mining with Kat Pool. We'll help you every step of the way!
           </div>
         </div>
@@ -252,16 +252,16 @@ export default function KatpoolIntro() {
         {/* Instructions Section */}
         <div className="mt-8 space-y-8">
           {/* Location Selection Step */}
-          <div className="relative pl-12">
-            <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">1</div>
+          <div className="relative pl-8 sm:pl-12">
+            <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">1</div>
             <div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Select Mining Location</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Select Mining Location</h3>
               {isLoadingLocation ? (
                 <div className="text-gray-600 dark:text-gray-400">Detecting your location...</div>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 space-y-4 border border-gray-200 dark:border-gray-700">
                       <div>
                         <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Select Location</div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -286,7 +286,7 @@ export default function KatpoolIntro() {
                               setShowCustomDifficulty(false)
                             }
                           }}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base"
                         >
                           {LOCATIONS.map((location) => (
                             <option key={location.domain} value={location.domain}>
@@ -297,13 +297,13 @@ export default function KatpoolIntro() {
                       </div>
                       <button
                         onClick={() => setLocationConfirmed(true)}
-                        className="w-full px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium"
+                        className="w-full px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium text-base"
                       >
                         Confirm Location
                       </button>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 space-y-4 border border-gray-200 dark:border-gray-700">
                       <div>
                         <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Why Choose Your Location?</div>
                         <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
@@ -328,30 +328,30 @@ export default function KatpoolIntro() {
 
           {/* Authentication Type Selection - Only show after location is confirmed */}
           {locationConfirmed && (
-            <div className="relative pl-12">
-              <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">2</div>
+            <div className="relative pl-8 sm:pl-12">
+              <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">2</div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Choose Authentication Method</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Choose Authentication Method</h3>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button
                       onClick={() => setAuthType('anonymous')}
-                      className={`p-6 rounded-xl border-2 transition-all ${
+                      className={`p-4 sm:p-6 rounded-xl border-2 transition-all ${
                         authType === 'anonymous'
                           ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                           : 'border-gray-200 dark:border-gray-700 hover:border-primary-500'
                       }`}
                     >
-                      <div className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Anonymous</div>
+                      <div className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Anonymous</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         Start mining immediately without registration
                       </div>
                     </button>
                     <button
                       disabled
-                      className="p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
+                      className="p-4 sm:p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
                     >
-                      <div className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">UpHold</div>
+                      <div className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">UpHold</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         Coming soon - Enhanced features
                       </div>
@@ -364,10 +364,10 @@ export default function KatpoolIntro() {
 
           {/* Miner Model Selection - Only show after location and auth type are selected */}
           {locationConfirmed && authType && (
-            <div className="relative pl-12">
-              <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">3</div>
+            <div className="relative pl-8 sm:pl-12">
+              <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">3</div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Find Your Miner Model</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Find Your Miner Model</h3>
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
                   <p className="text-blue-700 dark:text-blue-300">
                     First, identify your miner model from the table below and select the appropriate port. 
@@ -375,43 +375,45 @@ export default function KatpoolIntro() {
                   </p>
                 </div>
                 
-                {/* Port Selection Table */}
+                {/* Port Selection Table - Mobile Optimized */}
                 <div className="overflow-x-auto mb-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <table className="min-w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-900/50">
-                      <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        <th className="px-4 py-3 border-b dark:border-gray-700">Port</th>
-                        <th className="px-4 py-3 border-b dark:border-gray-700">Difficulty</th>
-                        <th className="px-4 py-3 border-b dark:border-gray-700">Supported Models</th>
-                        <th className="px-4 py-3 border-b dark:border-gray-700">Hashrate Range</th>
-                        <th className="px-4 py-3 border-b dark:border-gray-700">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {POOL_PORTS.map((port) => (
-                        <tr key={port.port} className={`text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
-                          selectedPort === port.port ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-                        }`}>
-                          <td className="px-4 py-4 font-mono font-medium text-primary-600 dark:text-primary-400">{port.port}</td>
-                          <td className="px-4 py-4">{port.difficulty}</td>
-                          <td className="px-4 py-4 max-w-md">{renderManufacturers(port.manufacturers)}</td>
-                          <td className="px-4 py-4">{port.hashrate}</td>
-                          <td className="px-4 py-4">
-                            <button
-                              onClick={() => setSelectedPort(port.port)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                selectedPort === port.port
-                                  ? 'bg-primary-500 text-white hover:bg-primary-600'
-                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                              }`}
-                            >
-                              {selectedPort === port.port ? 'Selected' : 'Select'}
-                            </button>
-                          </td>
+                  <div className="min-w-[800px]">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-gray-900/50">
+                        <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Port</th>
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Difficulty</th>
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Supported Models</th>
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Hashrate Range</th>
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {POOL_PORTS.map((port) => (
+                          <tr key={port.port} className={`text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                            selectedPort === port.port ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                          }`}>
+                            <td className="px-3 sm:px-4 py-4 font-mono font-medium text-primary-600 dark:text-primary-400">{port.port}</td>
+                            <td className="px-3 sm:px-4 py-4">{port.difficulty}</td>
+                            <td className="px-3 sm:px-4 py-4 max-w-[200px] sm:max-w-md">{renderManufacturers(port.manufacturers)}</td>
+                            <td className="px-3 sm:px-4 py-4">{port.hashrate}</td>
+                            <td className="px-3 sm:px-4 py-4">
+                              <button
+                                onClick={() => setSelectedPort(port.port)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                  selectedPort === port.port
+                                    ? 'bg-primary-500 text-white hover:bg-primary-600'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                              >
+                                {selectedPort === port.port ? 'Selected' : 'Select'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {selectedPort === 8888 && (
@@ -422,7 +424,7 @@ export default function KatpoolIntro() {
                         <label className="block text-sm text-blue-700 dark:text-blue-400 mb-1">
                           Enter your miner's hashrate:
                         </label>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <div className="flex-grow flex gap-2">
                             <input
                               type="text"
@@ -485,20 +487,20 @@ export default function KatpoolIntro() {
 
           {/* Step 2 - Configure Your Miner */}
           {selectedPort && selectedLocation && authType && (
-            <div className="relative pl-12">
-              <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">4</div>
+            <div className="relative pl-8 sm:pl-12">
+              <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">4</div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Configure Your Miner</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Configure Your Miner</h3>
                 
-                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 sm:p-6 space-y-4 border border-gray-200 dark:border-gray-700">
                   <div>
                     <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Pool Address</div>
-                    <div className="flex items-center">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                       <code className="flex-grow text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800 px-4 py-3 rounded-lg font-mono text-sm break-all border border-gray-200 dark:border-gray-700">
                         stratum+tcp://{selectedLocation.domain}:{selectedPort}
                       </code>
                       <button
-                        className="ml-3 px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                        className="px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2 text-base"
                         onClick={handleCopy}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -563,10 +565,10 @@ export default function KatpoolIntro() {
 
           {/* Step 3 - Start Mining */}
           {selectedPort && selectedLocation && authType && (
-            <div className="relative pl-12">
-              <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">5</div>
+            <div className="relative pl-8 sm:pl-12">
+              <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">5</div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Start Mining</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Start Mining</h3>
                 <div className="space-y-4">
                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                     <p className="text-green-700 dark:text-green-300">
@@ -581,21 +583,6 @@ export default function KatpoolIntro() {
             </div>
           )}
         </div>
-
-        {/* Video Tutorial Section - Commented out until video is ready */}
-        {/* <div className="mt-12 border-t border-gray-200 dark:border-gray-700/60 pt-8">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Video Tutorial</h3>
-          <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-900/50 rounded-lg overflow-hidden">
-            <iframe
-              className="w-full h-full"
-              src="about:blank"
-              title="Kat Pool Setup Tutorial"
-              style={{ border: 0 }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
-          </div>
-        </div> */}
       </div>
     </div>
   )
