@@ -114,7 +114,9 @@ export default function AnalyticsCard11() {
             hashrates,
           }))
           .filter(worker => {
-            return worker.hashrates.fifteenMin > 0;
+            // Filter out workers that have not shared in the last 5 minutes
+            const secondsSinceLastShare = Date.now() / 1000 - worker.lastShareTimestamp;
+            return worker.hashrates.fifteenMin > 0 && secondsSinceLastShare < 300;
           })
 
         setWorkers(processedWorkers);
