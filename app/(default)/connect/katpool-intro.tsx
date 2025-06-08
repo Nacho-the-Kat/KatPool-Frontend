@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface ManufacturerModels {
   manufacturer: string
@@ -139,6 +139,22 @@ export default function KatpoolIntro() {
   const [isLoadingLocation, setIsLoadingLocation] = useState(true)
   const [locationConfirmed, setLocationConfirmed] = useState(false)
 
+  // Add refs for each step section
+  const locationStepRef = useRef<HTMLDivElement>(null)
+  const authStepRef = useRef<HTMLDivElement>(null)
+  const minerStepRef = useRef<HTMLDivElement>(null)
+  const configStepRef = useRef<HTMLDivElement>(null)
+  const startStepRef = useRef<HTMLDivElement>(null)
+
+  // Function to scroll to a ref with offset
+  const scrollToRef = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) {
+      const yOffset = -80 // Increased offset to show more of the section title
+      const y = ref.current.getBoundingClientRect().top + window.pageYOffset + yOffset
+      window.scrollTo({ top: y, behavior: 'smooth' })
+    }
+  }
+
   useEffect(() => {
     const detectLocation = async () => {
       try {
@@ -231,6 +247,30 @@ export default function KatpoolIntro() {
     )
   }
 
+  // Modify the location confirmation handler
+  const handleLocationConfirm = () => {
+    setLocationConfirmed(true)
+    setTimeout(() => {
+      scrollToRef(authStepRef)
+    }, 100)
+  }
+
+  // Modify the auth type selection handler
+  const handleAuthTypeSelect = (type: 'anonymous' | 'uphold') => {
+    setAuthType(type)
+    setTimeout(() => {
+      scrollToRef(minerStepRef)
+    }, 100)
+  }
+
+  // Modify the port selection handler
+  const handlePortSelect = (port: number) => {
+    setSelectedPort(port)
+    setTimeout(() => {
+      scrollToRef(configStepRef)
+    }, 100)
+  }
+
   return (
     <div className="col-span-10 col-start-2 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
       <div className="px-4 sm:px-8 py-6">
@@ -252,7 +292,7 @@ export default function KatpoolIntro() {
         {/* Instructions Section */}
         <div className="mt-8 space-y-8">
           {/* Location Selection Step */}
-          <div className="relative pl-8 sm:pl-12">
+          <div ref={locationStepRef} className="relative pl-8 sm:pl-12">
             <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">1</div>
             <div>
               <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Select Mining Location</h3>
@@ -296,7 +336,7 @@ export default function KatpoolIntro() {
                         </select>
                       </div>
                       <button
-                        onClick={() => setLocationConfirmed(true)}
+                        onClick={handleLocationConfirm}
                         className="w-full px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium text-base"
                       >
                         Confirm Location
@@ -328,14 +368,14 @@ export default function KatpoolIntro() {
 
           {/* Authentication Type Selection - Only show after location is confirmed */}
           {locationConfirmed && (
-            <div className="relative pl-8 sm:pl-12">
+            <div ref={authStepRef} className="relative pl-8 sm:pl-12">
               <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">2</div>
               <div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Choose Authentication Method</h3>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button
-                      onClick={() => setAuthType('anonymous')}
+                      onClick={() => handleAuthTypeSelect('anonymous')}
                       className={`p-4 sm:p-6 rounded-xl border-2 transition-all ${
                         authType === 'anonymous'
                           ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
@@ -364,7 +404,7 @@ export default function KatpoolIntro() {
 
           {/* Miner Model Selection - Only show after location and auth type are selected */}
           {locationConfirmed && authType && (
-            <div className="relative pl-8 sm:pl-12">
+            <div ref={minerStepRef} className="relative pl-8 sm:pl-12">
               <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">3</div>
               <div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Find Your Miner Model</h3>
@@ -399,7 +439,7 @@ export default function KatpoolIntro() {
                             <td className="px-3 sm:px-4 py-4">{port.hashrate}</td>
                             <td className="px-3 sm:px-4 py-4">
                               <button
-                                onClick={() => setSelectedPort(port.port)}
+                                onClick={() => handlePortSelect(port.port)}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                                   selectedPort === port.port
                                     ? 'bg-primary-500 text-white hover:bg-primary-600'
@@ -487,7 +527,7 @@ export default function KatpoolIntro() {
 
           {/* Step 2 - Configure Your Miner */}
           {selectedPort && selectedLocation && authType && (
-            <div className="relative pl-8 sm:pl-12">
+            <div ref={configStepRef} className="relative pl-8 sm:pl-12">
               <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">4</div>
               <div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Configure Your Miner</h3>
@@ -565,7 +605,7 @@ export default function KatpoolIntro() {
 
           {/* Step 3 - Start Mining */}
           {selectedPort && selectedLocation && authType && (
-            <div className="relative pl-8 sm:pl-12">
+            <div ref={startStepRef} className="relative pl-8 sm:pl-12">
               <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">5</div>
               <div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Start Mining</h3>
