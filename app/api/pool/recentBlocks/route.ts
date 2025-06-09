@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     const requestId = headersList.get('x-request-id');
     
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
-    console.log('baseUrl', baseUrl);
+
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const perPage = searchParams.get('perPage') || '10';
