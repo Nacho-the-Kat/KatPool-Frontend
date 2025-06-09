@@ -110,7 +110,7 @@ export default function KaspaHashrateOverTime() {
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Network Hashrate over time</h2>
           <TimeRangeMenu align="right" currentRange={timeRange} onRangeChange={handleRangeChange} />
         </header>
-        <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">Current Network Hashrate</div>
+        <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">Average Network Hashrate Over Time</div>
         <div className="flex items-start">
           {isLoading ? (
             <div className="h-8 w-28 bg-gray-100 dark:bg-gray-700/50 animate-pulse rounded"></div>

@@ -1,23 +1,25 @@
 import { NextResponse } from 'next/server';
+import logger from '../../../../lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 10;
 
 interface TimeRange {
   days: number;
+  resolution: string;
 }
 
 const TIME_RANGES: Record<string, TimeRange> = {
-  '7d': { days: 7 },
-  '30d': { days: 30 },
-  '90d': { days: 90 },
-  '180d': { days: 180 },
-  '365d': { days: 365 }
+  '7d': { days: 7, resolution: '1d' },
+  '30d': { days: 30, resolution: '1d' },
+  '90d': { days: 90, resolution: '1d' },
+  '180d': { days: 180, resolution: '1d' },
+  '365d': { days: 365, resolution: '1d' }
 };
 
 interface HashrateData {
-  timestamp: string;
-  median_hashrate: number;
+  timestamp: number;
+  hashrate_kh: number;
 }
 
 export async function GET(request: Request) {
@@ -29,28 +31,27 @@ export async function GET(request: Request) {
       throw new Error('Invalid time range');
     }
 
-    const { days } = TIME_RANGES[range];
-    const end = Math.floor(Date.now() / 1000);
-    const start = end - (days * 24 * 60 * 60);
+    const { days, resolution } = TIME_RANGES[range];
+    const end = Date.now();
+    const start = end - (days * 24 * 60 * 60 * 1000);
 
-    const url = new URL('http://kas.katpool.xyz:8080/hashrate/');
+    const url = new URL('https://api.kaspa.org/info/hashrate/history');
+    url.searchParams.append('resolution', resolution);
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.error('Pool API error:', {
+      logger.error('Kaspa API error:', {
         status: response.status,
         url: url.toString()
       });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const responseData = await response.json();
-    const data: HashrateData[] = responseData.data;
+    const data: HashrateData[] = await response.json();
     
     // Filter data based on the requested time range
     const filteredData = data.filter((item: HashrateData) => {
-      const timestamp = parseInt(item.timestamp);
-      return timestamp >= start && timestamp <= end;
+      return item.timestamp >= start && item.timestamp <= end;
     });
 
     // Convert the data to the expected format
@@ -59,8 +60,8 @@ export async function GET(request: Request) {
         __name__: 'network_hash_rate_GHps'
       },
       values: filteredData.map((item: HashrateData) => [
-        item.timestamp,
-        (item.median_hashrate / 1e9).toString() // Convert to GH/s
+        (item.timestamp / 1000).toString(), // Convert to seconds
+        (item.hashrate_kh / 1e6).toString() // Convert from KH/s to GH/s
       ])
     }];
 
@@ -73,7 +74,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Error fetching hashrate history:', error);
+    logger.error('Error fetching hashrate history:', { error });
     return NextResponse.json(
       { status: 'error', message: error instanceof Error ? error.message : 'Failed to fetch hashrate history' },
       { status: 500 }
