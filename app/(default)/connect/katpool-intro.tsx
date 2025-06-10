@@ -307,7 +307,7 @@ export default function KatpoolIntro() {
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                           {userLocation ? (
                             <>
-                              We've detected you're in {userLocation.userCity}, {userLocation.userCountry} and you're closest to {userLocation.city}, {userLocation.country}. You can change this if needed.
+                              We've detected you're in {userLocation.userCity}, {userLocation.userCountry} and you're closest to {userLocation.city}, {userLocation.country}. You can change this if needed. Please choose the location closest to your ASIC miners, not you.
                             </>
                           ) : (
                             'Please select your preferred mining location.'
