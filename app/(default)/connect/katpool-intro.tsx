@@ -391,7 +391,7 @@ export default function KatpoolIntro() {
                       disabled
                       className="p-4 sm:p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
                     >
-                      <div className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">UpHold</div>
+                      <div className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Any Asset Payouts</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         Coming soon - Enhanced features
                       </div>
