@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface ManufacturerModels {
   manufacturer: string
@@ -13,6 +13,17 @@ interface PortConfig {
   difficulty: number | 'Variable'
   manufacturers: ManufacturerModels[]
   hashrate: string
+}
+
+interface Location {
+  name: string
+  domain: string
+  city: string
+  country: string
+  latitude: number
+  longitude: number
+  userCity?: string
+  userCountry?: string
 }
 
 const POOL_PORTS: PortConfig[] = [
@@ -86,6 +97,29 @@ const POOL_PORTS: PortConfig[] = [
   }
 ]
 
+const LOCATIONS: Location[] = [
+  { name: 'North America West', domain: 'na-west.katpool.xyz', city: 'San Francisco', country: 'USA', latitude: 37.7749, longitude: -122.4194 },
+  { name: 'North America East', domain: 'na-east.katpool.xyz', city: 'New York City', country: 'USA', latitude: 40.7128, longitude: -74.0060 },
+  { name: 'Europe', domain: 'eu.katpool.xyz', city: 'Frankfurt', country: 'Germany', latitude: 50.1109, longitude: 8.6821 },
+  { name: 'Asia', domain: 'ap.katpool.xyz', city: 'Singapore', country: 'Singapore', latitude: 1.3521, longitude: 103.8198 },
+  { name: 'Oceania', domain: 'au.katpool.xyz', city: 'Sydney', country: 'Australia', latitude: -33.8688, longitude: 151.2093 },
+  { name: 'South America', domain: 'sa.katpool.xyz', city: 'São Paulo', country: 'Brazil', latitude: -23.5505, longitude: -46.6333 },
+  { name: 'China', domain: 'hkg.katpool.xyz', city: 'Hong Kong', country: 'China', latitude: 22.3193, longitude: 114.1694 }
+]
+
+// Function to calculate distance between two points using Haversine formula
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 const getDifficultyRecommendation = (hashrate: number, unit: 'GH/s' | 'TH/s'): string => {
   // Convert everything to GH/s for calculation
   const hashRateInGH = unit === 'TH/s' ? hashrate * 1000 : hashrate
@@ -99,11 +133,83 @@ export default function KatpoolIntro() {
   const [hashrateValue, setHashrateValue] = useState('')
   const [hashrateUnit, setHashrateUnit] = useState<'GH/s' | 'TH/s'>('TH/s')
   const [showCustomDifficulty, setShowCustomDifficulty] = useState(false)
+  const [userLocation, setUserLocation] = useState<Location | null>(null)
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
+  const [authType, setAuthType] = useState<'anonymous' | 'uphold' | null>(null)
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true)
+  const [locationConfirmed, setLocationConfirmed] = useState(false)
+
+  // Add refs for each step section
+  const locationStepRef = useRef<HTMLDivElement>(null)
+  const authStepRef = useRef<HTMLDivElement>(null)
+  const minerStepRef = useRef<HTMLDivElement>(null)
+  const configStepRef = useRef<HTMLDivElement>(null)
+  const startStepRef = useRef<HTMLDivElement>(null)
+
+  // Function to scroll to a ref with offset
+  const scrollToRef = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) {
+      const yOffset = -80 // Increased offset to show more of the section title
+      const y = ref.current.getBoundingClientRect().top + window.pageYOffset + yOffset
+      window.scrollTo({ top: y, behavior: 'smooth' })
+    }
+  }
+
+  useEffect(() => {
+    const detectLocation = async () => {
+      try {
+        const response = await fetch('https://ipinfo.io/json')
+        const data = await response.json()
+        
+        if (data.loc) {
+          const [lat, lon] = data.loc.split(',').map(Number)
+          
+          // Find closest location based on coordinates
+          let closestLocation = LOCATIONS[0]
+          let minDistance = Infinity
+          
+          for (const location of LOCATIONS) {
+            const distance = calculateDistance(
+              lat,
+              lon,
+              location.latitude,
+              location.longitude
+            )
+            
+            if (distance < minDistance) {
+              minDistance = distance
+              closestLocation = location
+            }
+          }
+
+          // Store both user's location and closest server
+          setUserLocation({
+            ...closestLocation,
+            userCity: data.city,
+            userCountry: data.country
+          })
+          setSelectedLocation(closestLocation)
+        } else {
+          // Fallback if location data is not available
+          setUserLocation(LOCATIONS[0])
+          setSelectedLocation(LOCATIONS[0])
+        }
+      } catch (error) {
+        console.error('Error detecting location:', error)
+        setUserLocation(LOCATIONS[0])
+        setSelectedLocation(LOCATIONS[0])
+      } finally {
+        setIsLoadingLocation(false)
+      }
+    }
+
+    detectLocation()
+  }, [])
 
   const handleCopy = async () => {
-    if (!selectedPort) return
+    if (!selectedPort || !selectedLocation) return
     try {
-      await navigator.clipboard.writeText(`stratum+tcp://kas.katpool.xyz:${selectedPort}`)
+      await navigator.clipboard.writeText(`stratum+tcp://${selectedLocation.domain}:${selectedPort}`)
       setCopySuccess(true)
       setTimeout(() => setCopySuccess(false), 2000)
     } catch (err) {
@@ -141,138 +247,118 @@ export default function KatpoolIntro() {
     )
   }
 
+  // Modify the location confirmation handler
+  const handleLocationConfirm = () => {
+    setLocationConfirmed(true)
+    setTimeout(() => {
+      scrollToRef(authStepRef)
+    }, 100)
+  }
+
+  // Modify the auth type selection handler
+  const handleAuthTypeSelect = (type: 'anonymous' | 'uphold') => {
+    setAuthType(type)
+    setTimeout(() => {
+      scrollToRef(minerStepRef)
+    }, 100)
+  }
+
+  // Modify the port selection handler
+  const handlePortSelect = (port: number) => {
+    setSelectedPort(port)
+    setTimeout(() => {
+      scrollToRef(configStepRef)
+    }, 100)
+  }
+
   return (
     <div className="col-span-10 col-start-2 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
-      <div className="px-8 py-6">
+      <div className="px-4 sm:px-8 py-6">
         {/* Header Section */}
         <div className="border-b border-gray-200 dark:border-gray-700/60 pb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+            <div className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
               👋 Welcome to Kat Pool!
             </div>
-            <div className="px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-sm font-medium rounded-full">
+            <div className="px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-sm font-medium rounded-full w-fit">
               Easy Setup Guide
             </div>
           </div>
-          <div className="text-lg text-gray-600 dark:text-gray-400">
+          <div className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
             Follow this simple guide to start mining with Kat Pool. We'll help you every step of the way!
           </div>
         </div>
 
         {/* Instructions Section */}
         <div className="mt-8 space-y-8">
-          {/* Step 1 */}
-          <div className="relative pl-12">
-            <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">1</div>
+          {/* Location Selection Step */}
+          <div ref={locationStepRef} className="relative pl-8 sm:pl-12">
+            <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">1</div>
             <div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Find Your Miner Model</h3>
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-                <p className="text-blue-700 dark:text-blue-300">
-                  First, identify your miner model from the table below and select the appropriate port. 
-                  {!selectedPort && " You must select a port to proceed with the setup."}
-                </p>
-              </div>
-              
-              {/* Port Selection Table */}
-              <div className="overflow-x-auto mb-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-900/50">
-                    <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      <th className="px-4 py-3 border-b dark:border-gray-700">Port</th>
-                      <th className="px-4 py-3 border-b dark:border-gray-700">Difficulty</th>
-                      <th className="px-4 py-3 border-b dark:border-gray-700">Supported Models</th>
-                      <th className="px-4 py-3 border-b dark:border-gray-700">Hashrate Range</th>
-                      <th className="px-4 py-3 border-b dark:border-gray-700">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {POOL_PORTS.map((port) => (
-                      <tr key={port.port} className={`text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
-                        selectedPort === port.port ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-                      }`}>
-                        <td className="px-4 py-4 font-mono font-medium text-primary-600 dark:text-primary-400">{port.port}</td>
-                        <td className="px-4 py-4">{port.difficulty}</td>
-                        <td className="px-4 py-4 max-w-md">{renderManufacturers(port.manufacturers)}</td>
-                        <td className="px-4 py-4">{port.hashrate}</td>
-                        <td className="px-4 py-4">
-                          <button
-                            onClick={() => setSelectedPort(port.port)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              selectedPort === port.port
-                                ? 'bg-primary-500 text-white hover:bg-primary-600'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                          >
-                            {selectedPort === port.port ? 'Selected' : 'Select'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {selectedPort === 8888 && (
-                <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <div className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Custom Difficulty Calculator</div>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm text-blue-700 dark:text-blue-400 mb-1">
-                        Enter your miner's hashrate:
-                      </label>
-                      <div className="flex gap-2">
-                        <div className="flex-grow flex gap-2">
-                          <input
-                            type="text"
-                            value={hashrateValue}
-                            onChange={(e) => handleHashrateChange(e.target.value)}
-                            placeholder="Enter number..."
-                            className="flex-grow px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100 placeholder-blue-400 dark:placeholder-blue-600 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          />
-                          <select
-                            value={hashrateUnit}
-                            onChange={(e) => setHashrateUnit(e.target.value as 'GH/s' | 'TH/s')}
-                            className="px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          >
-                            <option value="GH/s">GH/s</option>
-                            <option value="TH/s">TH/s</option>
-                          </select>
-                        </div>
-                        <button
-                          onClick={() => setShowCustomDifficulty(true)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            isValidHashrate
-                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                              : 'bg-blue-100 text-blue-400 cursor-not-allowed'
-                          }`}
-                          disabled={!isValidHashrate}
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Select Mining Location</h3>
+              {isLoadingLocation ? (
+                <div className="text-gray-600 dark:text-gray-400">Detecting your location...</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+                      <div>
+                        <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Select Location</div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          {userLocation ? (
+                            <>
+                              We've detected you're in {userLocation.userCity}, {userLocation.userCountry} and you're closest to {userLocation.city}, {userLocation.country}. You can change this if needed. Please choose the location closest to your ASIC miners, not you.
+                            </>
+                          ) : (
+                            'Please select your preferred mining location.'
+                          )}
+                        </p>
+                        <select
+                          value={selectedLocation?.domain || ''}
+                          onChange={(e) => {
+                            const location = LOCATIONS.find(loc => loc.domain === e.target.value)
+                            if (location) {
+                              setSelectedLocation(location)
+                              setLocationConfirmed(false)
+                              setAuthType(null)
+                              setSelectedPort(null)
+                              setHashrateValue('')
+                              setShowCustomDifficulty(false)
+                            }
+                          }}
+                          className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-base"
                         >
-                          Calculate
-                        </button>
+                          {LOCATIONS.map((location) => (
+                            <option key={location.domain} value={location.domain}>
+                              {location.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                      {hashrateValue !== '' && !isValidHashrate && (
-                        <p className="mt-1 text-xs text-red-500">Please enter a valid number greater than 0</p>
-                      )}
+                      <button
+                        onClick={handleLocationConfirm}
+                        className="w-full px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium text-base"
+                      >
+                        Confirm Location
+                      </button>
                     </div>
-                    
-                    {showCustomDifficulty && isValidHashrate && (
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                        <div className="text-sm text-blue-800 dark:text-blue-300 space-y-2">
-                          <p>For your hashrate of <strong>{hashrateValue} {hashrateUnit}</strong>:</p>
-                          <p>Recommended difficulty: <strong>{recommendedDifficulty}</strong></p>
-                          <p>To use this difficulty, set your password to: <code className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">d={recommendedDifficulty}</code></p>
+
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+                      <div>
+                        <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Why Choose Your Location?</div>
+                        <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+                          <p>Selecting the right mining location is crucial for optimal performance:</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li><strong>Lower Latency:</strong> Mining closer to your physical location reduces network delay, leading to more efficient mining operations</li>
+                            <li><strong>Better Stability:</strong> Reduced network distance means fewer connection issues and more consistent mining</li>
+                            <li><strong>Higher Profitability:</strong> Lower latency can result in more shares being accepted, potentially increasing your mining rewards</li>
+                            <li><strong>Network Reliability:</strong> Each region has optimized infrastructure to ensure stable mining operations</li>
+                          </ul>
+                          <p className="mt-3 text-gray-500 dark:text-gray-500">
+                            We've automatically detected your location for the best possible mining experience, but you can change it if needed.
+                          </p>
                         </div>
                       </div>
-                    )}
-
-                    <div className="text-sm text-blue-700 dark:text-blue-400">
-                      <p className="font-semibold mb-1">How to choose your difficulty:</p>
-                      <ul className="list-disc pl-5 space-y-1">
-                        <li>Higher difficulty = fewer shares but larger rewards per share</li>
-                        <li>Lower difficulty = more shares but smaller rewards per share</li>
-                        <li>Recommended: Set difficulty to ~4x your hashrate in GH/s</li>
-                        <li>Example: For 1 TH/s (1000 GH/s), use difficulty ≈ 4096</li>
-                      </ul>
                     </div>
                   </div>
                 </div>
@@ -280,22 +366,181 @@ export default function KatpoolIntro() {
             </div>
           </div>
 
-          {/* Step 2 */}
-          {selectedPort && (
-            <div className="relative pl-12">
-              <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">2</div>
+          {/* Authentication Type Selection - Only show after location is confirmed */}
+          {locationConfirmed && (
+            <div ref={authStepRef} className="relative pl-8 sm:pl-12">
+              <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">2</div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Configure Your Miner</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Choose Authentication Method</h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button
+                      onClick={() => handleAuthTypeSelect('anonymous')}
+                      className={`p-4 sm:p-6 rounded-xl border-2 transition-all ${
+                        authType === 'anonymous'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-primary-500'
+                      }`}
+                    >
+                      <div className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Anonymous</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Start mining immediately without registration
+                      </div>
+                    </button>
+                    <button
+                      disabled
+                      className="p-4 sm:p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
+                    >
+                      <div className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Any Asset Payouts</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Coming soon - Enhanced features
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Miner Model Selection - Only show after location and auth type are selected */}
+          {locationConfirmed && authType && (
+            <div ref={minerStepRef} className="relative pl-8 sm:pl-12">
+              <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">3</div>
+              <div>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Find Your Miner Model</h3>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                  <p className="text-blue-700 dark:text-blue-300">
+                    First, identify your miner model from the table below and select the appropriate port. 
+                    {!selectedPort && " You must select a port to proceed with the setup."}
+                  </p>
+                </div>
                 
-                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+                {/* Port Selection Table - Mobile Optimized */}
+                <div className="overflow-x-auto mb-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <div className="min-w-[800px]">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-gray-900/50">
+                        <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Port</th>
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Difficulty</th>
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Supported Models</th>
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Hashrate Range</th>
+                          <th className="px-3 sm:px-4 py-3 border-b dark:border-gray-700">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {POOL_PORTS.map((port) => (
+                          <tr key={port.port} className={`text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                            selectedPort === port.port ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                          }`}>
+                            <td className="px-3 sm:px-4 py-4 font-mono font-medium text-primary-600 dark:text-primary-400">{port.port}</td>
+                            <td className="px-3 sm:px-4 py-4">{port.difficulty}</td>
+                            <td className="px-3 sm:px-4 py-4 max-w-[200px] sm:max-w-md">{renderManufacturers(port.manufacturers)}</td>
+                            <td className="px-3 sm:px-4 py-4">{port.hashrate}</td>
+                            <td className="px-3 sm:px-4 py-4">
+                              <button
+                                onClick={() => handlePortSelect(port.port)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                  selectedPort === port.port
+                                    ? 'bg-primary-500 text-white hover:bg-primary-600'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                              >
+                                {selectedPort === port.port ? 'Selected' : 'Select'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {selectedPort === 8888 && (
+                  <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Custom Difficulty Calculator</div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm text-blue-700 dark:text-blue-400 mb-1">
+                          Enter your miner's hashrate:
+                        </label>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="flex-grow flex gap-2">
+                            <input
+                              type="text"
+                              value={hashrateValue}
+                              onChange={(e) => handleHashrateChange(e.target.value)}
+                              placeholder="Enter number..."
+                              className="flex-grow px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100 placeholder-blue-400 dark:placeholder-blue-600 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                            <select
+                              value={hashrateUnit}
+                              onChange={(e) => setHashrateUnit(e.target.value as 'GH/s' | 'TH/s')}
+                              className="px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            >
+                              <option value="GH/s">GH/s</option>
+                              <option value="TH/s">TH/s</option>
+                            </select>
+                          </div>
+                          <button
+                            onClick={() => setShowCustomDifficulty(true)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              isValidHashrate
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                : 'bg-blue-100 text-blue-400 cursor-not-allowed'
+                            }`}
+                            disabled={!isValidHashrate}
+                          >
+                            Calculate
+                          </button>
+                        </div>
+                        {hashrateValue !== '' && !isValidHashrate && (
+                          <p className="mt-1 text-xs text-red-500">Please enter a valid number greater than 0</p>
+                        )}
+                      </div>
+                      
+                      {showCustomDifficulty && isValidHashrate && (
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                          <div className="text-sm text-blue-800 dark:text-blue-300 space-y-2">
+                            <p>For your hashrate of <strong>{hashrateValue} {hashrateUnit}</strong>:</p>
+                            <p>Recommended difficulty: <strong>{recommendedDifficulty}</strong></p>
+                            <p>To use this difficulty, set your password to: <code className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">d={recommendedDifficulty}</code></p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="text-sm text-blue-700 dark:text-blue-400">
+                        <p className="font-semibold mb-1">How to choose your difficulty:</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                          <li>Higher difficulty = fewer shares but larger rewards per share</li>
+                          <li>Lower difficulty = more shares but smaller rewards per share</li>
+                          <li>Recommended: Set difficulty to ~4x your hashrate in GH/s</li>
+                          <li>Example: For 1 TH/s (1000 GH/s), use difficulty ≈ 4096</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2 - Configure Your Miner */}
+          {selectedPort && selectedLocation && authType && (
+            <div ref={configStepRef} className="relative pl-8 sm:pl-12">
+              <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">4</div>
+              <div>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Configure Your Miner</h3>
+                
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 sm:p-6 space-y-4 border border-gray-200 dark:border-gray-700">
                   <div>
                     <div className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Pool Address</div>
-                    <div className="flex items-center">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                       <code className="flex-grow text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800 px-4 py-3 rounded-lg font-mono text-sm break-all border border-gray-200 dark:border-gray-700">
-                        stratum+tcp://kas.katpool.xyz:{selectedPort}
+                        stratum+tcp://{selectedLocation.domain}:{selectedPort}
                       </code>
                       <button
-                        className="ml-3 px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                        className="px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2 text-base"
                         onClick={handleCopy}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -358,12 +603,12 @@ export default function KatpoolIntro() {
             </div>
           )}
 
-          {/* Step 3 */}
-          {selectedPort && (
-            <div className="relative pl-12">
-              <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-lg">3</div>
+          {/* Step 3 - Start Mining */}
+          {selectedPort && selectedLocation && authType && (
+            <div ref={startStepRef} className="relative pl-8 sm:pl-12">
+              <div className="absolute left-0 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-base sm:text-lg">5</div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Start Mining</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Start Mining</h3>
                 <div className="space-y-4">
                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                     <p className="text-green-700 dark:text-green-300">
