@@ -34,6 +34,7 @@ interface WorkerData {
   minerId: string;
   lastShareTimestamp: number;
   hashrates: {
+    fiveMin: number;
     fifteenMin: number;
     oneHour: number;
     twelveHour: number;
@@ -84,7 +85,8 @@ export default function AnalyticsCard11() {
         ]);
 
         // Process hashrate data
-        const hashrateMap = new Map<string, { 
+        const hashrateMap = new Map<string, {
+          fiveMin: number;
           fifteenMin: number;
           oneHour: number;
           twelveHour: number;
@@ -113,8 +115,10 @@ export default function AnalyticsCard11() {
             lastShareTimestamp: timestampMap.get(minerId) || Date.now() / 1000,
             hashrates,
           }))
-          .filter(worker => {
-            return worker.hashrates.fifteenMin > 0;
+           .filter(worker => {
+            // Filter out workers that have not shared in the last 5 minutes
+            const secondsSinceLastShare = Date.now() / 1000 - worker.lastShareTimestamp;
+            return worker.hashrates.fiveMin > 0 && secondsSinceLastShare < 300;
           })
 
         setWorkers(processedWorkers);
@@ -194,7 +198,10 @@ export default function AnalyticsCard11() {
       )}
 
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100">Worker Details</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Worker Details</h2>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Data is updated every 5 minutes. New miners may be delayed slightly.</span>
+        </div>
       </header>
       <div className="p-3">
         {isLoading ? (

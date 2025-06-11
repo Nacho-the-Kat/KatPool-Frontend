@@ -10,7 +10,7 @@ export async function GET() {
     const start = end - (5 * 60); // Last 5 minutes
     const step = 60; // 1-minute intervals
 
-    const url = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const url = new URL(`http://kas.katpool.xyz:8080/api/v1/query_range`);
     url.searchParams.append('query', 'pool_hash_rate_GHps');
     url.searchParams.append('start', start.toString());
     url.searchParams.append('end', end.toString());
