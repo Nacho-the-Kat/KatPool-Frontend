@@ -7,7 +7,7 @@ const cacheStore: { [key: string]: { data: any; expires: number } } = {};
 const CACHE_TTL = 60 * 1000 * 10 - 10000; // 9 minute 50 sec in milliseconds
 
 interface KasPayment {
-  wallet_address: string[];
+  wallet_address: string;
   amount: string;
   timestamp: string;
   transaction_hash: string;
@@ -100,7 +100,7 @@ export async function GET() {
 
     // Process KAS rewards (no need to filter by 48h, endpoint already does it)
     kasData.forEach((payout: KasPayment) => {
-      const wallet = payout.wallet_address[0];
+      const wallet = payout.wallet_address;
       const amount = Number(BigInt(payout.amount)) / 1e8;
       rewardsMap.set(wallet, (rewardsMap.get(wallet) || 0) + amount);
     });
