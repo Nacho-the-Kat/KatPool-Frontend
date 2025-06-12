@@ -85,7 +85,7 @@ export async function GET(request: Request) {
       data: allPayments
     });
   } catch (error) {
-    logger.error('Error fetching pool payouts:', { error, traceId });
+    logger.error('Error fetching pool payouts:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch pool payouts' },
       { status: 500 }

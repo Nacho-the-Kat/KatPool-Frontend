@@ -77,7 +77,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    logger.error('Error fetching NACHO price:', { error, traceId });
+    logger.error('Error fetching NACHO price:', { error: error instanceof Error ? error.message : String(error), traceId });
     
     // Return a more specific error message
     const errorMessage = error instanceof Error ? 

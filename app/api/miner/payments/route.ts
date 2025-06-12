@@ -100,7 +100,7 @@ export async function GET(request: Request) {
       data: allPayments
     });
   } catch (error) {
-    logger.error('Error fetching payments:', { error, traceId });
+    logger.error('Error fetching payments:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch payments' },
       { status: 500 }

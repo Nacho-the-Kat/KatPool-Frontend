@@ -36,7 +36,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    logger.error('Error fetching 24h average hashrate:', { error, traceId })
+    logger.error('Error fetching 24h average hashrate:', { error: error instanceof Error ? error.message : String(error), traceId })
     return NextResponse.json(
       { status: 'error', message: 'Internal server error' },
       { status: 500 }

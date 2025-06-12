@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       }
     })
   } catch (error) {
-    logger.error('Error fetching NACHO balance:', { error, traceId })
+    logger.error('Error fetching NACHO balance:', { error: error instanceof Error ? error.message : String(error), traceId })
     return NextResponse.json({
       status: 'success',
       data: {

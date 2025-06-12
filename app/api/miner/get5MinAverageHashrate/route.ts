@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       data: average
     });
   } catch (error) {
-    logger.error('Error fetching miner get5MinAverageHashrate:', { error, traceId });
+    logger.error('Error fetching miner get5MinAverageHashrate:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner get5MinAverageHashrate' },
       { status: 500 }

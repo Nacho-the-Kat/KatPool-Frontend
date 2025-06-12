@@ -65,7 +65,7 @@ export async function GET() {
     // If upstream API returns an error status, maintain that error
     return NextResponse.json(data);
   } catch (error) {
-    logger.error('Error proxying pool hashrate:', { error, traceId });
+    logger.error('Error proxying pool hashrate:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: 'Failed to fetch pool hashrate' },
       { status: 500 }

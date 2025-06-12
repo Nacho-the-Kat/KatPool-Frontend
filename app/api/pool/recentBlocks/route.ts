@@ -91,7 +91,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    logger.error('Error fetching recent blocks:', { error, traceId });
+    logger.error('Error fetching recent blocks:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch recent blocks' },
       { status: 500 }

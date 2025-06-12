@@ -82,7 +82,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error) {
-    logger.error('Error fetching combined balance:', { error, traceId });
+    logger.error('Error fetching combined balance:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch balances' },
       { status: 500 }

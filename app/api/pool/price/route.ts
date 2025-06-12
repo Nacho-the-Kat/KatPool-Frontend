@@ -33,7 +33,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    logger.error('Error fetching Kaspa price:', { error, traceId });
+    logger.error('Error fetching Kaspa price:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch Kaspa price' },
       { status: 500 }
