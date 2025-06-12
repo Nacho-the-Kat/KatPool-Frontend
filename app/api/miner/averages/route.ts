@@ -6,7 +6,6 @@ export const runtime = 'edge';
 export const revalidate = 10;
 
 function calculateAverages(values: [number, string][]) {
-  console.log(1/0);
   const now = Date.now() / 1000; // current time in seconds
 
   const intervals = {
