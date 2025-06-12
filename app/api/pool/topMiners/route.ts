@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 // In-memory cache object
@@ -30,10 +31,9 @@ interface MinerData {
 }
 
 export async function GET() {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || 'unknown';
   try {
-    const headersList = headers();
-    const requestId = headersList.get('x-request-id');
-
     // Check cache first
     const now = Date.now();
     const cached = cacheStore['topMiners'];
@@ -62,12 +62,12 @@ export async function GET() {
     const [hashrateResponse, kasResponse] = await Promise.all([
       fetch(hashrateUrl, {
         headers: {
-          'x-request-id': requestId || '',
+          'x-trace-id': traceId,
         },
       }),
       fetch(`${baseUrl}/api/pool/48hKASpayouts`, {
         headers: {
-          'x-request-id': requestId || '',
+          'x-trace-id': traceId,
         },
       })
     ]);
@@ -92,7 +92,7 @@ export async function GET() {
     // NACHO payments grouped by wallet for last 48 hours
     const rebatesMap = await fetch(`${baseUrl}/api/pool/48hNACHOPayouts`, {
       headers: {
-        'x-request-id': requestId || '',
+        'x-trace-id': traceId,
       },
     }).then(res => res.json());
     // Also need to restore KAS rewards processing
@@ -161,7 +161,7 @@ export async function GET() {
       data: minerData
     });
   } catch (error) {
-    console.error('Error fetching top miners:', error);
+    logger.error('Error fetching top miners:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch top miners' },
       { status: 500 }

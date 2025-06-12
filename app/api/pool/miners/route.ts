@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+import logger from '@/lib/utils/logger'
 
 export const runtime = 'edge';
 export const revalidate = 10;
 
 export async function GET() {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || 'unknown';
+
   try {
     // Get data for the last hour to determine truly active miners
     const end = Math.floor(Date.now() / 1000);
@@ -46,7 +51,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Error fetching active miners:', error);
+    logger.error('Error fetching active miners:', { error, traceId });
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch active miners' },
       { status: 500 }

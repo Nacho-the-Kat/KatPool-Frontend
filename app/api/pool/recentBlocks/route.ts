@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
+import logger from '@/lib/utils/logger'
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -26,9 +27,9 @@ interface Block {
 }
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || 'unknown';
   try {
-    const headersList = headers();
-    const requestId = headersList.get('x-request-id');
     
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
 
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
       `${baseUrl}/api/pool/blockdetails?currentPage=${page}&perPage=${perPage}`,
       {
         headers: {
-          'x-request-id': requestId || '',
+          'x-trace-id': traceId,
         },
       }
     );
@@ -90,7 +91,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Error fetching recent blocks:', error);
+    logger.error('Error fetching recent blocks:', { error, traceId });
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch recent blocks' },
       { status: 500 }

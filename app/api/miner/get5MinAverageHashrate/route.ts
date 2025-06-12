@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 10;
 
 // TODO: this logic is relative copy of averages route, should be refactored
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || 'unknown';
+
   try {
     const { searchParams } = new URL(request.url);
     const wallet = searchParams.get('wallet');
@@ -21,8 +25,6 @@ export async function GET(request: Request) {
     const start = end - 5 * 60; // Last 5 minutes
     const step = 15; // 15-second intervals
 
-    const headersList = headers();
-    const requestId = headersList.get('x-request-id');
     const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
     const url = new URL(`${baseUrl}/api/v1/query_range`);
     url.searchParams.append(
@@ -35,7 +37,7 @@ export async function GET(request: Request) {
 
     const response = await fetch(url, {
       headers: {
-        'x-request-id': requestId || '',
+        'x-trace-id': traceId || '',
       },
     });
     const data = await response.json();
@@ -57,7 +59,7 @@ export async function GET(request: Request) {
       data: average
     });
   } catch (error) {
-    console.error('Error fetching miner get5MinAverageHashrate:', error);
+    logger.error('Error fetching miner get5MinAverageHashrate:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner get5MinAverageHashrate' },
       { status: 500 }

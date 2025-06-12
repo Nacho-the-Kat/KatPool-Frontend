@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -18,6 +20,9 @@ const TIME_RANGES: Record<string, TimeRange> = {
 };
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || '7d';
@@ -51,11 +56,12 @@ export async function GET(request: Request) {
     ]);
 
     if (!recentResponse.ok || !historicalResponse.ok) {
-      console.error('Pool API error:', {
+      logger.error('Pool API error:', {
         recentStatus: recentResponse.status,
         historicalStatus: historicalResponse.status,
         recentUrl: recentUrl.toString(),
-        historicalUrl: historicalUrl.toString()
+        historicalUrl: historicalUrl.toString(),
+        traceId
       });
       throw new Error(`HTTP error! status: ${recentResponse.status} / ${historicalResponse.status}`);
     }
@@ -86,7 +92,7 @@ export async function GET(request: Request) {
       error: 'Failed to fetch pool hashrate history'
     });
   } catch (error) {
-    console.error('Error proxying pool hashrate history:', error);
+    logger.error('Error proxying pool hashrate history:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch pool hashrate history' },
       { status: 500 }

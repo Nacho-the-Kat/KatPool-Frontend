@@ -8,11 +8,11 @@ export async function middleware(request: NextRequest) {
   const url = request.url
   const method = request.method
   const path = request.nextUrl.pathname
-  const requestId = uuidv4()
+  const traceId = uuidv4()
   
-  // Set requestId in request headers
+  // Set traceId in request headers
   const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-request-id', requestId)
+  requestHeaders.set('x-trace-id', traceId)
   
   // Log request
   logger.info(`request : ${method} ${path}`, {
@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
     url,
     headers: requestHeaders,
     path,
-    requestId,
+    traceId,
   })
 
   try {
@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
       duration,
       url,
       path,
-      requestId,
+      traceId,
     })
 
     return response
@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
       path,
       isApi: path.startsWith('/api'),
       error: error instanceof Error ? error.message : 'Unknown error',
-      requestId,
+      traceId,
     })
     throw error
   }

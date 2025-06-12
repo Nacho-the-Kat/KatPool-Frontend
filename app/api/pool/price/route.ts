@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 60; // Refresh price every minute
@@ -8,6 +10,9 @@ interface KaspaPrice {
 }
 
 export async function GET() {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || 'unknown';
+
   try {
     const response = await fetch('https://api.kaspa.org/info/price?stringOnly=false');
 
@@ -28,7 +33,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('Error fetching Kaspa price:', error);
+    logger.error('Error fetching Kaspa price:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch Kaspa price' },
       { status: 500 }

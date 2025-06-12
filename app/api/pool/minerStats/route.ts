@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 
@@ -25,6 +27,8 @@ interface ProcessedStats {
 }
 
 export async function GET() {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
@@ -52,6 +56,7 @@ export async function GET() {
       signal: controller.signal,
       headers: {
         'Accept-Encoding': 'gzip',
+        'x-trace-id': traceId || '',
       }
     });
 
@@ -116,7 +121,7 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error('Error in miner stats API:', error);
+    logger.error('Error in miner stats API:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner stats' },
       { status: 500 }
