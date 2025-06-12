@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'edge'
@@ -15,6 +16,9 @@ interface BalanceResponse {
 
 export async function GET(request: Request) {
   try {
+    const headersList = headers();
+    const requestId = headersList.get('x-request-id');
+
     const { searchParams } = new URL(request.url)
     const wallet = searchParams.get('wallet')
 
@@ -25,7 +29,12 @@ export async function GET(request: Request) {
       )
     }
 
-    const response = await fetch(`http://kas.katpool.xyz:8080/balance/${wallet}`)
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const response = await fetch(`${baseUrl}/balance/${wallet}`, {
+      headers: {
+        'x-request-id': requestId || '',
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)

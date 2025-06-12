@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -73,13 +74,17 @@ export async function GET(request: Request) {
       throw new Error('Invalid time range');
     }
 
+    const headersList = headers();
+    const requestId = headersList.get('x-request-id');
+    const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
+
     const { days, recentStepMinutes, historicalStepHours } = TIME_RANGES[range];
     const endTime = Math.floor(Date.now() / 1000);
     const recentStartTime = endTime - (2 * 60 * 60); // Last 2 hours
     const startTime = endTime - (days * 24 * 60 * 60);
 
     // Fetch recent data (5-minute intervals)
-    const recentUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const recentUrl = new URL(`${baseUrl}/api/v1/query_range`);
     const recentQuery = `sum(miner_hash_rate_GHps{wallet_address="${wallet}"}) by (wallet_address)`;
     recentUrl.searchParams.append('query', recentQuery);
     recentUrl.searchParams.append('start', recentStartTime.toString());
@@ -87,15 +92,23 @@ export async function GET(request: Request) {
     recentUrl.searchParams.append('step', (recentStepMinutes * 60).toString());
 
     // Fetch historical data with coarser granularity
-    const historicalUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const historicalUrl = new URL(`${baseUrl}/api/v1/query_range`);
     historicalUrl.searchParams.append('query', recentQuery);
     historicalUrl.searchParams.append('start', startTime.toString());
     historicalUrl.searchParams.append('end', recentStartTime.toString());
     historicalUrl.searchParams.append('step', (historicalStepHours * 3600).toString());
 
     const [recentResponse, historicalResponse] = await Promise.all([
-      fetch(recentUrl),
-      fetch(historicalUrl)
+      fetch(recentUrl, {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      }),
+      fetch(historicalUrl, {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      })
     ]);
 
     if (!recentResponse.ok || !historicalResponse.ok) {

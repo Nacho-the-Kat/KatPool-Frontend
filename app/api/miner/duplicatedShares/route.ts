@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -20,7 +21,10 @@ export async function GET(request: Request) {
     const start = end - (48 * 60 * 60); // 48 hours ago
     const step = 12 * 60 * 60; // 12 hour steps
 
-    const url = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const headersList = headers();
+    const requestId = headersList.get('x-request-id');
+    const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const url = new URL(`${baseUrl}/api/v1/query_range`);
     
     // Construct and encode the full query parameter
     const queryString = `miner_duplicated_shares_1min_count{wallet_address="${wallet}"}`;
@@ -29,7 +33,11 @@ export async function GET(request: Request) {
     url.searchParams.append('end', end.toString());
     url.searchParams.append('step', step.toString());
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'x-request-id': requestId || '',
+      },
+    });
 
     if (!response.ok) {
       console.error('Pool API error:', {
