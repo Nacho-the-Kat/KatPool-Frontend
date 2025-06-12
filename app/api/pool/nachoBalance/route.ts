@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+import logger from '@/lib/utils/logger'
 
 export const runtime = 'edge';
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   const { searchParams } = new URL(request.url)
   const wallet = searchParams.get('wallet')
 
@@ -14,7 +19,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(`https://api.kasplex.org/v1/krc20/address/${wallet}/token/NACHO`)
+    const response = await fetch(`https://api.kasplex.org/v1/krc20/address/${wallet}/token/NACHO`, {
+      headers: {
+        'x-trace-id': traceId || '',
+      },
+    })
     const data = await response.json()
 
     return NextResponse.json({
@@ -25,7 +34,7 @@ export async function GET(request: Request) {
       }
     })
   } catch (error) {
-    console.error('Error fetching NACHO balance:', error)
+    logger.error('Error fetching NACHO balance:', { error, traceId })
     return NextResponse.json({
       status: 'success',
       data: {

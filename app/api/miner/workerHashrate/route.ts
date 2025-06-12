@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 
@@ -45,6 +47,9 @@ const timeWindows: Record<string, TimeWindow> = {
 };
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     const { searchParams } = new URL(request.url);
     const wallet = searchParams.get('wallet');
@@ -128,7 +133,7 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Error fetching worker hashrate:', error);
+    logger.error('Error fetching worker hashrate:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch worker hashrate' },
       { status: 500 }

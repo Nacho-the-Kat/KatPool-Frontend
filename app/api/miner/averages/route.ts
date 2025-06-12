@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -46,6 +48,9 @@ function calculateAverages(values: [number, string][]) {
 
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     const { searchParams } = new URL(request.url);
     const wallet = searchParams.get('wallet');
@@ -58,14 +63,20 @@ export async function GET(request: Request) {
     }
 
     const query = `miner_hash_rate_GHps{wallet_address="${wallet}"}[48h]`;
-    const url = new URL('http://kas.katpool.xyz:8080/api/v1/query');
+    const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const url = new URL(`${baseUrl}/api/v1/query`);
     url.searchParams.append('query', query);
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'x-trace-id': traceId || '',
+      },
+    });
 
     if (!response.ok) {
-      console.error('Pool API error:', {
+      logger.error('Pool API error:', {
         status: response.status,
-        url: url.toString()
+        url: url.toString(),
+        traceId
       });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -81,7 +92,7 @@ export async function GET(request: Request) {
       data: averages
     });
   } catch (error) {
-    console.error('Error fetching miner averages:', error);
+    logger.error('Error fetching miner averages:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner averages' },
       { status: 500 }

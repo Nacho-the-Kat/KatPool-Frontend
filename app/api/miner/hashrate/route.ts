@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -57,6 +59,9 @@ function filterOutAnomalies(
 }
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     const { searchParams } = new URL(request.url);
     const wallet = searchParams.get('wallet');
@@ -73,13 +78,15 @@ export async function GET(request: Request) {
       throw new Error('Invalid time range');
     }
 
+    const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
+
     const { days, recentStepMinutes, historicalStepHours } = TIME_RANGES[range];
     const endTime = Math.floor(Date.now() / 1000);
     const recentStartTime = endTime - (2 * 60 * 60); // Last 2 hours
     const startTime = endTime - (days * 24 * 60 * 60);
 
     // Fetch recent data (5-minute intervals)
-    const recentUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const recentUrl = new URL(`${baseUrl}/api/v1/query_range`);
     const recentQuery = `sum(miner_hash_rate_GHps{wallet_address="${wallet}"}) by (wallet_address)`;
     recentUrl.searchParams.append('query', recentQuery);
     recentUrl.searchParams.append('start', recentStartTime.toString());
@@ -87,23 +94,32 @@ export async function GET(request: Request) {
     recentUrl.searchParams.append('step', (recentStepMinutes * 60).toString());
 
     // Fetch historical data with coarser granularity
-    const historicalUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const historicalUrl = new URL(`${baseUrl}/api/v1/query_range`);
     historicalUrl.searchParams.append('query', recentQuery);
     historicalUrl.searchParams.append('start', startTime.toString());
     historicalUrl.searchParams.append('end', recentStartTime.toString());
     historicalUrl.searchParams.append('step', (historicalStepHours * 3600).toString());
 
     const [recentResponse, historicalResponse] = await Promise.all([
-      fetch(recentUrl),
-      fetch(historicalUrl)
+      fetch(recentUrl, {
+        headers: {
+          'x-trace-id': traceId || '',
+        },
+      }),
+      fetch(historicalUrl, {
+        headers: {
+          'x-trace-id': traceId || '',
+        },
+      })
     ]);
 
     if (!recentResponse.ok || !historicalResponse.ok) {
-      console.error('Pool API error:', {
+      logger.error('Pool API error:', {
         recentStatus: recentResponse.status,
         historicalStatus: historicalResponse.status,
         recentUrl: recentUrl.toString(),
-        historicalUrl: historicalUrl.toString()
+        historicalUrl: historicalUrl.toString(),
+        traceId
       });
       throw new Error(`HTTP error! status: ${recentResponse.status} / ${historicalResponse.status}`);
     }
@@ -144,7 +160,7 @@ export async function GET(request: Request) {
       error: 'Failed to fetch complete hashrate data'
     });
   } catch (error: unknown) {
-    console.error('Error in miner hashrate API:', error);
+    logger.error('Error in miner hashrate API:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner hashrate' },
       { status: 500 }

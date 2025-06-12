@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 10;
 
 export async function GET() {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     // Get last 5 minutes of data with 1-minute intervals for accurate current hashrate
     const end = Math.floor(Date.now() / 1000);
@@ -16,7 +21,11 @@ export async function GET() {
     url.searchParams.append('end', end.toString());
     url.searchParams.append('step', step.toString());
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'x-trace-id': traceId || '',
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -56,7 +65,7 @@ export async function GET() {
     // If upstream API returns an error status, maintain that error
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error proxying pool hashrate:', error);
+    logger.error('Error proxying pool hashrate:', { error, traceId });
     return NextResponse.json(
       { error: 'Failed to fetch pool hashrate' },
       { status: 500 }

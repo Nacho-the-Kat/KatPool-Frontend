@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
+import logger from '@/lib/utils/logger'
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -10,16 +11,16 @@ interface BlockData {
 }
 
 export async function GET() {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+  
   try {
-    const headersList = headers();
-    const requestId = headersList.get('x-request-id');
-    
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
     const response = await fetch(
       `${baseUrl}/api/pool/blockdetails?currentPage=1&perPage=1000`,
       {
         headers: {
-          'x-request-id': requestId || '',
+          'x-trace-id': traceId || '',
         },
       }
     );
@@ -50,7 +51,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Error fetching 24h blocks:', error);
+    logger.error('Error fetching 24h blocks:', { error, traceId });
     return NextResponse.json({
       status: 'success',
       data: {

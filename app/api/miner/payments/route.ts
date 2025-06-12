@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 300; // 5 minutes since payments are infrequent
@@ -30,6 +32,9 @@ interface ProcessedPayment {
 }
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || 'unknown';
+
   try {
     const { searchParams } = new URL(request.url);
     const wallet = searchParams.get('wallet');
@@ -41,10 +46,20 @@ export async function GET(request: Request) {
       );
     }
 
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+
     // Fetch both KAS and NACHO payments in parallel
     const [kasResponse, nachoResponse] = await Promise.all([
-      fetch(`http://kas.katpool.xyz:8080/api/payments/${wallet}`),
-      fetch(`http://kas.katpool.xyz:8080/api/nacho_payments/${wallet}`)
+      fetch(`${baseUrl}/api/payments/${wallet}`, {
+        headers: {
+          'x-trace-id': traceId || '',
+        },
+      }),
+      fetch(`${baseUrl}/api/nacho_payments/${wallet}`, {
+        headers: {
+          'x-trace-id': traceId || '',
+        },
+      })
     ]);
 
     if (!kasResponse.ok || !nachoResponse.ok) {
@@ -85,7 +100,7 @@ export async function GET(request: Request) {
       data: allPayments
     });
   } catch (error) {
-    console.error('Error fetching payments:', error);
+    logger.error('Error fetching payments:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch payments' },
       { status: 500 }

@@ -1,4 +1,6 @@
+import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
+import logger from '@/lib/utils/logger'
 
 export const runtime = 'edge'
 export const revalidate = 10
@@ -14,6 +16,9 @@ interface BalanceResponse {
 }
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     const { searchParams } = new URL(request.url)
     const wallet = searchParams.get('wallet')
@@ -25,7 +30,12 @@ export async function GET(request: Request) {
       )
     }
 
-    const response = await fetch(`http://kas.katpool.xyz:8080/balance/${wallet}`)
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const response = await fetch(`${baseUrl}/balance/${wallet}`, {
+      headers: {
+        'x-trace-id': traceId || '',
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -72,7 +82,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error) {
-    console.error('Error fetching combined balance:', error)
+    logger.error('Error fetching combined balance:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch balances' },
       { status: 500 }

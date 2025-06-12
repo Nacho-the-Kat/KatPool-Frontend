@@ -302,46 +302,46 @@ export default function AnalyticsCard01() {
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">Miner Performance</h2>
         <TimeRangeMenu align="right" currentRange={timeRange} onRangeChange={handleRangeChange} />
       </header>
-      <div className="px-5 py-1">
+      <div className="px-4 py-1">
         <div className="flex flex-wrap max-sm:*:w-1/2">
           <div className="flex items-center py-2">
-            <div className="mr-5">
+            <div className="mr-3">
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{currentHashrate}</div>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Last 5m Avg</div>
             </div>
-            <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-5" aria-hidden="true"></div>
+            <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-3" aria-hidden="true"></div>
           </div>
           <div className="flex items-center py-2">
-            <div className="mr-5">
+            <div className="mr-3">
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{oneHourAvg}</div>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Last 1h Avg</div>
             </div>
-            <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-5" aria-hidden="true"></div>
+            <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-3" aria-hidden="true"></div>
           </div>
           <div className="flex items-center py-2">
-            <div className="mr-5">
+            <div className="mr-3">
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{twelveHourAvg}</div>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Last 12h Avg</div>
             </div>
-            <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-5" aria-hidden="true"></div>
+            <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-3" aria-hidden="true"></div>
           </div>
           <div className="flex items-center py-2">
-            <div className="mr-5">
+            <div className="mr-3">
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{twentyFourHourAvg}</div>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Last 24h Avg</div>
             </div>
-            <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-5" aria-hidden="true"></div>
+            <div className="hidden md:block w-px h-8 bg-gray-200 dark:bg-gray-700 mr-3" aria-hidden="true"></div>
           </div>
           <div className="flex items-center py-2">
-            <div className="mr-5">
+            <div className="mr-3">
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{fortyEightHourAvg}</div>
               </div>

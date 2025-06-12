@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 10;
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     const { searchParams } = new URL(request.url);
     const wallet = searchParams.get('wallet');
@@ -20,18 +25,24 @@ export async function GET(request: Request) {
     const start = end - (5 * 60); // Last 5 minutes
     const step = 30; // 30-second intervals
 
-    const url = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const url = new URL(`${baseUrl}/api/v1/query_range`);
     url.searchParams.append('query', `sum(miner_hash_rate_GHps{wallet_address="${wallet}"})`);
     url.searchParams.append('start', start.toString());
     url.searchParams.append('end', end.toString());
     url.searchParams.append('step', step.toString());
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'x-trace-id': traceId || '',
+      },
+    });
 
     if (!response.ok) {
-      console.error('Pool API error:', {
+      logger.error('Pool API error:', {
         status: response.status,
-        url: url.toString()
+        url: url.toString(),
+        traceId
       });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -74,9 +85,10 @@ export async function GET(request: Request) {
       });
     }
 
-    console.log('Current hashrate response:', {
+    logger.info('Current hashrate response:', {
       query: url.searchParams.get('query'),
-      result: data.data?.result
+      result: data.data?.result,
+      traceId
     });
 
     return NextResponse.json({
@@ -84,7 +96,7 @@ export async function GET(request: Request) {
       data: data.data
     });
   } catch (error) {
-    console.error('Error fetching current hashrate:', error);
+    logger.error('Error fetching current hashrate:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch current hashrate' },
       { status: 500 }
