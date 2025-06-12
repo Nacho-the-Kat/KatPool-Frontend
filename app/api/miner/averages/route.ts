@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -58,9 +59,16 @@ export async function GET(request: Request) {
     }
 
     const query = `miner_hash_rate_GHps{wallet_address="${wallet}"}[48h]`;
-    const url = new URL('http://kas.katpool.xyz:8080/api/v1/query');
+    const headersList = headers();
+    const requestId = headersList.get('x-request-id');
+    const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const url = new URL(`${baseUrl}/api/v1/query`);
     url.searchParams.append('query', query);
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'x-request-id': requestId || '',
+      },
+    });
 
     if (!response.ok) {
       console.error('Pool API error:', {

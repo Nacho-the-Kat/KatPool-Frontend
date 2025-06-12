@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export const runtime = 'edge';
 export const revalidate = 300; // 5 minutes since payments are infrequent
@@ -41,10 +42,22 @@ export async function GET(request: Request) {
       );
     }
 
+    const headersList = headers();
+    const requestId = headersList.get('x-request-id');
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+
     // Fetch both KAS and NACHO payments in parallel
     const [kasResponse, nachoResponse] = await Promise.all([
-      fetch(`http://kas.katpool.xyz:8080/api/payments/${wallet}`),
-      fetch(`http://kas.katpool.xyz:8080/api/nacho_payments/${wallet}`)
+      fetch(`${baseUrl}/api/payments/${wallet}`, {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      }),
+      fetch(`${baseUrl}/api/nacho_payments/${wallet}`, {
+        headers: {
+          'x-request-id': requestId || '',
+        },
+      })
     ]);
 
     if (!kasResponse.ok || !nachoResponse.ok) {
