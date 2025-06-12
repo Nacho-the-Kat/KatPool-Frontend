@@ -51,7 +51,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    logger.error('Error fetching active miners:', { error, traceId });
+    logger.error('Error fetching active miners:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch active miners' },
       { status: 500 }

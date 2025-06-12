@@ -83,7 +83,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    logger.error('Error fetching hashrate history:', { error, traceId });
+    logger.error('Error fetching hashrate history:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { status: 'error', message: error instanceof Error ? error.message : 'Failed to fetch hashrate history' },
       { status: 500 }

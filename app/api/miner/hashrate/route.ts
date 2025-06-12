@@ -160,7 +160,7 @@ export async function GET(request: Request) {
       error: 'Failed to fetch complete hashrate data'
     });
   } catch (error: unknown) {
-    logger.error('Error in miner hashrate API:', { error, traceId });
+    logger.error('Error in miner hashrate API:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner hashrate' },
       { status: 500 }

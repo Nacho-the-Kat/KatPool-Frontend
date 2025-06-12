@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       error: 'Failed to fetch pool hashrate history'
     });
   } catch (error) {
-    logger.error('Error proxying pool hashrate history:', { error, traceId });
+    logger.error('Error proxying pool hashrate history:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch pool hashrate history' },
       { status: 500 }

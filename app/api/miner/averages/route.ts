@@ -6,6 +6,7 @@ export const runtime = 'edge';
 export const revalidate = 10;
 
 function calculateAverages(values: [number, string][]) {
+  console.log(1/0);
   const now = Date.now() / 1000; // current time in seconds
 
   const intervals = {
@@ -92,7 +93,7 @@ export async function GET(request: Request) {
       data: averages
     });
   } catch (error) {
-    logger.error('Error fetching miner averages:', { error, traceId });
+    logger.error('Error fetching miner averages:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner averages' },
       { status: 500 }

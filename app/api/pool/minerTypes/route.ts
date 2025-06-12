@@ -61,7 +61,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    logger.error('Error fetching miner types:', { error, traceId });
+    logger.error('Error fetching miner types:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch miner types' },
       { status: 500 }

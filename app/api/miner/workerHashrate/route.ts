@@ -133,7 +133,7 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    logger.error('Error fetching worker hashrate:', { error, traceId });
+    logger.error('Error fetching worker hashrate:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch worker hashrate' },
       { status: 500 }

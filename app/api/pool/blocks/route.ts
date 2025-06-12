@@ -45,7 +45,7 @@ export async function GET() {
     throw new Error('Invalid response format');
 
   } catch (error) {
-    logger.error('Error fetching total blocks:', { error, traceId });
+    logger.error('Error fetching total blocks:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch total blocks' },
       { 

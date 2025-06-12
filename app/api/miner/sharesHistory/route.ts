@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error: unknown) {
-    logger.error('Error in miner shares history API:', { error, traceId });
+    logger.error('Error in miner shares history API:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner shares history' },
       { status: 500 }

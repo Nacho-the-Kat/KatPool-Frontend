@@ -51,7 +51,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    logger.error('Error fetching 24h blocks:', { error, traceId });
+    logger.error('Error fetching 24h blocks:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json({
       status: 'success',
       data: {

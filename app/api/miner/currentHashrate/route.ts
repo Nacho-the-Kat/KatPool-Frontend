@@ -96,7 +96,7 @@ export async function GET(request: Request) {
       data: data.data
     });
   } catch (error) {
-    logger.error('Error fetching current hashrate:', { error, traceId });
+    logger.error('Error fetching current hashrate:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch current hashrate' },
       { status: 500 }

@@ -161,7 +161,7 @@ export async function GET() {
       data: minerData
     });
   } catch (error) {
-    logger.error('Error fetching top miners:', { error, traceId });
+    logger.error('Error fetching top miners:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch top miners' },
       { status: 500 }
