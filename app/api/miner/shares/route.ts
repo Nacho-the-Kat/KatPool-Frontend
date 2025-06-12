@@ -96,7 +96,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(data);
   } catch (error: unknown) {
-    logger.error('Error in miner shares API:', { error, traceId });
+    logger.error('Error in miner shares API:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner shares' },
       { status: 500 }

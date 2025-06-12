@@ -29,7 +29,7 @@ export const formatHashrate = (hashrate: number): string => {
       return `${(hashrate / 1000000000).toFixed(2)} EH/s`;
     }
   } catch (error) {
-    logger.error('Error formatting hashrate:', { error, traceId });
+    logger.error('Error formatting hashrate:', { error: error instanceof Error ? error.message : String(error), traceId });
     return 'Error';
   }
 }; 

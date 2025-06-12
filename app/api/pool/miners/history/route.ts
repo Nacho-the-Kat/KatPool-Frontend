@@ -109,7 +109,7 @@ export async function GET(request: Request) {
       error: 'Failed to fetch complete miners history'
     });
   } catch (error) {
-    logger.error('Error fetching miners history:', { error, traceId });
+    logger.error('Error fetching miners history:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { status: 'error', message: error instanceof Error ? error.message : 'Failed to fetch miners history' },
       { status: 500 }

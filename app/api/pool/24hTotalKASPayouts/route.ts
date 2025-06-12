@@ -31,7 +31,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    logger.error('Error fetching 24h total KAS payouts:', { error, traceId });
+    logger.error('Error fetching 24h total KAS payouts:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json({
       status: 'error',
       message: 'Failed to fetch 24h total KAS payouts',

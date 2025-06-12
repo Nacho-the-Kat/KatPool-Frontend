@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       data: averages
     });
   } catch (error) {
-    logger.error('Error fetching miner averages:', { error, traceId });
+    logger.error('Error fetching miner averages:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner averages' },
       { status: 500 }

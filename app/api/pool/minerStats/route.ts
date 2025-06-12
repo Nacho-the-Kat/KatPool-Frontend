@@ -121,7 +121,7 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error: unknown) {
-    logger.error('Error in miner stats API:', { error, traceId });
+    logger.error('Error in miner stats API:', { error: error instanceof Error ? error.message : String(error), traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch miner stats' },
       { status: 500 }
