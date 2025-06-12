@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 3600; // Cache for 1 hour
@@ -38,6 +40,9 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 3, de
 }
 
 export async function GET() {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || 'unknown';
+
   try {
     const apiKey = process.env.COINGECKO_API_KEY;
     
@@ -72,7 +77,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Error fetching NACHO price:', error);
+    logger.error('Error fetching NACHO price:', { error, traceId });
     
     // Return a more specific error message
     const errorMessage = error instanceof Error ? 

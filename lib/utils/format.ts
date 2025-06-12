@@ -1,7 +1,13 @@
+import logger from './logger';
+import { headers } from 'next/headers';
+
 export const formatHashrate = (hashrate: number): string => {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   // Handle invalid inputs
   if (!Number.isFinite(hashrate) || hashrate < 0) {
-    console.error('Invalid hashrate value:', hashrate);
+    logger.error('Invalid hashrate value:', { hashrate, traceId });
     return 'Error';
   }
 
@@ -23,7 +29,7 @@ export const formatHashrate = (hashrate: number): string => {
       return `${(hashrate / 1000000000).toFixed(2)} EH/s`;
     }
   } catch (error) {
-    console.error('Error formatting hashrate:', error);
+    logger.error('Error formatting hashrate:', { error, traceId });
     return 'Error';
   }
 }; 

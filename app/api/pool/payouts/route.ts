@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -28,22 +29,22 @@ interface ProcessedPayment {
 }
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || 'unknown';
+
   try {
-    const headersList = headers();
-    const requestId = headersList.get('x-request-id');
-    
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
     
     // Fetch both KAS and NACHO payouts in parallel
     const [kasResponse, nachoResponse] = await Promise.all([
       fetch(`${baseUrl}/api/pool/payouts`, {
         headers: {
-          'x-request-id': requestId || '',
+          'x-trace-id': traceId,
         },
       }),
       fetch(`${baseUrl}/api/pool/nacho_payouts`, {
         headers: {
-          'x-request-id': requestId || '',
+          'x-trace-id': traceId,
         },
       })
     ]);
@@ -84,7 +85,7 @@ export async function GET(request: Request) {
       data: allPayments
     });
   } catch (error) {
-    console.error('Error fetching pool payouts:', error);
+    logger.error('Error fetching pool payouts:', { error, traceId });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch pool payouts' },
       { status: 500 }

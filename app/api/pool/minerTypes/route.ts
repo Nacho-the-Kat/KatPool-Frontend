@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+import logger from '@/lib/utils/logger'
 
 export const runtime = 'edge';
 export const revalidate = 10;
 
 export async function GET() {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     // TODO: May remove `asic_type!=""` filter once backend consistently includes `asic_type` in all metrics
     const url = new URL('http://kas.katpool.xyz:8080/api/v1/query');
@@ -11,9 +16,18 @@ export async function GET() {
       'query',
       'active_workers_10m_count{asic_type!=""} != 0'
     );
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'x-trace-id': traceId || '',
+      },
+    });
 
     if (!response.ok) {
+      logger.error('Pool API error:', {
+        status: response.status,
+        url: url.toString(),
+        traceId
+      });
       throw new Error('Failed to fetch data');
     }
 
@@ -47,7 +61,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Error fetching miner types:', error);
+    logger.error('Error fetching miner types:', { error, traceId });
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch miner types' },
       { status: 500 }

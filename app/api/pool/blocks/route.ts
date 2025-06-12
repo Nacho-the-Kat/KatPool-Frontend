@@ -1,20 +1,21 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
+import logger from '@/lib/utils/logger'
 
 export const runtime = 'edge';
 export const revalidate = 10;
 
 export async function GET() {
-  try {
-    const headersList = headers();
-    const requestId = headersList.get('x-request-id');
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
 
+  try {
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
     const response = await fetch(
       `${baseUrl}/api/pool/blockdetails?currentPage=1&perPage=10`,
       {
         headers: {
-          'x-request-id': requestId || '',
+          'x-trace-id': traceId || '',
         },
       }
     );
@@ -36,7 +37,7 @@ export async function GET() {
         }
       }, {
         headers: {
-          'x-request-id': requestId || '',
+          'x-trace-id': traceId || '',
         },
       });
     }
@@ -44,13 +45,13 @@ export async function GET() {
     throw new Error('Invalid response format');
 
   } catch (error) {
-    console.error('Error fetching total blocks:', error);
+    logger.error('Error fetching total blocks:', { error, traceId });
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch total blocks' },
       { 
         status: 500,
         headers: {
-          'x-request-id': headers().get('x-request-id') || '',
+          'x-trace-id': headers().get('x-trace-id') || '',
         },
       }
     );

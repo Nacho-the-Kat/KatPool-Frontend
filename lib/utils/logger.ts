@@ -1,20 +1,20 @@
 import rTracer from 'cls-rtracer';
 
-const { DATADOG_SECRET, DATADOG_LOG_URL } = process.env;
+const { DATADOG_SECRET, DATADOG_LOG_URL, DATADOG_SERVICE_NAME } = process.env;
 
 interface LogContext {
   [key: string]: any;
-  requestId?: string;
+  traceId?: string;
 }
 
 const sendLog = async (level: string, message: string, context: LogContext = {}) => {
-  const requestId: string = String(rTracer.id());
+  const traceId: string = String(rTracer.id());
   const logData = {
     ddsource: 'nodejs',
-    service: 'dev-katpool-frontend',
+    service: DATADOG_SERVICE_NAME || 'prod-katpool-frontend',
     level,
     message,
-    requestId: requestId.toString(),
+    traceId: traceId.toString(),
     ...context,
     timestamp: new Date().toISOString(),
   };

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers';
+import logger from '@/lib/utils/logger';
 
 export const runtime = 'edge';
 export const revalidate = 10;
@@ -18,6 +20,9 @@ const TIME_RANGES: Record<string, TimeRange> = {
 };
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || '30d';
@@ -46,16 +51,25 @@ export async function GET(request: Request) {
     historicalUrl.searchParams.append('step', (historicalStepHours * 3600).toString());
 
     const [recentResponse, historicalResponse] = await Promise.all([
-      fetch(recentUrl),
-      fetch(historicalUrl)
+      fetch(recentUrl, {
+        headers: {
+          'x-trace-id': traceId || '',
+        },
+      }),
+      fetch(historicalUrl, {
+        headers: {
+          'x-trace-id': traceId || '',
+        },
+      })
     ]);
 
     if (!recentResponse.ok || !historicalResponse.ok) {
-      console.error('Pool API error:', {
+      logger.error('Pool API error:', {
         recentStatus: recentResponse.status,
         historicalStatus: historicalResponse.status,
         recentUrl: recentUrl.toString(),
-        historicalUrl: historicalUrl.toString()
+        historicalUrl: historicalUrl.toString(),
+        traceId
       });
       throw new Error(`HTTP error! status: ${recentResponse.status} / ${historicalResponse.status}`);
     }
@@ -95,7 +109,7 @@ export async function GET(request: Request) {
       error: 'Failed to fetch complete miners history'
     });
   } catch (error) {
-    console.error('Error fetching miners history:', error);
+    logger.error('Error fetching miners history:', { error, traceId });
     return NextResponse.json(
       { status: 'error', message: error instanceof Error ? error.message : 'Failed to fetch miners history' },
       { status: 500 }

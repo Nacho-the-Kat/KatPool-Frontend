@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import logger from '../../../../lib/utils/logger';
 
 export const runtime = 'edge';
@@ -23,6 +24,9 @@ interface HashrateData {
 }
 
 export async function GET(request: Request) {
+  const headersList = headers();
+  const traceId = headersList.get('x-trace-id') || undefined;
+
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || '30d';
@@ -37,12 +41,17 @@ export async function GET(request: Request) {
 
     const url = new URL('https://api.kaspa.org/info/hashrate/history');
     url.searchParams.append('resolution', resolution);
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'x-trace-id': traceId || '',
+      },
+    });
 
     if (!response.ok) {
       logger.error('Kaspa API error:', {
         status: response.status,
-        url: url.toString()
+        url: url.toString(),
+        traceId
       });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -74,7 +83,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    logger.error('Error fetching hashrate history:', { error });
+    logger.error('Error fetching hashrate history:', { error, traceId });
     return NextResponse.json(
       { status: 'error', message: error instanceof Error ? error.message : 'Failed to fetch hashrate history' },
       { status: 500 }
