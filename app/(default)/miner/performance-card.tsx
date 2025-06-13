@@ -25,6 +25,7 @@ export default function AnalyticsCard01() {
   const [twentyFourHourAvg, setTwentyFourHourAvg] = useState<string>('')
   const [fortyEightHourAvg, setFortyEightHourAvg] = useState<string>('')
   const [chartData, setChartData] = useState<any>(null)
+  const [minerHashrateResponse, setMinerHashrateResponse] = useState<any>(null)
 
   const handleRangeChange = (range: '7d' | '30d' | '90d' | '180d' | '365d') => {
     setTimeRange(range);
@@ -117,11 +118,12 @@ export default function AnalyticsCard01() {
         setCurrentHashrate('0 H/s');
       }
 
+      setMinerHashrateResponse(minerHashrateResponse);
       // Calculate averages for different time periods
-      setOneHourAvg(formatHashrate(minerHashrateResponse.data['1h']));
-      setTwelveHourAvg(formatHashrate(minerHashrateResponse.data['12h']));
-      setTwentyFourHourAvg(formatHashrate(minerHashrateResponse.data['24h']));
-      setFortyEightHourAvg(formatHashrate(minerHashrateResponse.data['48h']));
+      setOneHourAvg(formatHashrate(minerHashrateResponse.data.averages['1h']));
+      setTwelveHourAvg(formatHashrate(minerHashrateResponse.data.averages['12h']));
+      setTwentyFourHourAvg(formatHashrate(minerHashrateResponse.data.averages['24h']));
+      setFortyEightHourAvg(formatHashrate(minerHashrateResponse.data.averages['48h']));
 
       // Handle chart data
       if (!chartResponse || chartResponse.error) {
@@ -300,14 +302,35 @@ export default function AnalyticsCard01() {
 
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">Miner Performance</h2>
-        <TimeRangeMenu align="right" currentRange={timeRange} onRangeChange={handleRangeChange} />
+        <div className="flex items-center gap-2">
+          <TimeRangeMenu align="right" currentRange={timeRange} onRangeChange={handleRangeChange} />
+          <div className="relative flex items-center">
+            <div className="group">
+              <button className="flex items-center justify-center w-6 h-6 rounded-full text-gray-400 hover:text-gray-500">
+                <span className="sr-only">View information</span>
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 16 16">
+                  <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z" />
+                </svg>
+              </button>
+              <div className="absolute top-full right-0 mt-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="relative">
+                  <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 right-4 -top-[6px]"></div>
+                  <div className="font-medium mb-1"><strong>Miner Performance Data</strong></div>
+                  <p className="mb-2">Data may take up to 10 minutes to update. The chart shows your mining hashrate over time, with averages calculated for different time periods.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
       <div className="px-4 py-1">
         <div className="flex flex-wrap max-sm:*:w-1/2">
           <div className="flex items-center py-2">
             <div className="mr-3">
               <div className="flex items-center">
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{currentHashrate}</div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">
+                  {minerHashrateResponse?.data?.activityStatus?.['5min'] ? currentHashrate : '0 H/s'}
+                </div>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Last 5m Avg</div>
             </div>
@@ -316,7 +339,9 @@ export default function AnalyticsCard01() {
           <div className="flex items-center py-2">
             <div className="mr-3">
               <div className="flex items-center">
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{oneHourAvg}</div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">
+                  {minerHashrateResponse?.data?.activityStatus?.['1h'] ? oneHourAvg : '0 H/s'}
+                </div>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Last 1h Avg</div>
             </div>
@@ -325,7 +350,9 @@ export default function AnalyticsCard01() {
           <div className="flex items-center py-2">
             <div className="mr-3">
               <div className="flex items-center">
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{twelveHourAvg}</div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">
+                  {minerHashrateResponse?.data?.activityStatus?.['12h'] ? twelveHourAvg : '0 H/s'}
+                </div>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Last 12h Avg</div>
             </div>
@@ -334,7 +361,9 @@ export default function AnalyticsCard01() {
           <div className="flex items-center py-2">
             <div className="mr-3">
               <div className="flex items-center">
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{twentyFourHourAvg}</div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">
+                  {minerHashrateResponse?.data?.activityStatus?.['24h'] ? twentyFourHourAvg : '0 H/s'}
+                </div>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Last 24h Avg</div>
             </div>
@@ -343,7 +372,9 @@ export default function AnalyticsCard01() {
           <div className="flex items-center py-2">
             <div className="mr-3">
               <div className="flex items-center">
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">{fortyEightHourAvg}</div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">
+                  {minerHashrateResponse?.data?.activityStatus?.['48h'] ? fortyEightHourAvg : '0 H/s'}
+                </div>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Last 48h Avg</div>
             </div>
