@@ -124,6 +124,28 @@ export async function GET(request: Request) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
+
+    if(data.data.result.length === 0) {
+      return NextResponse.json({
+        status: 'success',
+        data: {
+          averages: {
+            '5min': null,
+            '1h': null,
+            '12h': null,
+            '24h': null,
+            '48h': null
+          },
+          activityStatus: {
+            '5min': false,
+            '1h': false,
+            '12h': false,
+            '24h': false,
+            '48h': false
+          }
+        }
+      });
+    }
     const result = calculateAverages(data.data.result[0].values);
 
     if (data.status !== 'success' || !data.data?.result) {
