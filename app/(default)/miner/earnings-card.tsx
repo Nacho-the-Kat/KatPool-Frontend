@@ -216,11 +216,8 @@ export default function AnalyticsCard04() {
   const calculateDailyEstimateByHashrate = async (hashrateGH: number): Promise<bigint> => {
     if (hashrateGH <= 0) return BigInt(0);
 
-    // TODO: hashrateResponse should remove/refactor api file on FE , hotfix to allow cors on backend
     const totalHashrate = await fetch('/api/pool/24hAverageHashrate').then(res => res.json()).then(data => data.data.totalHashrate);
-    // TODO: totalKasPayouts24h should remove/refactor api file on FE , hotfix to  allow cors on backend
-    const totalKasPayouts24h: number = await fetch('/api/pool/24hTotalKASPayouts').then(res => res.json()).then(data => data.data.totalKASPayouts);
-
+    const totalKasPayouts24h: number = await fetch('/api/pool/24hTotalKASPayouts').then(res => res.json()).then(data => data.data.totalKASPayouts / 1e8);
     // Estimated KAS earned per GH/s per day by Katpool
     const kasPerGhPerDay = totalKasPayouts24h / totalHashrate;
     // Calculate estimated KAS for the hashrate
