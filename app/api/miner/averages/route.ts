@@ -24,6 +24,46 @@ function calculateAverages(values: [number, string][]) {
     counts[key] = 1;
   }
 
+  // Find earliest timestamp with non-zero value
+  let earliestTimestamp = now;
+  for (const [timestamp, valueStr] of values) {
+    const value = parseFloat(valueStr);
+    if (value === 0) continue; // skip zero values
+    if (timestamp < earliestTimestamp) {
+      earliestTimestamp = timestamp;
+    }
+  }
+
+  // Calculate activity status for each interval
+  const activityStatus: { [key: string]: boolean } = {};
+  const timeFrames = ['5min', '1h', '12h', '24h', '48h'] as const;
+  
+  // First calculate raw activity status
+  for (const key of timeFrames) {
+    // Count non-zero values within the interval
+    let activePoints = 0;
+    for (const [timestamp, valueStr] of values) {
+      const value = parseFloat(valueStr);
+      if (value === 0) continue; // skip zero values
+      const age = now - timestamp;
+      if (age <= intervals[key]) {
+        activePoints++;
+      }
+    }
+    // Consider active if there are any non-zero values in the interval
+    activityStatus[key] = activePoints > 0;
+  }
+
+  // Enforce hierarchical activity status
+  for (let i = timeFrames.length - 1; i > 0; i--) {
+    if (activityStatus[timeFrames[i]]) {
+      // If current time frame is active, make all shorter time frames active
+      for (let j = i - 1; j >= 0; j--) {
+        activityStatus[timeFrames[j]] = true;
+      }
+    }
+  }
+
   for (const [timestamp, valueStr] of values) {
     const value = parseFloat(valueStr);
     if (value === 0) continue; // skip zero values
@@ -43,7 +83,10 @@ function calculateAverages(values: [number, string][]) {
     averages[key] = counts[key] > 0 ? sums[key] / counts[key] : null;
   }
 
-  return averages;
+  return {
+    averages,
+    activityStatus
+  };
 }
 
 
@@ -81,7 +124,7 @@ export async function GET(request: Request) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    const averages = calculateAverages(data.data.result[0].values);
+    const result = calculateAverages(data.data.result[0].values);
 
     if (data.status !== 'success' || !data.data?.result) {
       throw new Error('Invalid response format');
@@ -89,7 +132,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       status: 'success',
-      data: averages
+      data: result
     });
   } catch (error) {
     logger.error('Error fetching miner averages:', { error: error instanceof Error ? error.message : String(error), traceId });
