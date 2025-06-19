@@ -37,6 +37,7 @@ export default function AnalyticsCard04() {
   const searchParams = useSearchParams()
   const walletAddress = searchParams.get('wallet')
   const [isLoading, setIsLoading] = useState(true)
+  const [isEarningsLoading, setIsEarningsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dailyKas, setDailyKas] = useState<bigint | null>(null)
   const [kasPrice, setKasPrice] = useState<number | null>(null)
@@ -52,11 +53,15 @@ export default function AnalyticsCard04() {
     const fetchData = async () => {
       if (!walletAddress) {
         setIsQualified(false); // Reset qualification when no wallet
+        setDailyKas(null); // Clear earnings data
         return;
       }
 
       try {
         setIsLoading(true);
+        setIsEarningsLoading(true);
+        setDailyKas(null); // Clear previous earnings data immediately
+        
         // Separate qualification check to its own Promise.all for clarity
         const [qualificationRes, otherDataRes] = await Promise.all([
           // Qualification data
@@ -97,11 +102,25 @@ export default function AnalyticsCard04() {
             const dailyEstimate = calculateDailyEstimate(paymentsRes.data);
 
             // get daily estimate based on current hashrate
-            const hashrate = await $fetch(`/api/miner/get5MinAverageHashrate?wallet=${walletAddress}`).then(res => res.data);
-            const dailyEstimateByHashrate = await calculateDailyEstimateByHashrate(hashrate);
+            const [hashrate24h, hashrate5m, hashrate7d] = await Promise.all([
+              $fetch(`/api/miner/getAverageHashrate?range=24h&wallet=${walletAddress}`).then(res => res.data),
+              $fetch(`/api/miner/getAverageHashrate?range=5m&wallet=${walletAddress}`).then(res => res.data),
+              $fetch(`/api/miner/getAverageHashrate?range=7d&wallet=${walletAddress}`).then(res => res.data)
+            ]);
 
-            // Set dailyKas to the maximum of both estimates
-            setDailyKas(dailyEstimate > dailyEstimateByHashrate ? dailyEstimate : dailyEstimateByHashrate);
+            const [dailyEstimateByHashrate24h, dailyEstimateByHashrate5m, dailyEstimateByHashrate7d] = await Promise.all([
+              calculateDailyEstimateByHashrate(hashrate24h),
+              calculateDailyEstimateByHashrate(hashrate5m),
+              calculateDailyEstimateByHashrate(hashrate7d)
+            ]);
+
+            // Set dailyKas to the maximum of all estimates
+            const maxHashrateEstimate = Math.max(
+              Number(dailyEstimateByHashrate24h),
+              Number(dailyEstimateByHashrate5m),
+              Number(dailyEstimateByHashrate7d)
+            );
+            setDailyKas(BigInt(Math.round(maxHashrateEstimate)));
           } else {
             setDailyKas(null);
           }
@@ -127,6 +146,7 @@ export default function AnalyticsCard04() {
         setMinerHashrate(null);
       } finally {
         setIsLoading(false);
+        setIsEarningsLoading(false);
       }
     };
 
@@ -476,11 +496,36 @@ export default function AnalyticsCard04() {
             </thead>
             {/* Table body */}
             <tbody className="text-sm font-medium divide-y divide-gray-100 dark:divide-gray-700/60">
-              {renderRow('Hourly', calculateAmount(dailyKas, 1 / 24))}
-              {renderRow('Daily', dailyKas)}
-              {renderRow('Weekly', calculateAmount(dailyKas, 7))}
-              {renderRow('Monthly', calculateAmount(dailyKas, 30))}
-              {renderRow('Yearly', calculateAmount(dailyKas, 365))}
+              {isEarningsLoading ? (
+                // Show loading skeleton
+                Array.from({ length: 5 }).map((_, index) => (
+                  <tr key={index}>
+                    <td className="p-2">
+                      <div className="text-gray-800 dark:text-gray-100">
+                        {index === 0 ? 'Hourly' : index === 1 ? 'Daily' : index === 2 ? 'Weekly' : index === 3 ? 'Monthly' : 'Yearly'}
+                      </div>
+                    </td>
+                    <td className="p-2 text-center">
+                      <div className="animate-pulse bg-gray-200 dark:bg-gray-600 h-4 w-16 mx-auto rounded"></div>
+                    </td>
+                    <td className="p-2 text-center">
+                      <div className="animate-pulse bg-gray-200 dark:bg-gray-600 h-4 w-16 mx-auto rounded"></div>
+                    </td>
+                    <td className="p-2 text-center">
+                      <div className="animate-pulse bg-gray-200 dark:bg-gray-600 h-4 w-20 mx-auto rounded"></div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                // Show actual data
+                <>
+                  {renderRow('Hourly', calculateAmount(dailyKas, 1 / 24))}
+                  {renderRow('Daily', dailyKas)}
+                  {renderRow('Weekly', calculateAmount(dailyKas, 7))}
+                  {renderRow('Monthly', calculateAmount(dailyKas, 30))}
+                  {renderRow('Yearly', calculateAmount(dailyKas, 365))}
+                </>
+              )}
             </tbody>
           </table>
         </div>
