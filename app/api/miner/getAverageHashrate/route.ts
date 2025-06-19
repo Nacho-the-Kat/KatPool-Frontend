@@ -13,9 +13,9 @@ interface RangeConfig {
 }
 
 const RANGE_CONFIGS: Record<TimeRange, RangeConfig> = {
-  '24h': { duration: 24 * 60 * 60, step: 60 }, // 24 hours, 1-minute intervals
+  '24h': { duration: 24 * 60 * 60, step: 300 }, // 24 hours, 5-minute intervals
   '5m': { duration: 5 * 60, step: 15 }, // 5 minutes, 15-second intervals
-  '7d': { duration: 7 * 24 * 60 * 60, step: 300 }, // 7 days, 5-minute intervals
+  '7d': { duration: 7 * 24 * 60 * 60, step: 3600 }, // 7 days, 1-hour intervals
 };
 
 // TODO: this logic is relative copy of averages route, should be refactored
