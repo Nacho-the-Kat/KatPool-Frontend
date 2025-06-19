@@ -10,7 +10,7 @@ interface StatCardProps {
   dataType: 'daaScore' | 'supply' | 'difficulty' | 'blockCount' | 'hashrate' | 
             'minedPercent' | 'nextReduction' | 'nextReward' | 'blockReward' | 'totalSupply' | 
             'poolHashrate' | 'poolBlocks' | 'poolMiners' | 'pool24hBlocks' |
-            'price'
+            'price' | 'totalPaidKas' | 'totalPaidNacho' | 'kasThreshold' | 'nachThreshold' | 'payoutSchedule'
   label: string
   icon: ReactNode | 'kaspa'
 }
@@ -182,6 +182,56 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
           case 'price':
             const priceResponse = await KaspaAPI.network.getPrice(false)
             result = `$${Number(priceResponse.price).toFixed(4)}`
+            break
+          case 'totalPaidKas':
+            try {
+              const data = await $fetch('/api/pool/totalPaidKAS', {
+                retry: 1,
+                timeout: 5000,
+              });
+              
+              if (data.status !== 'success' || typeof data.data?.totalPaidKAS !== 'number') {
+                throw new Error('Invalid response format');
+              }
+              
+              // Convert from satoshis to KAS (divide by 1e8) and format
+              const kasAmount = data.data.totalPaidKAS / 1e8;
+              result = `${kasAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })} KAS`;
+            } catch (error) {
+              console.error('Error fetching total paid KAS:', error);
+              result = 'Error';
+            }
+            break
+          case 'totalPaidNacho':
+            try {
+              const data = await $fetch('/api/pool/totalPaidNACHO', {
+                retry: 1,
+                timeout: 5000,
+              });
+              
+              if (data.status !== 'success' || typeof data.data?.totalPaidNACHO !== 'number') {
+                throw new Error('Invalid response format');
+              }
+              
+              // Convert from satoshis to NACHO (divide by 1e8) and format
+              const nachoAmount = data.data.totalPaidNACHO / 1e8;
+              result = `${nachoAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            } catch (error) {
+              console.error('Error fetching total paid NACHO:', error);
+              result = 'Error';
+            }
+            break
+          case 'kasThreshold':
+            // Static value for now - will be replaced with config.json data
+            result = '100 KAS'
+            break
+          case 'nachThreshold':
+            // Static value for now - will be replaced with config.json data
+            result = '50 NACHO'
+            break
+          case 'payoutSchedule':
+            // Static value for now - will be replaced with config.json data
+            result = 'Every 12 hours'
             break
         }
         
