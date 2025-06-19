@@ -222,16 +222,55 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
             }
             break
           case 'kasThreshold':
-            // Static value for now - will be replaced with config.json data
-            result = '100 KAS'
+            try {
+              const data = await $fetch('/api/pool/config', {
+                retry: 1,
+                timeout: 5000,
+              });
+              
+              if (data.status !== 'success' || !data.data?.kasThreshold) {
+                throw new Error('Invalid response format');
+              }
+              
+              result = data.data.kasThreshold;
+            } catch (error) {
+              console.error('Error fetching KAS threshold:', error);
+              result = 'Error';
+            }
             break
           case 'nachThreshold':
-            // Static value for now - will be replaced with config.json data
-            result = '50 NACHO'
+            try {
+              const data = await $fetch('/api/pool/config', {
+                retry: 1,
+                timeout: 5000,
+              });
+              
+              if (data.status !== 'success' || !data.data?.nachThreshold) {
+                throw new Error('Invalid response format');
+              }
+              
+              result = data.data.nachThreshold;
+            } catch (error) {
+              console.error('Error fetching NACHO threshold:', error);
+              result = 'Error';
+            }
             break
           case 'payoutSchedule':
-            // Static value for now - will be replaced with config.json data
-            result = 'Every 12 hours'
+            try {
+              const data = await $fetch('/api/pool/config', {
+                retry: 1,
+                timeout: 5000,
+              });
+              
+              if (data.status !== 'success' || !data.data?.payoutSchedule) {
+                throw new Error('Invalid response format');
+              }
+              
+              result = data.data.payoutSchedule;
+            } catch (error) {
+              console.error('Error fetching payout schedule:', error);
+              result = 'Error';
+            }
             break
         }
         
