@@ -11,7 +11,6 @@ export async function GET() {
   
   try {
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
-    console.log('url', `${baseUrl}/api/pool/totalPaidKAS`);
     const response = await fetch(`${baseUrl}/api/pool/totalPaidKAS`, {
       headers: {
         'x-trace-id': traceId || '',

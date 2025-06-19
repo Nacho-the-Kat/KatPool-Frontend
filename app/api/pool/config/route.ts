@@ -18,7 +18,6 @@ export async function GET() {
 
   try {
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
-    console.log('url', `${baseUrl}/config`);
     const response = await fetch(`${baseUrl}/config`, {
       method: 'GET',
       headers: {
