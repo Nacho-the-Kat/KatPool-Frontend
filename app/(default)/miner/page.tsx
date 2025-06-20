@@ -10,6 +10,7 @@ import SharesCard from './shares-card'
 import EarningsCard from './earnings-card'
 import WorkersCard from './workers-card'
 import WalletCard from './wallet-card'
+import TotalEarnedBanner from './total-earned-banner'
 import { NachoPriceProvider } from './nacho-price-context'
 
 export default function MinerDashboard() {
@@ -25,6 +26,7 @@ export default function MinerDashboard() {
       </div>
 
       <NachoPriceProvider>
+        <TotalEarnedBanner />
         <div className="grid grid-cols-12 gap-6">
           <Suspense fallback={<div className="col-span-full xl:col-span-8 bg-gray-100 dark:bg-gray-800 rounded-xl h-[400px] animate-pulse"/>}>
             <PerformanceCard />
