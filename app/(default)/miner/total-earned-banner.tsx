@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { $fetch } from 'ofetch'
 import Image from 'next/image'
@@ -10,7 +10,7 @@ interface TotalEarnedData {
   totalNacho: number
 }
 
-export default function TotalEarnedBanner() {
+function TotalEarnedBannerContent() {
   const searchParams = useSearchParams()
   const [data, setData] = useState<TotalEarnedData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -137,5 +137,37 @@ export default function TotalEarnedBanner() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function TotalEarnedBanner() {
+  return (
+    <Suspense fallback={
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700 mb-6">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-3">
+                <div className="text-primary-500">
+                  <Image src="/images/kaspa-dark-wide.svg" alt="Kaspa Logo" width={32} height={32} className="w-7 h-7" />
+                </div>
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Earned KAS:</span>
+                <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="text-primary-500">
+                  <Image src="/images/nacho.svg" alt="Nacho Logo" width={32} height={32} className="w-7 h-7" />
+                </div>
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Earned NACHO:</span>
+                <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <TotalEarnedBannerContent />
+    </Suspense>
   )
 } 
