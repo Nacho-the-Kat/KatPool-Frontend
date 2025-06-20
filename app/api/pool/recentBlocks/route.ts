@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
-    const perPage = searchParams.get('perPage') || '10';
+    const perPage = searchParams.get('perPage') || '20';
 
     const response = await fetch(
       `${baseUrl}/api/pool/blockdetails?currentPage=${page}&perPage=${perPage}`,

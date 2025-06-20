@@ -196,7 +196,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               
               // Convert from satoshis to KAS (divide by 1e8) and format
               const kasAmount = data.data.totalPaidKAS / 1e8;
-              result = `${kasAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })} KAS`;
+              result = `${kasAmount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
             } catch (error) {
               console.error('Error fetching total paid KAS:', error);
               result = 'Error';
@@ -215,7 +215,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               
               // Convert from satoshis to NACHO (divide by 1e8) and format
               const nachoAmount = data.data.totalPaidNACHO / 1e8;
-              result = `${nachoAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+              result = `${nachoAmount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
             } catch (error) {
               console.error('Error fetching total paid NACHO:', error);
               result = 'Error';
