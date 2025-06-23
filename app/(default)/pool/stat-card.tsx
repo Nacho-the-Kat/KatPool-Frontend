@@ -10,7 +10,7 @@ interface StatCardProps {
   dataType: 'daaScore' | 'supply' | 'difficulty' | 'blockCount' | 'hashrate' | 
             'minedPercent' | 'nextReduction' | 'nextReward' | 'blockReward' | 'totalSupply' | 
             'poolHashrate' | 'poolBlocks' | 'poolMiners' | 'pool24hBlocks' |
-            'price' | 'totalPaidKas' | 'totalPaidNacho' | 'kasThreshold' | 'nachThreshold' | 'payoutSchedule'
+            'price' | 'totalPaidKas' | 'totalPaidNacho' | 'kasThreshold' | 'nachThreshold' | 'payoutSchedule' | 'poolLuck'
   label: string
   icon: ReactNode | 'kaspa'
 }
@@ -269,6 +269,44 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = data.data.payoutSchedule;
             } catch (error) {
               console.error('Error fetching payout schedule:', error);
+              result = 'Error';
+            }
+            break
+          case 'poolLuck':
+            try {
+              const poolHashrateData = await $fetch('/api/pool/hashrate', {
+                retry: 1,
+                timeout: 5000,
+              });
+              
+              if (poolHashrateData.status !== 'success' || !poolHashrateData.data?.result?.[0]?.value?.[1]) {
+                throw new Error('Invalid pool hashrate response');
+              }
+              
+              const poolHashrate = Number(poolHashrateData.data.result[0].value[1]);
+              
+              // Fetch network hashrate
+              const networkHashrateResponse = await KaspaAPI.network.getHashrate(false);
+              const networkHashrate = Number(networkHashrateResponse.hashrate) * 1000; // adjust units
+              
+              // Fetch 24h blocks
+              const blocks24hData = await $fetch('/api/pool/blocks24h', {
+                retry: 1,
+                timeout: 5000,
+              });
+              
+              if (blocks24hData.status !== 'success' || typeof blocks24hData.data?.totalBlocks24h !== 'number') {
+                throw new Error('Invalid 24h blocks response');
+              }
+              
+              const actualBlocks24h = blocks24hData.data.totalBlocks24h;
+              const kaspaBlocksPerDay = 864000; // number of blocks per day in kaspa
+              const expected24hBlocks = (poolHashrate / networkHashrate) * kaspaBlocksPerDay;
+              // Calculate luck: Expected Blocks / Actual Blocks
+              const luckPercentage = ((actualBlocks24h / expected24hBlocks) * 100).toFixed(2);
+              result = `${luckPercentage}%`;
+            } catch (error) {
+              console.error('Error calculating pool luck:', error);
               result = 'Error';
             }
             break
