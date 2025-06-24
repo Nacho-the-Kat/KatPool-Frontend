@@ -50,8 +50,9 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
             break
           case 'hashrate':
             const hashrateResponse = await KaspaAPI.network.getHashrate(false)
-            const hashrate = Number(hashrateResponse.hashrate)
-            result = `${(hashrate / 1e6).toFixed(2)} EH/s`
+            const hashrate = Number(hashrateResponse.hashrate) * 1000; // adjust units
+            const formattedHashrate = formatHashrate(hashrate)
+            result = `${formattedHashrate}`
             break
           case 'minedPercent':
             const supplyData = await KaspaAPI.network.getCoinSupply()
