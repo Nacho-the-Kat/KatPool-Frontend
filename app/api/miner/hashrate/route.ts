@@ -58,6 +58,30 @@ function filterOutAnomalies(
   });
 }
 
+// TODO: remove this after fix on backend side
+function removeConsecutiveDuplicates(data: {
+  metric: { wallet_address: string };
+  values: [number, string][];
+}[]) {
+  const clonedData = JSON.parse(JSON.stringify(data));
+
+  clonedData.data.result.forEach((entry: { values: string | any[]; }) => {
+    let prevValue: string | null = null;
+
+    for (let i = 0; i < entry.values.length; i++) {
+      const currentValue = entry.values[i][1];
+      if (currentValue === prevValue) {
+        entry.values[i][1] = '0';
+      } else {
+        prevValue = currentValue;
+      }
+    }
+  });
+
+  return clonedData;
+}
+
+
 export async function GET(request: Request) {
   const headersList = headers();
   const traceId = headersList.get('x-trace-id') || undefined;
@@ -85,13 +109,13 @@ export async function GET(request: Request) {
     const recentStartTime = endTime - (2 * 60 * 60); // Last 2 hours
     const startTime = endTime - (days * 24 * 60 * 60);
 
-    // Fetch recent data (5-minute intervals)
-    const recentUrl = new URL(`${baseUrl}/api/v1/query_range`);
     const recentQuery = `sum(miner_hash_rate_GHps{wallet_address="${wallet}"}) by (wallet_address)`;
-    recentUrl.searchParams.append('query', recentQuery);
-    recentUrl.searchParams.append('start', recentStartTime.toString());
-    recentUrl.searchParams.append('end', endTime.toString());
-    recentUrl.searchParams.append('step', (recentStepMinutes * 60).toString());
+    // Fetch recent data (5-minute intervals)
+    // const recentUrl = new URL(`${baseUrl}/api/v1/query_range`);
+    // recentUrl.searchParams.append('query', recentQuery);
+    // recentUrl.searchParams.append('start', recentStartTime.toString());
+    // recentUrl.searchParams.append('end', endTime.toString());
+    // recentUrl.searchParams.append('step', (recentStepMinutes * 60).toString());
 
     // Fetch historical data with coarser granularity
     const historicalUrl = new URL(`${baseUrl}/api/v1/query_range`);
@@ -100,12 +124,12 @@ export async function GET(request: Request) {
     historicalUrl.searchParams.append('end', recentStartTime.toString());
     historicalUrl.searchParams.append('step', (historicalStepHours * 3600).toString());
 
-    const [recentResponse, historicalResponse] = await Promise.all([
-      fetch(recentUrl, {
-        headers: {
-          'x-trace-id': traceId || '',
-        },
-      }),
+    const [/*recentResponse,*/ historicalResponse] = await Promise.all([
+      // fetch(recentUrl, {
+      //   headers: {
+      //     'x-trace-id': traceId || '',
+      //   },
+      // }),
       fetch(historicalUrl, {
         headers: {
           'x-trace-id': traceId || '',
@@ -113,51 +137,58 @@ export async function GET(request: Request) {
       })
     ]);
 
-    if (!recentResponse.ok || !historicalResponse.ok) {
+    if (!historicalResponse.ok) {
       logger.error('Pool API error:', {
-        recentStatus: recentResponse.status,
+        // recentStatus: recentResponse.status,
         historicalStatus: historicalResponse.status,
-        recentUrl: recentUrl.toString(),
+        // recentUrl: recentUrl.toString(),
         historicalUrl: historicalUrl.toString(),
         traceId
       });
-      throw new Error(`HTTP error! status: ${recentResponse.status} / ${historicalResponse.status}`);
+      throw new Error(`HTTP error! status: ${historicalResponse.status}`);
     }
 
-    const [recentData, historicalData] = await Promise.all([
-      recentResponse.json(),
-      historicalResponse.json()
-    ]);
+    // const [recentData, historicalData] = await Promise.all([
+    //   recentResponse.json(),
+    //   historicalResponse.json()
+    // ]);
+    const historicalData = await historicalResponse.json();
 
-    const filteredHistoricalData = await filterOutAnomalies(historicalData.data.result);
+    // TODO: get rid of removeConsecutiveDuplicates after fix on backend side
+    const historicalDataWithoutConsecutiveDuplicates = await removeConsecutiveDuplicates(historicalData);
+    const filteredHistoricalData = await filterOutAnomalies(historicalDataWithoutConsecutiveDuplicates.data.result);
+
     // Merge the datasets
-    if (recentData.status === 'success' && historicalData.status === 'success') {
-      const mergedResult = recentData.data.result.map((series: any) => {
-        const historicalSeries = filteredHistoricalData.find(
-          (h: any) => h.metric.wallet_address === series.metric.wallet_address
-        );
-        
-        if (historicalSeries) {
-          return {
-            ...series,
-            values: [...historicalSeries.values, ...series.values]
-          };
-        }
-        return series;
-      });
+    // if (recentDataWithoutConsecutiveDuplicates.status === 'success' && historicalData.status === 'success') {
+    //   const mergedResult = recentDataWithoutConsecutiveDuplicates.data.result.map((series: any) => {
+    //     const historicalSeries = filteredHistoricalData.find(
+    //       (h: any) => h.metric.wallet_address === series.metric.wallet_address
+    //     );
 
-      return NextResponse.json({
-        status: 'success',
-        data: {
-          resultType: recentData.data.resultType,
-          result: mergedResult
-        }
-      });
-    }
+    //     if (historicalSeries) {
+    //       return {
+    //         ...series,
+    //         values: [...historicalSeries.values, ...series.values]
+    //       };
+    //     }
+    //     return series;
+    //   });
+
+    //   return NextResponse.json({
+    //     status: 'success',
+    //     data: {
+    //       resultType: recentData.data.resultType,
+    //       result: mergedResult
+    //     }
+    //   });
+    // }
 
     return NextResponse.json({
-      status: 'error',
-      error: 'Failed to fetch complete hashrate data'
+      status: 'success',
+      data: {
+        resultType: filteredHistoricalData,
+        result: filteredHistoricalData
+      }
     });
   } catch (error: unknown) {
     logger.error('Error in miner hashrate API:', { error: error instanceof Error ? error.message : String(error), traceId });
