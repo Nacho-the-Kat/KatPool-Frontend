@@ -26,6 +26,17 @@ export default function PoolHashrateOverTime() {
     { label: 'Last 6 Months', value: '180d' },
   ];
 
+  const getRangeLabel = (range: string) => {
+    switch (range) {
+      case '7d': return 'Last 7 Days';
+      case '30d': return 'Last 30 Days';
+      case '90d': return 'Last 3 Months';
+      case '180d': return 'Last 6 Months';
+      case '365d': return 'Last Year';
+      default: return 'Last 7 Days';
+    }
+  };
+
   const fetchData = async (range: string) => {
     try {
       setIsLoading(true);
@@ -113,7 +124,9 @@ export default function PoolHashrateOverTime() {
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Pool Hashrate over time</h2>
           <TimeRangeMenu align="right" currentRange={timeRange} onRangeChange={handleRangeChange} />
         </header>
-        <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">Average Hashrate</div>
+        <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">
+          Average Pool Hashrate {getRangeLabel(timeRange)}
+        </div>
         <div className="flex items-start">
           {isLoading ? (
             <div className="h-8 w-28 bg-gray-100 dark:bg-gray-700/50 animate-pulse rounded"></div>
