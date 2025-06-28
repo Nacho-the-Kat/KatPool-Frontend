@@ -6,12 +6,12 @@ import { useState, useEffect } from 'react'
 import { $fetch } from 'ofetch'
 
 interface Payout {
-  walletAddress: string
-  kasAmount?: string
-  nachoAmount?: string
-  timestamp: number
-  transactionHash: string
-  type: 'kas' | 'nacho'
+  wallet_address: string
+  nacho_amount?: number
+  amount?: number
+  timestamp: string
+  transaction_hash: string
+  payment_type: 'KAS' | 'NACHO'
 }
 
 interface AggregatedPayout {
@@ -28,26 +28,42 @@ export default function PoolPayouts() {
     const fetchPayouts = async () => {
       try {
         const response = await $fetch('/api/pool/payouts')
+        console.log('API Response:', response)
+        console.log('Response type:', typeof response)
+        console.log('Response.data type:', typeof response.data)
+        console.log('Response.data:', response.data)
+        
         if (response.status === 'success') {
-          // Filter for KAS payouts only before aggregating
-          const kasPayouts = response.data.filter((payout: Payout) => payout.type === 'kas');
+          // Check if response.data is an array, if not, try to access it differently
+          const payoutsData = Array.isArray(response.data) ? response.data : response.data?.payouts || response.data?.data || response.data
+          console.log('Payouts data:', payoutsData)
+          
+          if (!Array.isArray(payoutsData)) {
+            console.error('Payouts data is not an array:', payoutsData)
+            return
+          }
+          
+          // Filter for KAS payouts only
+          const kasPayouts = payoutsData.filter((payout: Payout) => payout.amount && payout.amount > 0);
+          console.log('KAS payouts:', kasPayouts)
           
           // Aggregate payouts by transaction hash
           const aggregated = Object.values(
             kasPayouts.reduce((acc: Record<string, AggregatedPayout>, payout: Payout) => {
-              if (!acc[payout.transactionHash]) {
-                acc[payout.transactionHash] = {
+              if (!acc[payout.transaction_hash]) {
+                acc[payout.transaction_hash] = {
                   amount: 0,
-                  timestamp: payout.timestamp,
-                  transactionHash: payout.transactionHash
+                  timestamp: new Date(payout.timestamp).getTime(),
+                  transactionHash: payout.transaction_hash
                 }
               }
-              // Convert kasAmount string to number
-              const amount = payout.kasAmount ? Number(payout.kasAmount) : 0
-              acc[payout.transactionHash].amount += amount
+              // Convert kas_amount to number
+              const amount = payout.amount ? payout.amount : 0
+              acc[payout.transaction_hash].amount += amount
               return acc
             }, {})
           ) as AggregatedPayout[]
+          console.log('Aggregated payouts:', aggregated)
           setPayouts(aggregated)
         }
       } catch (error) {
@@ -61,9 +77,11 @@ export default function PoolPayouts() {
   }, [])
 
   const formatAmount = (amount: number) => {
-    return amount.toLocaleString('en-US', {
+    // Convert from raw amount to KAS (assuming 1 KAS = 100000000 sompi)
+    const kasAmount = amount / 100000000
+    return kasAmount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     })
   }
 
@@ -112,6 +130,9 @@ export default function PoolPayouts() {
       groups[day].push(payout)
       return groups
     }, {})
+
+  // Log groupedPayouts values for debugging
+  console.log('groupedPayouts:', groupedPayouts)
 
   if (isLoading) {
     return (
