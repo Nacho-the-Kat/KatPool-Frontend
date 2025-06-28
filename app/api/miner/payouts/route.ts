@@ -27,10 +27,9 @@ export async function GET(request: Request) {
 
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
     // Build URL with pagination parameters
-    const url = new URL(`${baseUrl}/api/payments/${wallet}`);
+    const url = new URL(`${baseUrl}/api/pool/payouts/${wallet}`);
     url.searchParams.set('page', page.toString());
     url.searchParams.set('perPage', perPage.toString());
-
     // Fetch unified payments endpoint
     const response = await fetch(url.toString(), {
       headers: {
