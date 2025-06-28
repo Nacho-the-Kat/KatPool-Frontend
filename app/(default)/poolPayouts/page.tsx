@@ -14,7 +14,8 @@ interface Payout {
   type: 'kas' | 'nacho'
 }
 
-export default function PoolPayouts() {
+// Component that uses useSearchParams - must be wrapped in Suspense
+function PoolPayoutsContent() {
   const searchParams = useSearchParams()
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(500)
@@ -105,6 +106,23 @@ export default function PoolPayouts() {
   }
 
   return (
+    <div className="grid grid-cols-12 gap-6">
+      <PoolPayoutsCard 
+        currentPage={currentPage} 
+        itemsPerPage={itemsPerPage} 
+        onPageChange={handlePageChange} 
+        onItemsPerPageChange={handleItemsPerPageChange} 
+        totalItems={totalItems} 
+        payouts={payouts} 
+        isLoading={isLoading} 
+        error={error} 
+      />
+    </div>
+  )
+}
+
+export default function PoolPayouts() {
+  return (
     <>
       <Head>
         <title>Pool Payouts - Kat Pool</title>
@@ -119,32 +137,21 @@ export default function PoolPayouts() {
         </div>
 
         {/* Cards */}
-        <div className="grid grid-cols-12 gap-6">
-          <Suspense fallback={
-            <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl p-6">
-              <div className="animate-pulse flex space-x-4">
-                <div className="flex-1 space-y-4 py-1">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
-                  </div>
+        <Suspense fallback={
+          <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl p-6">
+            <div className="animate-pulse flex space-x-4">
+              <div className="flex-1 space-y-4 py-1">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
                 </div>
               </div>
             </div>
-          }>
-            <PoolPayoutsCard 
-              currentPage={currentPage} 
-              itemsPerPage={itemsPerPage} 
-              onPageChange={handlePageChange} 
-              onItemsPerPageChange={handleItemsPerPageChange} 
-              totalItems={totalItems} 
-              payouts={payouts} 
-              isLoading={isLoading} 
-              error={error} 
-            />
-          </Suspense>
-        </div>
+          </div>
+        }>
+          <PoolPayoutsContent />
+        </Suspense>
       </div>
     </>
   )

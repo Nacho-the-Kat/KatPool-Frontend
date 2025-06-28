@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import PayoutsCard from './payouts-card'
+
 interface Payout {
   id: number
   timestamp: number
@@ -13,7 +14,8 @@ interface Payout {
   type: 'kas' | 'nacho'
 }
 
-export default function Payouts() {
+// Component that uses useSearchParams - must be wrapped in Suspense
+function PayoutsContent() {
   const searchParams = useSearchParams()
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -134,7 +136,32 @@ export default function Payouts() {
 
       {/* Cards */}
       <div className="grid grid-cols-12 gap-6">
-        <Suspense fallback={
+        <PayoutsCard 
+          currentPage={currentPage} 
+          itemsPerPage={itemsPerPage} 
+          onPageChange={handlePageChange} 
+          onItemsPerPageChange={handleItemsPerPageChange} 
+          totalItems={totalItems} 
+          payouts={payouts} 
+          isLoading={isLoading} 
+          error={error} 
+        />
+      </div>
+    </div>
+  )
+}
+
+// Main component that wraps the content in Suspense
+export default function Payouts() {
+  return (
+    <Suspense fallback={
+      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
+        <div className="sm:flex sm:justify-between sm:items-center mb-8">
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Miner Payout History</h1>
+          </div>
+        </div>
+        <div className="grid grid-cols-12 gap-6">
           <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl p-6">
             <div className="animate-pulse flex space-x-4">
               <div className="flex-1 space-y-4 py-1">
@@ -146,19 +173,10 @@ export default function Payouts() {
               </div>
             </div>
           </div>
-        }>
-          <PayoutsCard 
-            currentPage={currentPage} 
-            itemsPerPage={itemsPerPage} 
-            onPageChange={handlePageChange} 
-            onItemsPerPageChange={handleItemsPerPageChange} 
-            totalItems={totalItems} 
-            payouts={payouts} 
-            isLoading={isLoading} 
-            error={error} 
-          />
-        </Suspense>
+        </div>
       </div>
-    </div>
+    }>
+      <PayoutsContent />
+    </Suspense>
   )
 }
