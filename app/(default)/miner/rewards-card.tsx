@@ -24,13 +24,9 @@ export default function AnalyticsCard02() {
   const [recentPayouts, setRecentPayouts] = useState<Payout[]>([])
   const [pendingNachoRebate, setPendingNachoRebate] = useState<string>('--')
   const [kasPrice, setKasPrice] = useState<number | null>(null)
+  const [payoutsLoading, setPayoutsLoading] = useState(false)
+  const [payoutsError, setPayoutsError] = useState<string | null>(null)
   const { price: nachoPrice, isLoading: nachoPriceLoading } = useNachoPrice()
-
-  // Add debug log for nacho price
-  useEffect(() => {
-    console.log('Current NACHO Price:', nachoPrice);
-    console.log('NACHO Price Loading:', nachoPriceLoading);
-  }, [nachoPrice, nachoPriceLoading]);
 
   // Replace both balance and rebate effects with a single one
   useEffect(() => {
@@ -102,20 +98,71 @@ export default function AnalyticsCard02() {
       if (!walletAddress) return;
 
       try {
-        const response = await $fetch(`/api/miner/payments?wallet=${walletAddress}`, {
+        setPayoutsLoading(true);
+        setPayoutsError(null);
+        const response = await $fetch(`/api/miner/payouts?wallet=${walletAddress}&perPage=4`, {
           retry: 3,
           retryDelay: 1000,
           timeout: 10000,
         });
 
-        if (response.status === 'success') {
-          // Take the 4 most recent payouts - no need to filter by wallet since
-          // the API already returns only this wallet's payouts
-          const recentPayouts = response.data.slice(0, 4);
-          setRecentPayouts(recentPayouts);
+        if (response.status === 'success' && response.data && response.data.data) {
+          // The API returns data in a nested structure: response.data.data
+          const payoutsData = Array.isArray(response.data.data) ? response.data.data : [];
+          
+          // Transform the backend data to match frontend interface
+          const transformedPayouts = payoutsData.map((payment: any) => {
+            try {
+              // Handle different field name variations
+              const walletAddress = Array.isArray(payment.wallet_address) 
+                ? payment.wallet_address[0] 
+                : payment.wallet_address || payment.walletAddress;
+              
+              const transactionHash = payment.transaction_hash || payment.transactionHash;
+              const timestamp = payment.timestamp ? new Date(payment.timestamp).getTime() : Date.now();
+              
+              // Determine payment type and amount
+              let kasAmount: string | undefined;
+              let nachoAmount: string | undefined;
+              let type: 'kas' | 'nacho';
+              
+              if (payment.payment_type === 'KAS' || payment.amount) {
+                type = 'kas';
+                kasAmount = payment.amount ? (Number(BigInt(payment.amount)) / 1e8).toFixed(8) : undefined;
+              } else if (payment.payment_type === 'NACHO' || payment.nacho_amount) {
+                type = 'nacho';
+                nachoAmount = payment.nacho_amount ? (Number(BigInt(payment.nacho_amount)) / 1e8).toFixed(8) : undefined;
+              } else {
+                // Default to KAS if no type specified
+                type = 'kas';
+                kasAmount = payment.amount ? (Number(BigInt(payment.amount)) / 1e8).toFixed(8) : undefined;
+              }
+              
+              return {
+                walletAddress,
+                kasAmount,
+                nachoAmount,
+                timestamp,
+                transactionHash,
+                type
+              };
+            } catch (transformError) {
+              console.error('Error transforming payout:', payment, transformError);
+              return null;
+            }
+          }).filter(Boolean) as Payout[];
+          
+          setRecentPayouts(transformedPayouts);
+        } else {
+          setRecentPayouts([]);
+          setPayoutsError('Invalid response format from server');
         }
       } catch (error) {
         console.error('Error fetching payouts:', error)
+        setRecentPayouts([]);
+        setPayoutsError(error instanceof Error ? error.message : 'Failed to fetch payouts');
+      } finally {
+        setPayoutsLoading(false);
       }
     };
 
@@ -241,52 +288,86 @@ export default function AnalyticsCard02() {
             </thead>
             {/* Table body */}
             <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
-              {recentPayouts.map((payout) => (
-                <tr key={payout.transactionHash}>
-                  <td className="py-2">
-                    <div className="text-left text-gray-500">
-                      {formatTimestamp(payout.timestamp)}
-                      <span className="mx-2">•</span>
-                      <a
-                        href={`https://kas.fyi/transaction/${payout.transactionHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-primary-500 dark:hover:text-primary-400"
-                      >
-                        {formatTxHash(payout.transactionHash)}
-                      </a>
-                    </div>
-                  </td>
-                  <td className="py-2">
-                    <div className="font-medium text-right text-gray-800 dark:text-gray-100">
-                      {payout.type === 'kas' && payout.kasAmount ? `${formatAmount(Number(payout.kasAmount))} KAS` : '--'}
-                    </div>
-                  </td>
-                  <td className="py-2">
-                    <div className="font-medium text-right text-green-500">
-                      <span className="text-[13px] text-gray-500 dark:text-gray-400">
-                        {payout.type === 'nacho' && payout.nachoAmount ? `${formatAmount(Number(payout.nachoAmount))} NACHO` : '--'}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {/* Fill remaining rows with placeholders if less than 4 payouts */}
-              {Array.from({ length: Math.max(0, 4 - recentPayouts.length) }).map((_, index) => (
-                <tr key={`placeholder-${index}`}>
-                  <td className="py-2">
-                    <div className="text-left text-gray-500">--</div>
-                  </td>
-                  <td className="py-2">
-                    <div className="font-medium text-right text-gray-800 dark:text-gray-100">--</div>
-                  </td>
-                  <td className="py-2">
-                    <div className="font-medium text-right">
-                      <span className="text-[13px] text-gray-500 dark:text-gray-400">--</span>
+              {payoutsLoading ? (
+                // Loading state
+                Array.from({ length: 4 }).map((_, index) => (
+                  <tr key={`loading-${index}`}>
+                    <td className="py-2">
+                      <div className="text-left text-gray-500">
+                        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-24 rounded"></div>
+                      </div>
+                    </td>
+                    <td className="py-2">
+                      <div className="font-medium text-right">
+                        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-16 rounded ml-auto"></div>
+                      </div>
+                    </td>
+                    <td className="py-2">
+                      <div className="font-medium text-right">
+                        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-16 rounded ml-auto"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : payoutsError ? (
+                // Error state
+                <tr>
+                  <td colSpan={3} className="py-4">
+                    <div className="text-center text-red-500 dark:text-red-400 text-sm">
+                      {payoutsError}
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                <>
+                  {recentPayouts.map((payout) => (
+                    <tr key={payout.transactionHash}>
+                      <td className="py-2">
+                        <div className="text-left text-gray-500">
+                          {formatTimestamp(payout.timestamp)}
+                          <span className="mx-2">•</span>
+                          <a
+                            href={`https://kas.fyi/transaction/${payout.transactionHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-primary-500 dark:hover:text-primary-400"
+                          >
+                            {formatTxHash(payout.transactionHash)}
+                          </a>
+                        </div>
+                      </td>
+                      <td className="py-2">
+                        <div className="font-medium text-right text-gray-800 dark:text-gray-100">
+                          {payout.type === 'kas' && payout.kasAmount ? `${formatAmount(Number(payout.kasAmount))} KAS` : '--'}
+                        </div>
+                      </td>
+                      <td className="py-2">
+                        <div className="font-medium text-right text-green-500">
+                          <span className="text-[13px] text-gray-500 dark:text-gray-400">
+                            {payout.type === 'nacho' && payout.nachoAmount ? `${formatAmount(Number(payout.nachoAmount))} NACHO` : '--'}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Fill remaining rows with placeholders if less than 4 payouts */}
+                  {Array.from({ length: Math.max(0, 4 - recentPayouts.length) }).map((_, index) => (
+                    <tr key={`placeholder-${index}`}>
+                      <td className="py-2">
+                        <div className="text-left text-gray-500">--</div>
+                      </td>
+                      <td className="py-2">
+                        <div className="font-medium text-right text-gray-800 dark:text-gray-100">--</div>
+                      </td>
+                      <td className="py-2">
+                        <div className="font-medium text-right">
+                          <span className="text-[13px] text-gray-500 dark:text-gray-400">--</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              )}
             </tbody>
           </table>
         </div>
