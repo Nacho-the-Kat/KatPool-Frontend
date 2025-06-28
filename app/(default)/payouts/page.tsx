@@ -3,8 +3,6 @@
 import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import PayoutsCard from './payouts-card'
-import logger from '../../../lib/utils/logger'
-
 interface Payout {
   id: number
   timestamp: number
@@ -56,12 +54,12 @@ export default function Payouts() {
 
     try {
       const params = new URLSearchParams({
-        wallet: wallet,
         page: page.toString(),
-        perPage: perPage.toString()
+        perPage: perPage.toString(),
+        wallet,
       })
       
-      const response = await fetch(`/api/miner/payments?${params}`)
+      const response = await fetch(`/api/miner/payouts?${params}`)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -69,9 +67,11 @@ export default function Payouts() {
 
       const result = await response.json()
       
-      if (result.status === 'success') {
+      if (result.data && result.data.data) {
+        const data = Array.isArray(result.data.data) ? result.data.data : [];
+        
         // Transform the backend data to match frontend interface
-        const transformedPayouts = (result.data.data || []).map((payment: any, index: number) => ({
+        const transformedPayouts = data.map((payment: any, index: number) => ({
           id: index + 1, // Generate ID since backend doesn't provide one
           timestamp: new Date(payment.timestamp).getTime(),
           transactionHash: payment.transaction_hash,
@@ -84,10 +84,9 @@ export default function Payouts() {
         setPayouts(transformedPayouts)
         setTotalItems(result.data.pagination?.totalCount || 0)
       } else {
-        throw new Error(result.error || 'Failed to fetch payouts')
+        throw new Error('Invalid response format')
       }
     } catch (err) {
-      logger.error('Error fetching payouts:', { error: err })
       setError(err instanceof Error ? err.message : 'Failed to fetch payouts')
       setPayouts([])
       setTotalItems(0)
