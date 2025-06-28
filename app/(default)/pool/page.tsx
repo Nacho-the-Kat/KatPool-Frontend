@@ -1,3 +1,5 @@
+'use client'
+
 export const metadata = {
   title: 'Statistics - Kat Pool',
   description: 'Where Kaspa Miners Thrive',
