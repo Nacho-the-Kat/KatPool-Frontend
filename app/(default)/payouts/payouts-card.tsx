@@ -6,16 +6,25 @@ import Link from 'next/link'
 import { $fetch } from 'ofetch'
 import { Download } from 'lucide-react'
 
-type SortDirection = 'asc' | 'desc'
-type SortKey = 'timestamp' | 'transactionHash' | 'amount'
-
 interface Payout {
+  id: number
   timestamp: number
   transactionHash: string
   walletAddress: string
   kasAmount?: string
   nachoAmount?: string
   type: 'kas' | 'nacho'
+}
+
+interface PayoutsCardProps {
+  currentPage: number
+  itemsPerPage: number
+  onPageChange: (page: number) => void
+  onItemsPerPageChange: (itemsPerPage: number) => void
+  totalItems: number
+  payouts: Payout[]
+  isLoading: boolean
+  error: string | null
 }
 
 const downloadCSV = (data: Payout[]) => {
@@ -42,14 +51,21 @@ const downloadCSV = (data: Payout[]) => {
   document.body.removeChild(link)
 }
 
-export default function PayoutsCard() {
+export default function PayoutsCard({ 
+  currentPage, 
+  itemsPerPage, 
+  onPageChange,
+  onItemsPerPageChange,
+  totalItems,
+  payouts,
+  isLoading,
+  error
+}: PayoutsCardProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [payouts, setPayouts] = useState<Payout[]>([])
-  const [sortKey, setSortKey] = useState<SortKey>('timestamp')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
 
   useEffect(() => {
     // Handle wallet address initialization
@@ -58,40 +74,19 @@ export default function PayoutsCard() {
     
     if (queryWallet) {
       setWalletAddress(queryWallet)
-      fetchPayouts(queryWallet)
-    } else if (savedWallet) {
-      router.push(`/payouts?wallet=${savedWallet}`)
+    } else if (savedWallet && !queryWallet) {
+      // Only redirect if we have a saved wallet but no query parameter
+      // This prevents infinite redirects
+      const currentUrl = new URL(window.location.href)
+      currentUrl.searchParams.set('wallet', savedWallet)
+      router.replace(currentUrl.toString())
       setWalletAddress(savedWallet)
-    } else {
-      setIsLoading(false)
     }
   }, [router, searchParams])
 
-  const fetchPayouts = async (wallet: string) => {
-    try {
-      setIsLoading(true)
-      const response = await $fetch(`/api/miner/payments?wallet=${wallet}`, {
-        retry: 3,
-        retryDelay: 1000,
-        timeout: 10000,
-      })
-      
-      if (response.status === 'success') {
-        setPayouts(response.data)
-      }
-    } catch (error) {
-      console.error('Error fetching payouts:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortKey(key)
-      setSortDirection('desc')
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      onPageChange(newPage)
     }
   }
 
@@ -117,51 +112,28 @@ export default function PayoutsCard() {
     })
   }
 
-  const sortedPayouts = [...payouts].sort((a, b) => {
-    const modifier = sortDirection === 'asc' ? 1 : -1
-    
-    switch (sortKey) {
-      case 'timestamp':
-        return (a.timestamp - b.timestamp) * modifier
-      case 'transactionHash':
-        return a.transactionHash.localeCompare(b.transactionHash) * modifier
-      case 'amount':
-        const aAmount = a.type === 'kas' ? Number(a.kasAmount || 0) : 0
-        const bAmount = b.type === 'kas' ? Number(b.kasAmount || 0) : 0
-        return (aAmount - bAmount) * modifier
-      default:
-        return 0
-    }
-  })
-
-  const SortIcon = ({ active, direction }: { active: boolean; direction: SortDirection }) => (
-    <span className={`ml-1 inline-block ${active ? 'text-primary-500' : 'text-gray-400'}`}>
-      {direction === 'asc' ? '↑' : '↓'}
-    </span>
-  )
-
-  const SortableHeader = ({ label, sortKey: key }: { label: string; sortKey: SortKey }) => (
-    <div 
-      className="font-semibold cursor-pointer hover:text-primary-500 flex items-center justify-center"
-      onClick={() => handleSort(key)}
-    >
-      {label}
-      <SortIcon active={sortKey === key} direction={sortDirection} />
-    </div>
-  )
-
   if (isLoading) {
     return (
-      <div className="relative col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl p-4">
-        <div className="text-center text-gray-500 dark:text-gray-400">
-          Loading...
+      <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl p-8">
+        <div className="flex items-center justify-center">
+          <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
         </div>
       </div>
-    )
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl p-8">
+        <div className="flex items-center justify-center text-red-500">
+          {error}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="relative col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+    <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
       {!walletAddress && (
         <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center">
           <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">
@@ -177,15 +149,34 @@ export default function PayoutsCard() {
             : 'Payout History'
           }
         </h2>
-        {walletAddress && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => downloadCSV(sortedPayouts)}
-            className="p-1.5 text-gray-500 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
-            title="Export as CSV"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Download className="w-5 h-5" />
+            Previous
           </button>
-        )}
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+          {walletAddress && (
+            <button
+              onClick={() => downloadCSV(payouts)}
+              className="p-1.5 text-gray-500 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
+              title="Export as CSV"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </header>
       
       <div className="p-3">
@@ -194,13 +185,13 @@ export default function PayoutsCard() {
             <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm">
               <tr>
                 <th className="p-2 whitespace-nowrap">
-                  <SortableHeader label="Time" sortKey="timestamp" />
+                  <div className="font-semibold text-center">Time</div>
                 </th>
                 <th className="p-2 whitespace-nowrap">
-                  <SortableHeader label="Transaction" sortKey="transactionHash" />
+                  <div className="font-semibold text-center">Transaction</div>
                 </th>
                 <th className="p-2 whitespace-nowrap">
-                  <SortableHeader label="KAS Amount" sortKey="amount" />
+                  <div className="font-semibold text-center">KAS Amount</div>
                 </th>
                 <th className="p-2 whitespace-nowrap">
                   <div className="font-semibold text-center">NACHO Rebate</div>
@@ -208,8 +199,8 @@ export default function PayoutsCard() {
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
-              {sortedPayouts.map((payout) => (
-                <tr key={payout.transactionHash}>
+              {payouts.map((payout) => (
+                <tr key={payout.id}>
                   <td className="p-2 whitespace-nowrap">
                     <div className="text-center">
                       {formatTimestamp(payout.timestamp)}
@@ -242,6 +233,42 @@ export default function PayoutsCard() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="border-t border-gray-100 dark:border-gray-700/60 mt-4" />
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 dark:text-gray-300">Show:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+              className="px-2 pr-7 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Records</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>
