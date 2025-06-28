@@ -1,7 +1,4 @@
-export const metadata = {
-  title: 'Statistics - Kat Pool',
-  description: 'Where Kaspa Miners Thrive',
-}
+'use client'
 
 import StatCard from './stat-card'
 import PoolMinersOverTime from './poolMinersOverTime'

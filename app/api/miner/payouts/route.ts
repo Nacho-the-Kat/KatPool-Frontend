@@ -11,12 +11,23 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
+    const wallet = searchParams.get('wallet');
     const page = parseInt(searchParams.get('page') || '1');
-    const perPage = parseInt(searchParams.get('perPage') || '500');
+    const perPage = parseInt(searchParams.get('perPage') || '20');
+
+    if (!wallet) {
+      return NextResponse.json(
+        { 
+          status: 'error',
+          error: 'Wallet address is required' 
+        },
+        { status: 400 }
+      );
+    }
 
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
     // Build URL with pagination parameters
-    const url = new URL(`${baseUrl}/api/pool/payouts`);
+    const url = new URL(`${baseUrl}/api/pool/payouts/${wallet}`);
     url.searchParams.set('page', page.toString());
     url.searchParams.set('perPage', perPage.toString());
     // Fetch unified payments endpoint
@@ -36,15 +47,16 @@ export async function GET(request: Request) {
       data
     });
   } catch (error) {
-    logger.error('Error fetching pool payouts:', { 
+    logger.error('Error fetching payments:', { 
       error: error instanceof Error ? error.message : String(error), 
-      traceId
+      traceId,
+      wallet: new URL(request.url).searchParams.get('wallet')
     });
     
     return NextResponse.json(
       { 
         status: 'error',
-        error: error instanceof Error ? error.message : 'Failed to fetch pool payouts' 
+        error: error instanceof Error ? error.message : 'Failed to fetch payments' 
       },
       { status: 500 }
     );
