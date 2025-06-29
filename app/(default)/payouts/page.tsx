@@ -78,8 +78,8 @@ function PayoutsContent() {
           timestamp: new Date(payment.timestamp).getTime(),
           transactionHash: payment.transaction_hash,
           walletAddress: Array.isArray(payment.wallet_address) ? payment.wallet_address[0] : payment.wallet_address,
-          kasAmount: payment.payment_type === 'KAS' ? (Number(BigInt(payment.amount)) / 1e8).toFixed(8) : undefined,
-          nachoAmount: payment.payment_type === 'NACHO' ? (Number(BigInt(payment.nacho_amount)) / 1e8).toFixed(8) : undefined,
+          kasAmount: payment.amount ? (Number(BigInt(payment.amount)) / 1e8).toFixed(8) : undefined,
+          nachoAmount: payment.nacho_amount ? (Number(BigInt(payment.nacho_amount)) / 1e8).toFixed(8) : undefined,
           type: payment.payment_type === 'KAS' ? 'kas' : 'nacho'
         }))
         

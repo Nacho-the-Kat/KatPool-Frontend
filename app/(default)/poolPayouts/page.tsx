@@ -63,8 +63,8 @@ function PoolPayoutsContent() {
           id: index + 1, // Generate ID since backend doesn't provide one
           timestamp: new Date(payout.timestamp).getTime(),
           transactionHash: payout.transaction_hash,
-          kasAmount: payout.payment_type === 'KAS' ? (Number(BigInt(payout.amount)) / 1e8).toFixed(8) : undefined,
-          nachoAmount: payout.payment_type === 'NACHO' ? (Number(BigInt(payout.nacho_amount)) / 1e8).toFixed(8) : undefined,
+          kasAmount: payout.amount ? (Number(BigInt(payout.amount)) / 1e8).toFixed(8) : undefined,
+          nachoAmount: payout.nacho_amount ? (Number(BigInt(payout.nacho_amount)) / 1e8).toFixed(8) : undefined,
           type: payout.payment_type === 'KAS' ? 'kas' : 'nacho'
         }))
         
