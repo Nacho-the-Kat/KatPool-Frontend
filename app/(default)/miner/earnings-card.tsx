@@ -8,8 +8,8 @@ import { useNachoPrice } from './nacho-price-context'
 interface Payment {
   id: number;
   walletAddress: string;
-  kasAmount?: string;
-  nachoAmount?: string;
+  amount?: string;
+  nacho_amount?: string;
   timestamp: number;
   transactionHash: string;
   type: 'kas' | 'nacho';
@@ -71,7 +71,7 @@ export default function AnalyticsCard04() {
           ]),
           // Other data
           Promise.all([
-            $fetch(`/api/miner/payments?wallet=${walletAddress}`),
+            $fetch(`/api/miner/payouts?wallet=${walletAddress}&page=1&perPage=50`), // Fetch more payments
             $fetch('/api/pool/price'),
             $fetch(`/api/miner/currentHashrate?wallet=${walletAddress}`),
           ])
@@ -95,29 +95,36 @@ export default function AnalyticsCard04() {
 
         // Process other data...
         if (paymentsRes.status === 'success') {
-          setHasPayments(paymentsRes.data.length > 0);
-          if (paymentsRes.data.length > 0) {
+          // Handle the new response structure - data is now directly the payments array
+          // Filter to keep only KAS payouts, remove NACHO ones
+          const payments = paymentsRes.data.data.filter((p: Payment) => p.amount);
+          setHasPayments(payments.length > 0);
+          if (payments.length > 0) {
             // get daily estimate based on last 7 payments
-            setRecentPayments(paymentsRes.data);
-            const dailyEstimate = calculateDailyEstimate(paymentsRes.data);
+            setRecentPayments(payments);
+            const dailyEstimate = calculateDailyEstimate(payments);
 
             // get daily estimate based on current hashrate
-            const [hashrate24h, hashrate5m, hashrate7d] = await Promise.all([
+            const [/*hashrate5m,*/hashrate24h, hashrate7d] = await Promise.all([
+              //$fetch(`/api/miner/getAverageHashrate?range=5m&wallet=${walletAddress}`).then(res => res.data),
               $fetch(`/api/miner/getAverageHashrate?range=24h&wallet=${walletAddress}`).then(res => res.data),
-              $fetch(`/api/miner/getAverageHashrate?range=5m&wallet=${walletAddress}`).then(res => res.data),
               $fetch(`/api/miner/getAverageHashrate?range=7d&wallet=${walletAddress}`).then(res => res.data)
             ]);
 
-            const [dailyEstimateByHashrate24h, dailyEstimateByHashrate5m, dailyEstimateByHashrate7d] = await Promise.all([
+            const [/* dailyEstimateByHashrate5m , */dailyEstimateByHashrate24h, dailyEstimateByHashrate7d] = await Promise.all([
+              // calculateDailyEstimateByHashrate(hashrate5m),
               calculateDailyEstimateByHashrate(hashrate24h),
-              calculateDailyEstimateByHashrate(hashrate5m),
               calculateDailyEstimateByHashrate(hashrate7d)
             ]);
 
+            // console.log('dailyEstimateByHashrate5m', dailyEstimateByHashrate5m);
+            console.log('dailyEstimateByHashrate24h', dailyEstimateByHashrate24h);
+            console.log('dailyEstimateByHashrate7d', dailyEstimateByHashrate7d);
+
             // Set dailyKas to the maximum of all estimates
             const maxHashrateEstimate = Math.max(
+              //Number(dailyEstimateByHashrate5m),
               Number(dailyEstimateByHashrate24h),
-              Number(dailyEstimateByHashrate5m),
               Number(dailyEstimateByHashrate7d)
             );
             setDailyKas(BigInt(Math.round(maxHashrateEstimate)));
@@ -251,7 +258,7 @@ export default function AnalyticsCard04() {
     if (payments.length === 0) return BigInt(0);
     
     // Filter for KAS payments only
-    const kasPayments = payments.filter(p => p.type === 'kas' && p.kasAmount);
+    const kasPayments = payments.filter(p => p.amount);
     if (kasPayments.length === 0) return BigInt(0);
     
     let weightedSum = BigInt(0);
@@ -263,7 +270,7 @@ export default function AnalyticsCard04() {
       const weight = Math.exp(-0.6 * index);
       try {
         // Convert string amount to BigInt safely
-        const amount = BigInt(Math.round(Number(payment.kasAmount) * 1e8));
+        const amount = BigInt(Math.round(Number(payment.amount) * 1e8));
         weightedSum += amount * BigInt(Math.round(weight * 1e8)) / BigInt(1e8);
         weightSum += weight;
       } catch (error) {
@@ -315,7 +322,7 @@ export default function AnalyticsCard04() {
     const hashrates: number[] = [];
     for (let i = 1; i < payments.length; i++) {
       const interval = (payments[i - 1].timestamp - payments[i].timestamp) / 1000;
-      const amount = Number(payments[i].kasAmount || 0) / 1e8;
+      const amount = Number(payments[i].amount || 0) / 1e8;
       if (interval > 0) {
         hashrates.push(amount / interval);
       }
