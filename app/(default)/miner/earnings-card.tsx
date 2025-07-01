@@ -270,8 +270,8 @@ export default function AnalyticsCard04() {
       const weight = Math.exp(-0.6 * index);
       try {
         // Convert string amount to BigInt safely
-        const kasAmount = BigInt(Math.round(Number(payment.amount) * 1e8));
-        weightedSum += kasAmount * BigInt(Math.round(weight * 1e8)) / BigInt(1e8);
+        const amount = BigInt(Math.round(Number(payment.amount) * 1e8));
+        weightedSum += amount * BigInt(Math.round(weight * 1e8)) / BigInt(1e8);
         weightSum += weight;
       } catch (error) {
         console.error('Error processing payment amount:', error);
