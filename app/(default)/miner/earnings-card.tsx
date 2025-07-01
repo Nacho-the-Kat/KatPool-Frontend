@@ -117,10 +117,6 @@ export default function AnalyticsCard04() {
               calculateDailyEstimateByHashrate(hashrate7d)
             ]);
 
-            // console.log('dailyEstimateByHashrate5m', dailyEstimateByHashrate5m);
-            console.log('dailyEstimateByHashrate24h', dailyEstimateByHashrate24h);
-            console.log('dailyEstimateByHashrate7d', dailyEstimateByHashrate7d);
-
             // Set dailyKas to the maximum of all estimates
             const maxHashrateEstimate = Math.max(
               //Number(dailyEstimateByHashrate5m),

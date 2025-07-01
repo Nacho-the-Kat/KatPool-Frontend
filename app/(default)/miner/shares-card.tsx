@@ -95,8 +95,14 @@ export default function AnalyticsCard03() {
               return todayValue;
             }
             const previousValue = minerData[sortedDays[i - 1]]?.value || 0;
-            // Ensure we don't return negative values - if the difference is negative, use 0
-            const diff = Math.max(0, todayValue - previousValue);
+            
+            // For any element where current value < previous value, return current value
+            if (todayValue < previousValue) {
+              return todayValue;
+            }
+            
+            // Otherwise return the difference
+            const diff = todayValue - previousValue;
             return diff;
           });
 
@@ -138,6 +144,9 @@ export default function AnalyticsCard03() {
           }))
         };
 
+        // remove first elem
+        filteredData.labels.shift();
+        filteredData.datasets.forEach(dataset => dataset.data.shift());
         setChartData(filteredData);
 
         setError(null);
