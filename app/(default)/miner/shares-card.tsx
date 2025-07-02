@@ -60,8 +60,7 @@ export default function AnalyticsCard03() {
           result.values.forEach(([timestamp, value]) => {
             // Convert timestamp to local date at midnight
             const date = new Date(timestamp * 1000);
-            date.setHours(0, 0, 0, 0);
-            const dayKey = date.toISOString().split('T')[0];
+            const dayKey = date.toLocaleDateString('en-CA'); // en-CA gives YYYY-MM-DD format
             const numValue = Number(value);
             
             // Keep track of the highest value for each day for this miner
@@ -119,14 +118,13 @@ export default function AnalyticsCard03() {
 
         // Format dates for display
         const labels = sortedDays.map(day => {
-          // Add timezone offset to get correct local date
-          const date = new Date(day);
-          const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-          const dayOfMonth = localDate.getDate();
+          // Parse the YYYY-MM-DD string and create a local date
+          const [year, month, dayOfMonth] = day.split('-').map(Number);
+          const date = new Date(year, month - 1, dayOfMonth); // month is 0-indexed
           const suffix = dayOfMonth === 1 ? 'st' : dayOfMonth === 2 ? 'nd' : dayOfMonth === 3 ? 'rd' : 'th';
-          const isToday = localDate.toDateString() === new Date().toDateString();
+          const isToday = date.toDateString() === new Date().toDateString();
           
-          const formatted = localDate.toLocaleDateString('en-US', { 
+          const formatted = date.toLocaleDateString('en-US', { 
             // weekday: 'short',
             month: 'short',
             day: 'numeric'
