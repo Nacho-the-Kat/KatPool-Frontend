@@ -1,93 +1,134 @@
 'use client';
 
-import { useState } from "react";
-import { Menu, X, Zap, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Menu, X, ChevronDown, ExternalLink } from "lucide-react";
+import Image from "next/image";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const navItems = [
+    { href: "/connect", label: "Getting Started" },
+    { href: "/miner", label: "Miner Dashboard" },
+    { href: "/pool", label: "Pool Statistics" },
+    { href: "/topMiners", label: "Top Miners" },
+    { href: "/resources", label: "Resources" },
+  ];
 
   return (
-    <nav className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800/50 sticky top-0 z-50">
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      isScrolled 
+        ? 'bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 shadow-lg' 
+        : 'bg-transparent'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
+          {/* Logo */}
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 p-0.5">
-              <div className="w-full h-full bg-slate-900 rounded-xl flex items-center justify-center">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold text-white">KASPA Pool</span>
-              <span className="text-xs text-teal-400">Enterprise Mining</span>
-            </div>
+            <Image
+              src="/images/navLogo.png"
+              alt="KatPool Logo"
+              width={154}
+              height={38}
+              className="h-10 w-auto"
+            />
           </div>
           
-          <div className="hidden lg:flex items-center space-x-8">
-            <a href="#features" className="text-gray-300 hover:text-teal-400 transition-colors font-medium">
-              Features
-            </a>
-            <a href="#statistics" className="text-gray-300 hover:text-teal-400 transition-colors font-medium">
-              Statistics
-            </a>
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center text-gray-300 hover:text-teal-400 transition-colors font-medium"
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-1">
+            {navItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  isScrolled
+                    ? 'text-white/90'
+                    : 'text-white/90'
+                }`}
               >
-                Resources
-                <ChevronDown className="w-4 h-4 ml-1" />
-              </button>
-              {isDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-xl">
-                  <a href="#getting-started" className="block px-4 py-3 text-gray-300 hover:text-teal-400 hover:bg-slate-700/50 transition-colors">
-                    Getting Started
-                  </a>
-                  <a href="#" className="block px-4 py-3 text-gray-300 hover:text-teal-400 hover:bg-slate-700/50 transition-colors">
-                    API Documentation
-                  </a>
-                  <a href="#" className="block px-4 py-3 text-gray-300 hover:text-teal-400 hover:bg-slate-700/50 transition-colors">
-                    Mining Guide
-                  </a>
-                </div>
-              )}
-            </div>
-            <a href="#contact" className="text-gray-300 hover:text-teal-400 transition-colors font-medium">
-              Contact
-            </a>
-            <button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white px-6 py-2 font-semibold shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 transition-all duration-300 rounded-lg">
-              Start Mining
-            </button>
+                {item.label}
+              </a>
+            ))}
           </div>
 
+          {/* CTA Button */}
+          <div className="hidden lg:flex items-center space-x-4">
+            <a
+              href="/connect"
+              className={`inline-flex items-center px-6 py-2.5 rounded-lg text-sm font-semibold ${
+                isScrolled
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-white/10 text-white backdrop-blur-sm'
+              }`}
+            >
+              Start Mining
+              <ExternalLink className="ml-2 h-4 w-4" />
+            </a>
+          </div>
+
+          {/* Mobile Menu Button */}
           <div className="lg:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-300 hover:text-white transition-colors"
+              className={`p-2 rounded-lg ${
+                isScrolled
+                  ? 'text-white/90'
+                  : 'text-white/90'
+              }`}
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
 
+        {/* Mobile Navigation */}
         {isOpen && (
-          <div className="lg:hidden border-t border-slate-800">
-            <div className="px-2 pt-4 pb-6 space-y-1 bg-slate-900/50">
-              <a href="#features" className="block px-3 py-3 text-gray-300 hover:text-teal-400 font-medium">
-                Features
-              </a>
-              <a href="#statistics" className="block px-3 py-3 text-gray-300 hover:text-teal-400 font-medium">
-                Statistics
-              </a>
-              <a href="#getting-started" className="block px-3 py-3 text-gray-300 hover:text-teal-400 font-medium">
-                Getting Started
-              </a>
-              <a href="#contact" className="block px-3 py-3 text-gray-300 hover:text-teal-400 font-medium">
-                Contact
-              </a>
-              <button className="w-full mt-4 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold py-2 rounded-lg">
-                Start Mining
-              </button>
+          <div className="lg:hidden">
+            <div className={`px-4 py-6 space-y-2 rounded-b-2xl ${
+              isScrolled 
+                ? 'bg-slate-900/95 backdrop-blur-xl border-t border-slate-700/50 shadow-lg' 
+                : 'bg-slate-900/95 backdrop-blur-xl border-t border-white/10'
+            }`}>
+              {navItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium ${
+                    isScrolled
+                      ? 'text-white/90'
+                      : 'text-white/90'
+                  }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {item.label}
+                </a>
+              ))}
+              
+              {/* Mobile CTA */}
+              <div className="pt-4 border-t border-gray-200/50">
+                <a
+                  href="/connect"
+                  className={`inline-flex items-center justify-center w-full px-6 py-3 rounded-lg text-sm font-semibold ${
+                    isScrolled
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white/10 text-white'
+                  }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Start Mining
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </a>
+              </div>
             </div>
           </div>
         )}

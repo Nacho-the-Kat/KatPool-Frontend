@@ -3,6 +3,7 @@
 
 /* Additional styles */
 @import 'additional-styles/utility-patterns.css';
+@import 'additional-styles/landing-animations.css';
 
 @import 'tailwindcss/utilities';
 

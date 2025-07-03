@@ -65,26 +65,19 @@ const Testimonials = () => {
   ];
 
   return (
-    <section className="py-32 bg-gradient-to-b from-slate-900 to-slate-800 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/3 left-0 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/3 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl"></div>
-      </div>
+    <section className="py-20 relative overflow-hidden section-transition">
+      {/* Section-specific overlay for depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-800/10 via-transparent to-slate-900/10 overlay-transition"></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-20">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-teal-500/10 border border-teal-500/20 mb-6">
-            <Award className="w-4 h-4 text-teal-400 mr-2" />
-            <span className="text-sm font-medium text-teal-300">Trusted by Enterprise</span>
-          </div>
+        <div className="text-center mb-12">
           <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
             What Our
-            <span className="block bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
-              Enterprise Clients Say
+            <span className="block bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent animate-gradient-text">
+              Clients Say
             </span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed text-transition">
             Join Fortune 500 companies and leading mining operations who trust our 
             enterprise-grade infrastructure for their mission-critical mining operations.
           </p>
@@ -100,7 +93,7 @@ const Testimonials = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
               
               {/* Card */}
-              <div className="relative bg-slate-900/50 backdrop-blur-xl rounded-2xl p-8 border border-slate-700/50 hover:border-teal-500/50 transition-all duration-300 h-full flex flex-col">
+              <div className="relative bg-slate-900/50 backdrop-blur-enhanced rounded-2xl p-8 border border-slate-700/50 hover:border-teal-500/50 transition-all duration-300 h-full flex flex-col card-hover">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-6">
                   <Quote className="w-8 h-8 text-teal-400 flex-shrink-0" />
@@ -112,7 +105,7 @@ const Testimonials = () => {
                 </div>
 
                 {/* Content */}
-                <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
+                <p className="text-gray-300 mb-6 leading-relaxed flex-grow text-transition">
                   "{testimonial.content}"
                 </p>
                 
@@ -127,7 +120,7 @@ const Testimonials = () => {
                 {/* Footer */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold">
+                    <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold scale-transition">
                       {testimonial.avatar}
                     </div>
                     <div>
@@ -140,26 +133,6 @@ const Testimonials = () => {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Trust Indicators */}
-        <div className="mt-20 text-center">
-          <div className="inline-flex items-center justify-center space-x-8 py-8 px-12 bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">500+</div>
-              <div className="text-gray-400 text-sm">Enterprise Clients</div>
-            </div>
-            <div className="w-px h-12 bg-slate-700"></div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">99.98%</div>
-              <div className="text-gray-400 text-sm">Uptime SLA</div>
-            </div>
-            <div className="w-px h-12 bg-slate-700"></div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">24/7</div>
-              <div className="text-gray-400 text-sm">Enterprise Support</div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
