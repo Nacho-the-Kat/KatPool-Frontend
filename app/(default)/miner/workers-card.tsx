@@ -116,9 +116,9 @@ export default function AnalyticsCard11() {
             hashrates,
           }))
            .filter(worker => {
-            // Filter out workers that have not shared in the last 5 minutes
+            // Filter out workers that have not shared in the last 10 minutes
             const secondsSinceLastShare = Date.now() / 1000 - worker.lastShareTimestamp;
-            return worker.hashrates.fiveMin > 0 && secondsSinceLastShare < 300;
+            return worker.hashrates.fiveMin > 0 && secondsSinceLastShare < 600;
           })
 
         setWorkers(processedWorkers);
@@ -251,7 +251,9 @@ export default function AnalyticsCard11() {
                         </div>
                       </td>
                       <td className="p-2 whitespace-nowrap">
-                        <div className="text-center">{formatHashrate(worker.hashrates.fifteenMin)}</div>
+                        <div className="text-center">
+                          {secondsSinceLastShare > 600 ? 'estimating ...' : formatHashrate(worker.hashrates.fifteenMin)}
+                        </div>
                       </td>
                       <td className="p-2 whitespace-nowrap">
                         <div className="text-center">{formatHashrate(worker.hashrates.oneHour)}</div>
