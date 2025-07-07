@@ -36,15 +36,17 @@ export async function GET(request: Request) {
     const recentStart = end - (2 * 60 * 60); // Last 2 hours
     const historicalStart = end - (days * 24 * 60 * 60);
 
+    const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
+
     // Fetch recent data with fine granularity
-    const recentUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const recentUrl = new URL(`${baseUrl}/api/v1/query_range`);
     recentUrl.searchParams.append('query', 'miner_hash_rate_GHps');
     recentUrl.searchParams.append('start', recentStart.toString());
     recentUrl.searchParams.append('end', end.toString());
     recentUrl.searchParams.append('step', (recentStepMinutes * 60).toString());
 
     // Fetch historical data with coarser granularity
-    const historicalUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const historicalUrl = new URL(`${baseUrl}/api/v1/query_range`);
     historicalUrl.searchParams.append('query', 'miner_hash_rate_GHps');
     historicalUrl.searchParams.append('start', historicalStart.toString());
     historicalUrl.searchParams.append('end', recentStart.toString());

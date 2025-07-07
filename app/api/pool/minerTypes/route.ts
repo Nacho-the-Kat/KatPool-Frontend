@@ -11,7 +11,8 @@ export async function GET() {
 
   try {
     // TODO: May remove `asic_type!=""` filter once backend consistently includes `asic_type` in all metrics
-    const url = new URL('http://kas.katpool.xyz:8080/api/v1/query');
+    const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const url = new URL(`${baseUrl}/api/v1/query`);
     url.searchParams.append(
       'query',
       'active_workers_10m_count{asic_type!=""} != 0'

@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { $fetch } from 'ofetch'
+import FallbackMessage from '@/components/elements/fallback-message'
 
 interface SharesData {
   metric: {
@@ -190,11 +191,14 @@ export default function AnalyticsCard11() {
     <div className="relative col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
       {/* Blur overlay */}
       {!walletAddress && (
-        <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center">
-          <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-            Enter a wallet address to view analytics
-          </div>
-        </div>
+        <FallbackMessage
+          title="Wallet Address Required"
+          message="Enter a wallet address to view worker details"
+          showIcon={true}
+          className="absolute inset-0 z-10"
+        >
+          <div className="h-full bg-gray-50 dark:bg-gray-700 rounded-xl"></div>
+        </FallbackMessage>
       )}
 
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
@@ -205,11 +209,32 @@ export default function AnalyticsCard11() {
       </header>
       <div className="p-3">
         {isLoading ? (
-          <div className="flex items-center justify-center h-[300px]">
-            <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
-          </div>
+          <FallbackMessage
+            title="Loading Worker Data"
+            message="Fetching your mining workers information..."
+            showIcon={false}
+            className="h-[300px]"
+          >
+            <div className="h-[300px] flex items-center justify-center">
+              <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
+            </div>
+          </FallbackMessage>
         ) : error ? (
-          <div className="flex items-center justify-center h-[300px] text-red-500">{error}</div>
+          <FallbackMessage
+            title="Unable to load worker data"
+            message="There was an error fetching your worker data. Please try again later."
+            className="h-[300px]"
+          >
+            <div className="h-[300px] bg-gray-50 dark:bg-gray-700 rounded-lg"></div>
+          </FallbackMessage>
+        ) : workers.length === 0 ? (
+          <FallbackMessage
+            title="No Workers Found"
+            message="No active workers found for this wallet address"
+            className="h-[300px]"
+          >
+            <div className="h-[300px] bg-gray-50 dark:bg-gray-700 rounded-lg"></div>
+          </FallbackMessage>
         ) : (
           <div className="overflow-x-auto">
             <table className="table-auto w-full dark:text-gray-300">

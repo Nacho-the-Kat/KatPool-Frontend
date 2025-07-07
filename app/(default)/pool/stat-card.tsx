@@ -37,7 +37,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = `${supplyInBillions.toFixed(4)} B`
             } catch (error) {
               console.error('Supply conversion error:', error)
-              result = 'Error'
+              result = '--'
             }
             break
           case 'difficulty':
@@ -68,7 +68,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = `${percentage.toFixed(2)}%`
             } catch (error) {
               console.error('Supply calculation error:', error)
-              result = 'Error'
+              result = '--'
             }
             break
           case 'nextReduction':
@@ -100,7 +100,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = `${totalInBillions.toFixed(4)} B`
             } catch (error) {
               console.error('Total Supply conversion error:', error)
-              result = 'Error'
+              result = '--'
             }
             break
           case 'poolHashrate':
@@ -124,7 +124,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = formattedResult;
             } catch (error) {
               console.error('Error fetching pool hashrate:', error);
-              result = 'Error';
+              result = '--';
             }
             break
           case 'poolBlocks':
@@ -141,7 +141,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = data.data.totalBlocks.toLocaleString('en-US');
             } catch (error) {
               console.error('Error fetching pool blocks:', error);
-              result = 'Error';
+              result = '--';
             }
             break
           case 'poolMiners':
@@ -160,7 +160,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = totalMiners.toLocaleString('en-US');
             } catch (error) {
               console.error('Error fetching active miners:', error);
-              result = 'Error';
+              result = '--';
             }
             break
           case 'pool24hBlocks':
@@ -177,7 +177,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = data.data.totalBlocks24h.toLocaleString('en-US');
             } catch (error) {
               console.error('Error fetching 24h blocks:', error);
-              result = 'Error';
+              result = '--';
             }
             break
           case 'price':
@@ -200,7 +200,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = `${kasAmount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
             } catch (error) {
               console.error('Error fetching total paid KAS:', error);
-              result = 'Error';
+              result = '--';
             }
             break
           case 'totalPaidNacho':
@@ -219,7 +219,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = `${nachoAmount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
             } catch (error) {
               console.error('Error fetching total paid NACHO:', error);
-              result = 'Error';
+              result = '--';
             }
             break
           case 'kasThreshold':
@@ -236,7 +236,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = data.data.kasThreshold;
             } catch (error) {
               console.error('Error fetching KAS threshold:', error);
-              result = 'Error';
+              result = '--';
             }
             break
           case 'nachThreshold':
@@ -253,7 +253,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = data.data.nachThreshold;
             } catch (error) {
               console.error('Error fetching NACHO threshold:', error);
-              result = 'Error';
+              result = '--';
             }
             break
           case 'payoutSchedule':
@@ -270,7 +270,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = data.data.payoutSchedule;
             } catch (error) {
               console.error('Error fetching payout schedule:', error);
-              result = 'Error';
+              result = '--';
             }
             break
           case 'poolLuck':
@@ -308,7 +308,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               result = `${luckPercentage}%`;
             } catch (error) {
               console.error('Error calculating pool luck:', error);
-              result = 'Error';
+              result = '--';
             }
             break
         }
@@ -317,7 +317,7 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
         setIsLoading(false)
       } catch (error) {
         console.error('Error fetching data:', error)
-        setValue('Error')
+        setValue('--')
         setIsLoading(false)
       }
     }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import DoughnutChart from '@/components/charts/doughnut-chart'
+import FallbackMessage from '@/components/elements/fallback-message'
 import { tailwindConfig } from '@/components/utils/utils'
 
 export default function MinerTypes() {
@@ -85,10 +86,36 @@ export default function MinerTypes() {
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Manufacturer</h2>
         </header>
-        <div className="flex items-center justify-center h-[260px]">
-          <div className="text-red-500 dark:text-red-400 text-sm font-medium text-center px-4">
-            {error}
-          </div>
+        <div className="flex justify-center">
+          <FallbackMessage
+            title="Unable to load miner data"
+            message="Check back soon for updated statistics"
+          >
+            <DoughnutChart 
+              data={{
+                labels: ['Bitmain', 'MicroBT', 'Canaan', 'Other'],
+                datasets: [{
+                  label: 'Top Manufacturers',
+                  data: [25, 30, 20, 25],
+                  backgroundColor: [
+                    tailwindConfig.theme.colors.primary[500],
+                    tailwindConfig.theme.colors.sky[500],
+                    tailwindConfig.theme.colors.primary[800],
+                    tailwindConfig.theme.colors.sky[800],
+                  ],
+                  hoverBackgroundColor: [
+                    tailwindConfig.theme.colors.primary[600],
+                    tailwindConfig.theme.colors.sky[600],
+                    tailwindConfig.theme.colors.primary[900],
+                    tailwindConfig.theme.colors.sky[900],
+                  ],
+                  borderWidth: 0,
+                }]
+              }} 
+              width={389} 
+              height={260} 
+            />
+          </FallbackMessage>
         </div>
       </div>
     )
@@ -101,8 +128,36 @@ export default function MinerTypes() {
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Manufacturer</h2>
         </header>
-        <div className="flex items-center justify-center h-[260px]">
-          <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">No miner data available</div>
+        <div className="flex justify-center">
+          <FallbackMessage
+            title="No miner data available"
+            message="Check back soon for updated statistics"
+          >
+            <DoughnutChart 
+              data={{
+                labels: ['Bitmain', 'MicroBT', 'Canaan', 'Other'],
+                datasets: [{
+                  label: 'Top Manufacturers',
+                  data: [25, 30, 20, 25],
+                  backgroundColor: [
+                    tailwindConfig.theme.colors.primary[500],
+                    tailwindConfig.theme.colors.sky[500],
+                    tailwindConfig.theme.colors.primary[800],
+                    tailwindConfig.theme.colors.sky[800],
+                  ],
+                  hoverBackgroundColor: [
+                    tailwindConfig.theme.colors.primary[600],
+                    tailwindConfig.theme.colors.sky[600],
+                    tailwindConfig.theme.colors.primary[900],
+                    tailwindConfig.theme.colors.sky[900],
+                  ],
+                  borderWidth: 0,
+                }]
+              }} 
+              width={389} 
+              height={260} 
+            />
+          </FallbackMessage>
         </div>
       </div>
     )

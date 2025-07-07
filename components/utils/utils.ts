@@ -57,7 +57,7 @@ export const formatHashrate = (hashrate: number): string => {
   // Handle invalid inputs
   if (!Number.isFinite(hashrate) || hashrate < 0) {
     console.error('Invalid hashrate value:', hashrate);
-    return 'Error';
+    return 'Unavailable';
   }
 
   try {
@@ -79,7 +79,7 @@ export const formatHashrate = (hashrate: number): string => {
     }
   } catch (error) {
     console.error('Error formatting hashrate:', error);
-    return 'Error';
+    return 'Unavailable';
   }
 };
 
@@ -87,7 +87,7 @@ export const formatHashrateCompact = (hashrate: number): string => {
   // Handle invalid inputs
   if (!Number.isFinite(hashrate) || hashrate < 0) {
     console.error('Invalid hashrate value:', hashrate);
-    return 'Error';
+    return 'Unavailable';
   }
 
   try {
@@ -109,6 +109,6 @@ export const formatHashrateCompact = (hashrate: number): string => {
     }
   } catch (error) {
     console.error('Error formatting hashrate:', error);
-    return 'Error';
+    return 'Unavailable';
   }
 };

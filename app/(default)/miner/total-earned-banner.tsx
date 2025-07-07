@@ -80,7 +80,7 @@ function TotalEarnedBannerContent() {
                   <Image src="/images/kaspa-dark-wide.svg" alt="Kaspa Logo" width={32} height={32} className="w-7 h-7" />
                 </div>
                 <span className="text-sm font-medium text-gray-400 dark:text-gray-500">Total Earned KAS:</span>
-                <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">--</span>
+                <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Unavailable</span>
               </div>
               
               <div className="flex items-center space-x-3">
@@ -88,7 +88,7 @@ function TotalEarnedBannerContent() {
                   <Image src="/images/nacho.svg" alt="Nacho Logo" width={32} height={32} className="w-7 h-7" />
                 </div>
                 <span className="text-sm font-medium text-gray-400 dark:text-gray-500">Total Earned NACHO:</span>
-                <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">--</span>
+                <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Unavailable</span>
               </div>
             </div>
           </div>
@@ -103,13 +103,13 @@ function TotalEarnedBannerContent() {
                 {isLoading ? (
                   <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : error ? (
-                  <span className="text-sm text-red-500 dark:text-red-400">Error</span>
+                  <span className="text-sm text-red-500 dark:text-red-400">Unavailable</span>
                 ) : data ? (
                   <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                     {formatAmount(data.totalKas)} KAS
                   </span>
                 ) : (
-                  <span className="text-sm text-gray-500 dark:text-gray-400">--</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Unavailable</span>
                 )}
               </div>
               
@@ -122,13 +122,13 @@ function TotalEarnedBannerContent() {
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
                   ) : error ? (
-                    <span className="text-sm text-red-500 dark:text-red-400">Error</span>
+                    <span className="text-sm text-red-500 dark:text-red-400">Unavailable</span>
                   ) : data ? (
                     <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                       {formatAmount(data.totalNacho)} NACHO
                     </span>
                   ) : (
-                    <span className="text-sm text-gray-500 dark:text-gray-400">--</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Unavailable</span>
                   )}
                 </span>
               </div>

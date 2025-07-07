@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import BarChart03 from '@/components/charts/bar-chart-03'
 import { tailwindConfig } from '@/components/utils/utils'
 import { $fetch } from 'ofetch'
+import FallbackMessage from '@/components/elements/fallback-message'
 
 interface SharesData {
   metric: {
@@ -166,10 +167,12 @@ export default function AnalyticsCard03() {
     <div className="relative flex flex-col col-span-full sm:col-span-6 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
       {/* Blur overlay */}
       {!walletAddress && (
-        <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center">
-          <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-            Enter a wallet address to view analytics
-          </div>
+        <div className="absolute inset-0 z-10">
+          <FallbackMessage
+            title="Wallet Address Required"
+            message="Enter a wallet address to view shares analytics"
+            className="h-full"
+          />
         </div>
       )}
 
@@ -179,14 +182,37 @@ export default function AnalyticsCard03() {
 
       <div className="grow">
         {isLoading ? (
-          <div className="flex items-center justify-center h-[248px]">
-            <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
+          <div className="h-[248px]">
+            <FallbackMessage
+              title="Loading Shares Data"
+              message="Fetching your mining shares information..."
+              showIcon={false}
+              className="h-full"
+            >
+              <div className="h-full flex items-center justify-center">
+                <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
+              </div>
+            </FallbackMessage>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-[248px] text-red-500">{error}</div>
+          <div className="h-[248px]">
+            <FallbackMessage
+              title="No Shares Data Available"
+              message="Unable to load shares data at this time. Please try again later."
+              className="h-full"
+            />
+          </div>
         ) : chartData ? (
           <BarChart03 data={chartData} width={595} height={248} />
-        ) : null}
+        ) : (
+          <div className="h-[248px]">
+            <FallbackMessage
+              title="No Shares Data"
+              message="No shares data available for this wallet address"
+              className="h-full"
+            />
+          </div>
+        )}
       </div>
     </div>
   )
