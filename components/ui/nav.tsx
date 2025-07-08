@@ -38,7 +38,7 @@ export default function Nav() {
               />
             </Link>
           </li>
-          <li className="relative group">
+          {/* <li className="relative group">
             <Link
               href="/landing"
               className={`flex items-center px-3 py-2 text-sm font-medium transition-colors ${pathname === '/landing'
@@ -48,7 +48,7 @@ export default function Nav() {
             >
               <span>Landing Page</span>
             </Link>
-          </li>
+          </li> */}
           <li className="relative group">
             <Link
               href="/connect"
@@ -174,7 +174,7 @@ export default function Nav() {
         {isMobileMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 shadow-lg z-[100]">
             <ul className="px-2 py-3 space-y-1">
-              <li>
+              {/* <li>
                 <Link
                   href="/landing"
                   className={`block px-3 py-2 rounded-lg text-sm font-medium ${pathname === '/landing'
@@ -185,7 +185,7 @@ export default function Nav() {
                 >
                   Landing Page
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link
                   href="/connect"
