@@ -82,10 +82,7 @@ export default function RecentBlocks() {
             <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
           </div>
         ) : error || blocks.length === 0 ? (
-          <FallbackMessage
-            title="No recent blocks available"
-            message="Check back soon for new block discoveries"
-          >
+          <FallbackMessage>
             <div>
               <header className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm font-semibold p-2">Today</header>
               <ul className="my-1">

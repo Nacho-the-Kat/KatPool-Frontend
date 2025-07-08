@@ -103,7 +103,7 @@ function TotalEarnedBannerContent() {
                 {isLoading ? (
                   <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : error ? (
-                  <span className="text-sm text-red-500 dark:text-red-400">Unavailable</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">--</span>
                 ) : data ? (
                   <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                     {formatAmount(data.totalKas)} KAS
@@ -122,7 +122,7 @@ function TotalEarnedBannerContent() {
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
                   ) : error ? (
-                    <span className="text-sm text-red-500 dark:text-red-400">Unavailable</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">--</span>
                   ) : data ? (
                     <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                       {formatAmount(data.totalNacho)} NACHO

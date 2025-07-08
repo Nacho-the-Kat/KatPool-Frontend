@@ -133,8 +133,6 @@ export default function PoolHashrateOverTime() {
         </div>
         <div className="grow max-sm:max-h-[128px] xl:max-h-[128px]">
           <FallbackMessage
-            title="Unable to load hashrate data"
-            message="Unable to load hashrate data at this time."
             showIcon={false}
             className="h-full"
           >

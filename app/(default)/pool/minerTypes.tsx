@@ -87,10 +87,7 @@ export default function MinerTypes() {
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Manufacturer</h2>
         </header>
         <div className="flex justify-center">
-          <FallbackMessage
-            title="Unable to load miner data"
-            message="Check back soon for updated statistics"
-          >
+          <FallbackMessage>
             <DoughnutChart 
               data={{
                 labels: ['Bitmain', 'MicroBT', 'Canaan', 'Other'],
@@ -129,10 +126,7 @@ export default function MinerTypes() {
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Manufacturer</h2>
         </header>
         <div className="flex justify-center">
-          <FallbackMessage
-            title="No miner data available"
-            message="Check back soon for updated statistics"
-          >
+          <FallbackMessage>
             <DoughnutChart 
               data={{
                 labels: ['Bitmain', 'MicroBT', 'Canaan', 'Other'],

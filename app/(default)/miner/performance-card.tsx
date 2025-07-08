@@ -295,8 +295,6 @@ export default function AnalyticsCard01() {
       {/* Blur overlay */}
       {!walletAddress && (
         <FallbackMessage
-          title="No wallet address"
-          message="Enter a wallet address to view your miner performance analytics"
           showIcon={true}
           className="absolute inset-0 z-10"
         >
@@ -392,8 +390,6 @@ export default function AnalyticsCard01() {
           </div>
         ) : error ? (
           <FallbackMessage
-            title="Unable to load performance data"
-            message="There was an error fetching your miner performance data. Please try again later."
             showIcon={true}
             className="h-[300px]"
           >

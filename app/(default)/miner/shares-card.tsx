@@ -169,8 +169,6 @@ export default function AnalyticsCard03() {
       {!walletAddress && (
         <div className="absolute inset-0 z-10">
           <FallbackMessage
-            title="Wallet Address Required"
-            message="Enter a wallet address to view shares analytics"
             className="h-full"
           />
         </div>
@@ -184,8 +182,6 @@ export default function AnalyticsCard03() {
         {isLoading ? (
           <div className="h-[248px]">
             <FallbackMessage
-              title="Loading Shares Data"
-              message="Fetching your mining shares information..."
               showIcon={false}
               className="h-full"
             >
@@ -197,8 +193,6 @@ export default function AnalyticsCard03() {
         ) : error ? (
           <div className="h-[248px]">
             <FallbackMessage
-              title="No Shares Data Available"
-              message="Unable to load shares data at this time. Please try again later."
               className="h-full"
             />
           </div>
@@ -207,8 +201,6 @@ export default function AnalyticsCard03() {
         ) : (
           <div className="h-[248px]">
             <FallbackMessage
-              title="No Shares Data"
-              message="No shares data available for this wallet address"
               className="h-full"
             />
           </div>

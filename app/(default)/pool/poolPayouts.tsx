@@ -163,10 +163,7 @@ export default function PoolPayouts() {
       </header>
       <div className="p-3">
         {error || payouts.length === 0 ? (
-          <FallbackMessage
-            title="No recent payouts available"
-            message="Check back soon for new pool payouts"
-          >
+          <FallbackMessage>
             <div>
               <header className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm font-semibold p-2">Today</header>
               <ul className="my-1">

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
+import FallbackMessage from '@/components/elements/fallback-message'
 
 interface Block {
   blockHash: string
@@ -24,6 +25,7 @@ interface BlocksCardProps {
   blocks: Block[]
   isLoading: boolean
   error: string | null
+  onRetry?: () => void
 }
 
 export default function BlocksCard({ 
@@ -34,7 +36,8 @@ export default function BlocksCard({
   totalItems,
   blocks,
   isLoading,
-  error
+  error,
+  onRetry
 }: BlocksCardProps) {
   const router = useRouter()
 
@@ -70,9 +73,15 @@ export default function BlocksCard({
   if (error) {
     return (
       <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl p-8">
-        <div className="flex items-center justify-center text-red-500">
-          {error}
-        </div>
+        <FallbackMessage />
+      </div>
+    );
+  }
+
+  if (!blocks || blocks.length === 0) {
+    return (
+      <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl p-8">
+        <FallbackMessage />
       </div>
     );
   }

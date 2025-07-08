@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { $fetch } from 'ofetch'
 import { formatHashrate } from '@/components/utils/utils'
+import FallbackMessage from '@/components/elements/fallback-message'
 
 type SortDirection = 'asc' | 'desc'
 type SortKey = 'rank' | 'wallet' | 'hashrate' | 'rewards48h' | 'nachoRebates48h' | 'poolShare' | 'firstSeen'
@@ -211,7 +212,9 @@ export default function TopMinersCard() {
             <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-[300px] text-red-500">{error}</div>
+          <FallbackMessage
+            className="h-[300px]"
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="table-auto w-full dark:text-gray-300">
@@ -251,40 +254,48 @@ export default function TopMinersCard() {
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
-                {sortedData.map((miner) => (
-                  <tr key={miner.wallet}>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-left font-medium">#{miner.rank}</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <Link 
-                        href={`/miner?wallet=${miner.wallet}`}
-                        className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
-                      >
-                        {miner.wallet}
-                      </Link>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center font-medium">{formatHashrate(miner.hashrate)}</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center text-green-500">
-                        {miner.rewards48h > 0 ? `${formatRewards(miner.rewards48h)} KAS` : '--'}
-                      </div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center text-gray-500 dark:text-gray-400">
-                        {miner.nachoRebates48h > 0 ? `${formatRewards(miner.nachoRebates48h)} NACHO` : '--'}
-                      </div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center">{miner.poolShare.toFixed(2)}%</div>
-                    </td>
-                    <td className="p-2 whitespace-nowrap">
-                      <div className="text-center">{miner.firstSeen} days ago</div>
+                {sortedData.length > 0 ? (
+                  sortedData.map((miner) => (
+                    <tr key={miner.wallet}>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-left font-medium">#{miner.rank}</div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <Link 
+                          href={`/miner?wallet=${miner.wallet}`}
+                          className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                        >
+                          {miner.wallet}
+                        </Link>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center font-medium">{formatHashrate(miner.hashrate)}</div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center text-green-500">
+                          {miner.rewards48h > 0 ? `${formatRewards(miner.rewards48h)} KAS` : '--'}
+                        </div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center text-gray-500 dark:text-gray-400">
+                          {miner.nachoRebates48h > 0 ? `${formatRewards(miner.nachoRebates48h)} NACHO` : '--'}
+                        </div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center">{miner.poolShare.toFixed(2)}%</div>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">
+                        <div className="text-center">{miner.firstSeen} days ago</div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="p-8">
+                      <FallbackMessage />
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

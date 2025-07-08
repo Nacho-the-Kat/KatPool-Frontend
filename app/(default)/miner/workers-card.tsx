@@ -192,8 +192,6 @@ export default function AnalyticsCard11() {
       {/* Blur overlay */}
       {!walletAddress && (
         <FallbackMessage
-          title="Wallet Address Required"
-          message="Enter a wallet address to view worker details"
           showIcon={true}
           className="absolute inset-0 z-10"
         >
@@ -210,8 +208,6 @@ export default function AnalyticsCard11() {
       <div className="p-3">
         {isLoading ? (
           <FallbackMessage
-            title="Loading Worker Data"
-            message="Fetching your mining workers information..."
             showIcon={false}
             className="h-[300px]"
           >
@@ -221,16 +217,12 @@ export default function AnalyticsCard11() {
           </FallbackMessage>
         ) : error ? (
           <FallbackMessage
-            title="Unable to load worker data"
-            message="There was an error fetching your worker data. Please try again later."
             className="h-[300px]"
           >
             <div className="h-[300px] bg-gray-50 dark:bg-gray-700 rounded-lg"></div>
           </FallbackMessage>
         ) : workers.length === 0 ? (
           <FallbackMessage
-            title="No Workers Found"
-            message="No active workers found for this wallet address"
             className="h-[300px]"
           >
             <div className="h-[300px] bg-gray-50 dark:bg-gray-700 rounded-lg"></div>
