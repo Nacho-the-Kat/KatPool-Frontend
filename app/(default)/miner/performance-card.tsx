@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import LineChart03 from '@/components/charts/line-chart-03'
 import TimeRangeMenu from '@/components/elements/time-range-menu'
+import FallbackMessage from '@/components/elements/fallback-message'
 import { chartAreaGradient } from '@/components/charts/chartjs-config'
 import { tailwindConfig, hexToRGB, formatHashrate, formatHashrateCompact } from '@/components/utils/utils'
 import { $fetch } from 'ofetch'
@@ -293,11 +294,12 @@ export default function AnalyticsCard01() {
     <div className="relative flex flex-col col-span-full xl:col-span-8 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
       {/* Blur overlay */}
       {!walletAddress && (
-        <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center">
-          <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-            Enter a wallet address to view analytics
-          </div>
-        </div>
+        <FallbackMessage
+          showIcon={true}
+          className="absolute inset-0 z-10"
+        >
+          <div className="h-full bg-gray-50 dark:bg-gray-700 rounded-xl"></div>
+        </FallbackMessage>
       )}
 
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
@@ -387,7 +389,12 @@ export default function AnalyticsCard01() {
             <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-[300px] text-red-500">{error}</div>
+          <FallbackMessage
+            showIcon={true}
+            className="h-[300px]"
+          >
+            <div className="h-[300px] bg-gray-50 dark:bg-gray-700 rounded-lg"></div>
+          </FallbackMessage>
         ) : chartData && (
           <LineChart03 
             data={chartData} 

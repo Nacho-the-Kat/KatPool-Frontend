@@ -1,0 +1,181 @@
+/* Landing Page Smooth Transitions and Animations */
+
+/* Custom pulse animation with staggered delays */
+@keyframes smoothPulse {
+  0%, 100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.15;
+    transform: scale(1.05);
+  }
+}
+
+/* Apply staggered pulse animation to background orbs */
+.animate-smooth-pulse {
+  animation: smoothPulse 8s ease-in-out infinite;
+}
+
+/* Smooth section transitions */
+.section-transition {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced backdrop blur for better depth */
+.backdrop-blur-enhanced {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Smooth gradient transitions */
+.gradient-transition {
+  transition: background 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Floating animation for background elements */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-20px) rotate(1deg);
+  }
+  66% {
+    transform: translateY(10px) rotate(-1deg);
+  }
+}
+
+.animate-float {
+  animation: float 20s ease-in-out infinite;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced hover effects for cards */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Gradient text animation */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-text {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Smooth opacity transitions for overlays */
+.overlay-transition {
+  transition: opacity 0.4s ease-in-out;
+}
+
+/* Enhanced grid pattern animation */
+@keyframes gridMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(4rem, 4rem);
+  }
+}
+
+.animate-grid {
+  animation: gridMove 20s linear infinite;
+}
+
+/* Smooth border transitions */
+.border-transition {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Enhanced glow effects */
+.glow-effect {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glow-effect:hover {
+  box-shadow: 0 0 30px rgba(20, 184, 166, 0.3);
+}
+
+/* Smooth background color transitions */
+.bg-transition {
+  transition: background-color 0.5s ease;
+}
+
+/* Parallax effect for background elements */
+.parallax-bg {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Smooth text color transitions */
+.text-transition {
+  transition: color 0.3s ease;
+}
+
+/* Enhanced button hover effects */
+.btn-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.btn-hover:hover::before {
+  left: 100%;
+}
+
+/* Smooth scale transitions */
+.scale-transition {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced focus states */
+.focus-enhanced:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3);
+}
+
+/* Smooth opacity transitions for loading states */
+.opacity-transition {
+  transition: opacity 0.4s ease-in-out;
+}
+
+/* Enhanced shadow transitions */
+.shadow-transition {
+  transition: box-shadow 0.3s ease;
+}
+
+/* Smooth transform transitions */
+.transform-transition {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+} 

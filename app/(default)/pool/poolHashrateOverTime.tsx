@@ -7,6 +7,7 @@ import { chartAreaGradient } from '@/components/charts/chartjs-config'
 import { tailwindConfig, hexToRGB, formatHashrate } from '@/components/utils/utils'
 import { $fetch } from 'ofetch'
 import { ChartData } from 'chart.js'
+import FallbackMessage from '@/components/elements/fallback-message'
 
 interface HashRateData {
   timestamp: number;
@@ -55,6 +56,12 @@ export default function PoolHashrateOverTime() {
           value: Number(value)
         })
       );
+
+      // Check if we have any data
+      if (values.length === 0) {
+        setError('No data available for the selected time range');
+        return;
+      }
 
       // Calculate average hashrate
       const averageHashrate = values.reduce((sum, item) => sum + item.value, 0) / values.length;
@@ -111,8 +118,30 @@ export default function PoolHashrateOverTime() {
 
   if (error) {
     return (
-      <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl p-5">
-        <div className="text-red-500">Error: {error}</div>
+      <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div className="px-5 pt-5">
+          <header className="flex justify-between items-start mb-2">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Pool Hashrate over time</h2>
+            <TimeRangeMenu align="right" currentRange={timeRange} onRangeChange={handleRangeChange} />
+          </header>
+          <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">
+            Average Pool Hashrate {getRangeLabel(timeRange)}
+          </div>
+          <div className="flex items-start">
+            <div className="text-3xl font-bold text-gray-800 dark:text-gray-100 mr-2">--</div>
+          </div>
+        </div>
+        <div className="grow max-sm:max-h-[128px] xl:max-h-[128px]">
+          <FallbackMessage
+            showIcon={false}
+            className="h-full"
+          >
+            {/* Placeholder chart content that will be blurred */}
+            <div className="w-full h-full bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded"></div>
+            </div>
+          </FallbackMessage>
+        </div>
       </div>
     );
   }

@@ -5,7 +5,9 @@ import TimeRangeMenu from '@/components/elements/time-range-menu'
 import LineChart01 from '@/components/charts/line-chart-01'
 import { chartAreaGradient } from '@/components/charts/chartjs-config'
 import { tailwindConfig, hexToRGB } from '@/components/utils/utils'
+import FallbackMessage from '@/components/elements/fallback-message'
 import { $fetch } from 'ofetch'
+import { ChartData } from 'chart.js'
 
 interface MinersData {
   timestamp: number;
@@ -17,13 +19,24 @@ export default function PoolMinersOverTime() {
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '180d' | '365d'>('7d');
   const [currentMiners, setCurrentMiners] = useState<string>('');
-  const [chartData, setChartData] = useState<any>(null);
+  const [chartData, setChartData] = useState<ChartData<'line'> | null>(null);
 
   const menuItems = [
     { label: 'Last 30 Days', value: '30d' },
     { label: 'Last 3 Months', value: '90d' },
     { label: 'Last 6 Months', value: '180d' },
   ];
+
+  const getRangeLabel = (range: string) => {
+    switch (range) {
+      case '7d': return 'Last 7 Days';
+      case '30d': return 'Last 30 Days';
+      case '90d': return 'Last 3 Months';
+      case '180d': return 'Last 6 Months';
+      case '365d': return 'Last Year';
+      default: return 'Last 7 Days';
+    }
+  };
 
   const fetchData = async (range: string) => {
     try {
@@ -61,12 +74,13 @@ export default function PoolMinersOverTime() {
         .sort((a, b) => a.timestamp - b.timestamp);
 
       if (values.length === 0) {
-        throw new Error('No data points available');
+        setError('No data available for the selected time range');
+        return;
       }
 
-      // Set current miners count (most recent value)
-      const lastValue = values[values.length - 1];
-      setCurrentMiners(lastValue.value.toString());
+      // Calculate average miners count
+      const averageMiners = values.reduce((sum, item) => sum + item.value, 0) / values.length;
+      setCurrentMiners(averageMiners.toFixed(0));
 
       // Update chart data
       setChartData({
@@ -120,8 +134,30 @@ export default function PoolMinersOverTime() {
 
   if (error) {
     return (
-      <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl p-5">
-        <div className="text-red-500">Error: {error}</div>
+      <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div className="px-5 pt-5">
+          <header className="flex justify-between items-start mb-2">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Pool Miners over time</h2>
+            <TimeRangeMenu align="right" currentRange={timeRange} onRangeChange={handleRangeChange} />
+          </header>
+          <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">
+            Average Active Miners {getRangeLabel(timeRange)}
+          </div>
+          <div className="flex items-start">
+            <div className="text-3xl font-bold text-gray-800 dark:text-gray-100 mr-2">--</div>
+          </div>
+        </div>
+        <div className="grow max-sm:max-h-[128px] xl:max-h-[128px]">
+          <FallbackMessage
+            showIcon={false}
+            className="h-full"
+          >
+            {/* Placeholder chart content that will be blurred */}
+            <div className="w-full h-full bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded"></div>
+            </div>
+          </FallbackMessage>
+        </div>
       </div>
     );
   }
@@ -133,7 +169,9 @@ export default function PoolMinersOverTime() {
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Pool Miners over time</h2>
           <TimeRangeMenu align="right" currentRange={timeRange} onRangeChange={handleRangeChange} />
         </header>
-        <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">Current Active Miners</div>
+        <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">
+          Average Active Miners {getRangeLabel(timeRange)}
+        </div>
         <div className="flex items-start">
           {isLoading ? (
             <div className="h-8 w-28 bg-gray-100 dark:bg-gray-700/50 animate-pulse rounded"></div>

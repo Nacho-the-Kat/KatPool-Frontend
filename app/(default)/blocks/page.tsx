@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { $fetch } from 'ofetch'
 import BlocksCard from './blocks-card'
 
@@ -34,39 +34,43 @@ export default function Blocks() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true)
-        const response = await $fetch('/api/pool/recentBlocks', {
-          params: {
-            page: currentPage,
-            perPage: pagination.perPage
-          },
-          retry: 3,
-          retryDelay: 1000,
-          timeout: 10000,
-        })
-        if (!response || response.error) {
-          throw new Error(response?.error || 'Failed to fetch data')
-        }
-
-        setBlocks(response.data.blocks)
-        setPagination(response.data.pagination)
-        setError(null)
-      } catch (error) {
-        console.error('Error fetching blocks:', error)
-        setError(error instanceof Error ? error.message : 'Failed to load data')
-      } finally {
-        setIsLoading(false)
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const response = await $fetch('/api/pool/recentBlocks', {
+        params: {
+          page: currentPage,
+          perPage: pagination.perPage
+        },
+        retry: 3,
+        retryDelay: 1000,
+        timeout: 10000,
+      })
+      if (!response || response.error) {
+        throw new Error(response?.error || 'Failed to fetch data')
       }
-    }
 
+      setBlocks(response.data.blocks)
+      setPagination(response.data.pagination)
+    } catch (error) {
+      console.error('Error fetching blocks:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load data')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [currentPage, pagination.perPage])
+
+  const handleRetry = useCallback(() => {
+    fetchData()
+  }, [fetchData])
+
+  useEffect(() => {
     fetchData()
     // Refresh every 10 minutes
     const interval = setInterval(fetchData, 600000)
     return () => clearInterval(interval)
-  }, [currentPage, pagination.perPage])
+  }, [fetchData])
 
   const handleItemsPerPageChange = (newPerPage: number) => {
     setPagination((prev) => ({ ...prev, perPage: newPerPage }));
@@ -93,6 +97,7 @@ export default function Blocks() {
           blocks={blocks}
           isLoading={isLoading}
           error={error}
+          onRetry={handleRetry}
         />
       </div>
     </div>

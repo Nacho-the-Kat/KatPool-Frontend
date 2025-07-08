@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { $fetch } from 'ofetch'
 import { formatDistanceToNow } from 'date-fns'
+import FallbackMessage from '@/components/elements/fallback-message'
 
 interface Block {
   blockHash: string;
@@ -80,8 +81,31 @@ export default function RecentBlocks() {
           <div className="flex items-center justify-center h-48">
             <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
           </div>
-        ) : error ? (
-          <div className="flex items-center justify-center h-48 text-red-500">{error}</div>
+        ) : error || blocks.length === 0 ? (
+          <FallbackMessage>
+            <div>
+              <header className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm font-semibold p-2">Today</header>
+              <ul className="my-1">
+                {[1, 2, 3].map((i) => (
+                  <li key={i} className="flex px-2">
+                    <div className="w-9 h-9 shrink-0 my-2 mr-3 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                    <div className="grow flex items-center border-b border-gray-100 dark:border-gray-700/60 text-sm py-2">
+                      <div className="grow flex justify-between">
+                        <div className="self-center">
+                          Block <span className="font-medium text-gray-800 dark:text-gray-100">abc123...def456</span> found!
+                          <span className="text-gray-500 dark:text-gray-400"> • Reward: </span>
+                          <span className="text-green-500">123.45 KAS</span>
+                        </div>
+                        <div className="shrink-0 self-end ml-2">
+                          <span className="text-gray-400 dark:text-gray-500">2 hours ago</span>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </FallbackMessage>
         ) : (
           <>
             {/* Today's blocks */}

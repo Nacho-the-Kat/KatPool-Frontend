@@ -64,10 +64,11 @@ export async function GET(request: Request) {
     const now = Math.floor(Date.now() / 1000);
 
     // Create API calls for each time window
+    const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
     const fetchPromises = Object.entries(timeWindows).map(([key, window]) => {
       const end = now;
       const start = end - window.duration;
-      const url = new URL(`http://kas.katpool.xyz:8080/api/v1/query_range?query=worker_hash_rate_GHps{wallet_address="${wallet}"}&start=${start}&end=${end}&step=${window.step}`);
+      const url = new URL(`${baseUrl}/api/v1/query_range?query=worker_hash_rate_GHps{wallet_address="${wallet}"}&start=${start}&end=${end}&step=${window.step}`);
       return fetch(url).then(res => res.json()).then(data => ({ key, data }));
     });
 

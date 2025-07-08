@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { $fetch } from 'ofetch'
+import FallbackMessage from '@/components/elements/fallback-message'
 
 interface SharesData {
   metric: {
@@ -116,9 +117,9 @@ export default function AnalyticsCard11() {
             hashrates,
           }))
            .filter(worker => {
-            // Filter out workers that have not shared in the last 5 minutes
+            // Filter out workers that have not shared in the last 10 minutes
             const secondsSinceLastShare = Date.now() / 1000 - worker.lastShareTimestamp;
-            return worker.hashrates.fiveMin > 0 && secondsSinceLastShare < 300;
+            return worker.hashrates.fiveMin > 0 && secondsSinceLastShare < 600;
           })
 
         setWorkers(processedWorkers);
@@ -190,11 +191,12 @@ export default function AnalyticsCard11() {
     <div className="relative col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
       {/* Blur overlay */}
       {!walletAddress && (
-        <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center">
-          <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-            Enter a wallet address to view analytics
-          </div>
-        </div>
+        <FallbackMessage
+          showIcon={true}
+          className="absolute inset-0 z-10"
+        >
+          <div className="h-full bg-gray-50 dark:bg-gray-700 rounded-xl"></div>
+        </FallbackMessage>
       )}
 
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
@@ -205,11 +207,26 @@ export default function AnalyticsCard11() {
       </header>
       <div className="p-3">
         {isLoading ? (
-          <div className="flex items-center justify-center h-[300px]">
-            <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
-          </div>
+          <FallbackMessage
+            showIcon={false}
+            className="h-[300px]"
+          >
+            <div className="h-[300px] flex items-center justify-center">
+              <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
+            </div>
+          </FallbackMessage>
         ) : error ? (
-          <div className="flex items-center justify-center h-[300px] text-red-500">{error}</div>
+          <FallbackMessage
+            className="h-[300px]"
+          >
+            <div className="h-[300px] bg-gray-50 dark:bg-gray-700 rounded-lg"></div>
+          </FallbackMessage>
+        ) : workers.length === 0 ? (
+          <FallbackMessage
+            className="h-[300px]"
+          >
+            <div className="h-[300px] bg-gray-50 dark:bg-gray-700 rounded-lg"></div>
+          </FallbackMessage>
         ) : (
           <div className="overflow-x-auto">
             <table className="table-auto w-full dark:text-gray-300">
@@ -251,7 +268,9 @@ export default function AnalyticsCard11() {
                         </div>
                       </td>
                       <td className="p-2 whitespace-nowrap">
-                        <div className="text-center">{formatHashrate(worker.hashrates.fifteenMin)}</div>
+                        <div className="text-center">
+                          {secondsSinceLastShare > 600 ? 'estimating ...' : formatHashrate(worker.hashrates.fifteenMin)}
+                        </div>
                       </td>
                       <td className="p-2 whitespace-nowrap">
                         <div className="text-center">{formatHashrate(worker.hashrates.oneHour)}</div>

@@ -79,8 +79,8 @@ export default function AnalyticsCard02() {
       } catch (error) {
         console.error('Error fetching balances:', error);
         setError(error instanceof Error ? error.message : 'Failed to load data');
-        setPendingBalance('ERR');
-        setPendingNachoRebate('ERR');
+        setPendingBalance('--');
+        setPendingNachoRebate('--');
       } finally {
         setIsLoading(false);
       }
@@ -310,14 +310,22 @@ export default function AnalyticsCard02() {
                   </tr>
                 ))
               ) : payoutsError ? (
-                // Error state
-                <tr>
-                  <td colSpan={3} className="py-4">
-                    <div className="text-center text-red-500 dark:text-red-400 text-sm">
-                      {payoutsError}
-                    </div>
-                  </td>
-                </tr>
+                // Error state - show -- for each row instead of error message
+                Array.from({ length: 4 }).map((_, index) => (
+                  <tr key={`error-${index}`}>
+                    <td className="py-2">
+                      <div className="text-left text-gray-500">--</div>
+                    </td>
+                    <td className="py-2">
+                      <div className="font-medium text-right text-gray-800 dark:text-gray-100">--</div>
+                    </td>
+                    <td className="py-2">
+                      <div className="font-medium text-right">
+                        <span className="text-[13px] text-gray-500 dark:text-gray-400">--</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <>
                   {recentPayouts.map((payout) => (

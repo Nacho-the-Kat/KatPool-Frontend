@@ -50,9 +50,10 @@ export async function GET() {
     const step = 300;
 
     const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const metricsBaseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
 
     // Prepare URLs for parallel requests
-    const hashrateUrl = new URL('http://kas.katpool.xyz:8080/api/v1/query_range');
+    const hashrateUrl = new URL(`${metricsBaseUrl}/api/v1/query_range`);
     hashrateUrl.searchParams.append('query', 'sum(miner_hash_rate_GHps) by (wallet_address)');
     hashrateUrl.searchParams.append('start', start.toString());
     hashrateUrl.searchParams.append('end', end.toString());

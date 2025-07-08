@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { $fetch } from 'ofetch'
+import FallbackMessage from '@/components/elements/fallback-message'
 
 interface Payout {
   wallet_address: string
@@ -23,10 +24,12 @@ interface AggregatedPayout {
 export default function PoolPayouts() {
   const [payouts, setPayouts] = useState<AggregatedPayout[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchPayouts = async () => {
       try {
+        setError(null)
         const response = await $fetch('/api/pool/payouts')
         console.log('API Response:', response)
         console.log('Response type:', typeof response)
@@ -40,6 +43,7 @@ export default function PoolPayouts() {
           
           if (!Array.isArray(payoutsData)) {
             console.error('Payouts data is not an array:', payoutsData)
+            setError('Invalid data format received')
             return
           }
           
@@ -65,9 +69,12 @@ export default function PoolPayouts() {
           ) as AggregatedPayout[]
           console.log('Aggregated payouts:', aggregated)
           setPayouts(aggregated)
+        } else {
+          setError('Failed to fetch pool payouts')
         }
       } catch (error) {
         console.error('Error fetching pool payouts:', error)
+        setError(error instanceof Error ? error.message : 'Failed to load pool payouts')
       } finally {
         setIsLoading(false)
       }
@@ -155,49 +162,80 @@ export default function PoolPayouts() {
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">Recent Pool Payouts</h2>
       </header>
       <div className="p-3">
-        {Object.entries(groupedPayouts).map(([day, dayPayouts], index) => (
-          <div key={day}>
-            <header className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm font-semibold p-2">
-              {index === 0 ? 'Today' : day}
-            </header>
-            <ul className="my-1">
-              {dayPayouts.map((payout) => (
-                <li key={payout.transactionHash} className="flex px-2">
-                  <div className="w-9 h-9 shrink-0 my-2 mr-3">
-                    <Image
-                      src="/images/kaspa-dark.svg"
-                      alt="Kaspa Logo"
-                      width={36}
-                      height={36}
-                      className="w-full h-full text-primary-500"
-                    />
-                  </div>
-                  <div className="grow flex items-center border-b border-gray-100 dark:border-gray-700/60 text-sm py-2">
-                    <div className="grow flex justify-between">
-                      <div className="self-center">
-                        <span className="font-medium text-gray-800 dark:text-gray-100">Pool Payout</span>
-                        <span className="text-gray-500 dark:text-gray-400"> • </span>
-                        <span className="text-green-500">{formatAmount(payout.amount)} KAS</span>
-                        <span className="text-gray-500 dark:text-gray-400"> • </span>
-                        <a
-                          href={`https://explorer.kaspa.org/txs/${payout.transactionHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400"
-                        >
-                          {formatTxHash(payout.transactionHash)}
-                        </a>
-                      </div>
-                      <div className="shrink-0 self-end ml-2">
-                        <span className="text-gray-400 dark:text-gray-500">{getRelativeTime(payout.timestamp)}</span>
+        {error || payouts.length === 0 ? (
+          <FallbackMessage>
+            <div>
+              <header className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm font-semibold p-2">Today</header>
+              <ul className="my-1">
+                {[1, 2, 3].map((i) => (
+                  <li key={i} className="flex px-2">
+                    <div className="w-9 h-9 shrink-0 my-2 mr-3 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                    <div className="grow flex items-center border-b border-gray-100 dark:border-gray-700/60 text-sm py-2">
+                      <div className="grow flex justify-between">
+                        <div className="self-center">
+                          <span className="font-medium text-gray-800 dark:text-gray-100">Pool Payout</span>
+                          <span className="text-gray-500 dark:text-gray-400"> • </span>
+                          <span className="text-green-500">123.45 KAS</span>
+                          <span className="text-gray-500 dark:text-gray-400"> • </span>
+                          <span className="text-gray-500 dark:text-gray-400">abc...def</span>
+                        </div>
+                        <div className="shrink-0 self-end ml-2">
+                          <span className="text-gray-400 dark:text-gray-500">2 hours ago</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </FallbackMessage>
+        ) : (
+          <>
+            {Object.entries(groupedPayouts).map(([day, dayPayouts], index) => (
+              <div key={day}>
+                <header className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 dark:bg-opacity-50 rounded-sm font-semibold p-2">
+                  {index === 0 ? 'Today' : day}
+                </header>
+                <ul className="my-1">
+                  {dayPayouts.map((payout) => (
+                    <li key={payout.transactionHash} className="flex px-2">
+                      <div className="w-9 h-9 shrink-0 my-2 mr-3">
+                        <Image
+                          src="/images/kaspa-dark.svg"
+                          alt="Kaspa Logo"
+                          width={36}
+                          height={36}
+                          className="w-full h-full text-primary-500"
+                        />
+                      </div>
+                      <div className="grow flex items-center border-b border-gray-100 dark:border-gray-700/60 text-sm py-2">
+                        <div className="grow flex justify-between">
+                          <div className="self-center">
+                            <span className="font-medium text-gray-800 dark:text-gray-100">Pool Payout</span>
+                            <span className="text-gray-500 dark:text-gray-400"> • </span>
+                            <span className="text-green-500">{formatAmount(payout.amount)} KAS</span>
+                            <span className="text-gray-500 dark:text-gray-400"> • </span>
+                            <a
+                              href={`https://explorer.kaspa.org/txs/${payout.transactionHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400"
+                            >
+                              {formatTxHash(payout.transactionHash)}
+                            </a>
+                          </div>
+                          <div className="shrink-0 self-end ml-2">
+                            <span className="text-gray-400 dark:text-gray-500">{getRelativeTime(payout.timestamp)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </>
+        )}
 
         {/* Footer with link to full history */}
         <div className="px-5 py-4">

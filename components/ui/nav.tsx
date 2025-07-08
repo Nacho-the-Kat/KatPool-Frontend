@@ -40,6 +40,17 @@ export default function Nav() {
           </li>
           <li className="relative group">
             <Link
+              href="/landing"
+              className={`flex items-center px-3 py-2 text-sm font-medium transition-colors ${pathname === '/landing'
+                ? 'text-primary-500'
+                : 'text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400'
+              }`}
+            >
+              <span>Landing Page</span>
+            </Link>
+          </li>
+          <li className="relative group">
+            <Link
               href="/connect"
               className={`flex items-center px-3 py-2 text-sm font-medium transition-colors ${pathname === '/connect'
                 ? 'text-primary-500'
@@ -163,6 +174,18 @@ export default function Nav() {
         {isMobileMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 shadow-lg z-[100]">
             <ul className="px-2 py-3 space-y-1">
+              <li>
+                <Link
+                  href="/landing"
+                  className={`block px-3 py-2 rounded-lg text-sm font-medium ${pathname === '/landing'
+                    ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/10'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Landing Page
+                </Link>
+              </li>
               <li>
                 <Link
                   href="/connect"
