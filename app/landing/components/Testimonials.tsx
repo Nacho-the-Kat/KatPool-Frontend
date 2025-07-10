@@ -1,6 +1,13 @@
-import { Star, Quote, Building2, User, Award } from "lucide-react";
+"use client";
+
+import { Star, Quote, Building2, User, Award, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 const Testimonials = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
   const testimonials = [
     {
       name: "Sarah Chen",
@@ -64,12 +71,62 @@ const Testimonials = () => {
     }
   ];
 
+  // Create duplicated array for seamless infinite scroll
+  const duplicatedTestimonials = [...testimonials, ...testimonials, ...testimonials];
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Calculate transform position
+  const getTransformValue = () => {
+    const gap = 32; // 8 * 4 = 32px (gap-8)
+    
+    // Calculate card width based on screen size
+    let actualCardWidth = 320; // Default for mobile
+    if (windowWidth >= 1024) { // lg breakpoint
+      actualCardWidth = 320; // lg:w-80 = 320px
+    } else if (windowWidth >= 768) { // md breakpoint
+      actualCardWidth = 384; // md:w-96 = 384px
+    } else {
+      // For mobile, use container width
+      actualCardWidth = windowWidth - 64; // Account for padding
+    }
+    
+    return -currentIndex * (actualCardWidth + gap);
+  };
+
+  const handlePrevious = () => {
+    setCurrentIndex((prevIndex) => {
+      if (prevIndex === 0) {
+        return testimonials.length - 1;
+      }
+      return prevIndex - 1;
+    });
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prevIndex) => {
+      if (prevIndex >= testimonials.length - 1) {
+        return 0;
+      }
+      return prevIndex + 1;
+    });
+  };
+
   return (
     <section className="py-20 relative overflow-hidden section-transition">
       {/* Section-specific overlay for depth */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-800/10 via-transparent to-slate-900/10 overlay-transition"></div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
         <div className="text-center mb-12">
           <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
             What Our
@@ -83,58 +140,110 @@ const Testimonials = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <div 
-              key={index}
-              className="group relative"
-            >
-              {/* Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-              
-              {/* Card */}
-              <div className="relative bg-slate-900/50 backdrop-blur-enhanced rounded-2xl p-8 border border-slate-700/50 hover:border-teal-500/50 transition-all duration-300 h-full flex flex-col card-hover">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-6">
-                  <Quote className="w-8 h-8 text-teal-400 flex-shrink-0" />
-                  <div className="flex items-center space-x-1">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Content */}
-                <p className="text-gray-300 mb-6 leading-relaxed flex-grow text-transition">
-                  "{testimonial.content}"
-                </p>
+        {/* Carousel Container */}
+        <div className="relative overflow-visible" style={{ overflowX: 'hidden' }}>
+          {/* Carousel Track */}
+          <div 
+            ref={carouselRef}
+            className="flex gap-8 transition-transform duration-500 ease-out"
+            style={{ 
+              transform: `translateX(${getTransformValue()}px)`,
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none' 
+            }}
+          >
+            {duplicatedTestimonials.map((testimonial, index) => (
+              <div 
+                key={index}
+                className="group relative flex-shrink-0 w-full md:w-96 lg:w-80"
+              >
+                {/* Glow Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
-                {/* Metrics Badge */}
-                <div className="mb-6">
-                  <div className="inline-flex items-center px-3 py-1 rounded-full bg-teal-500/20 border border-teal-500/30">
-                    <Building2 className="w-3 h-3 text-teal-400 mr-1" />
-                    <span className="text-teal-300 text-xs font-medium">{testimonial.metrics}</span>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold scale-transition">
-                      {testimonial.avatar}
+                {/* Card */}
+                <div className="relative bg-slate-900/50 backdrop-blur-enhanced rounded-2xl p-8 border border-slate-700/50 hover:border-teal-500/50 transition-all duration-300 h-full flex flex-col card-hover">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-6">
+                    <Quote className="w-8 h-8 text-teal-400 flex-shrink-0" />
+                    <div className="flex items-center space-x-1">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                      ))}
                     </div>
-                    <div>
-                      <div className="text-white font-semibold">{testimonial.name}</div>
-                      <div className="text-teal-400 text-sm font-medium">{testimonial.role}</div>
-                      <div className="text-gray-400 text-xs">{testimonial.company}</div>
+                  </div>
+
+                  {/* Content */}
+                  <p className="text-gray-300 mb-6 leading-relaxed flex-grow text-transition">
+                    "{testimonial.content}"
+                  </p>
+                  
+                  {/* Metrics Badge */}
+                  <div className="mb-6">
+                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-teal-500/20 border border-teal-500/30">
+                      <Building2 className="w-3 h-3 text-teal-400 mr-1" />
+                      <span className="text-teal-300 text-xs font-medium">{testimonial.metrics}</span>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold scale-transition">
+                        {testimonial.avatar}
+                      </div>
+                      <div>
+                        <div className="text-white font-semibold">{testimonial.name}</div>
+                        <div className="text-teal-400 text-sm font-medium">{testimonial.role}</div>
+                        <div className="text-gray-400 text-xs">{testimonial.company}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* Navigation Buttons */}
+          <button
+            onClick={handlePrevious}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-slate-900/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-slate-800/90 transition-all duration-300 border border-slate-700/50 hover:border-teal-500/50 z-10"
+            aria-label="Previous testimonial"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+
+          <button
+            onClick={handleNext}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-slate-900/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-slate-800/90 transition-all duration-300 border border-slate-700/50 hover:border-teal-500/50 z-10"
+            aria-label="Next testimonial"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
+          {/* Navigation Dots */}
+          <div className="flex justify-center mt-8 space-x-2">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  currentIndex % testimonials.length === index
+                    ? 'bg-teal-400 scale-110'
+                    : 'bg-slate-600 hover:bg-slate-500'
+                }`}
+                aria-label={`Go to testimonial ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Hide scrollbar for webkit browsers */}
+      <style jsx>{`
+        .flex::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </section>
   );
 };
