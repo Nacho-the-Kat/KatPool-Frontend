@@ -134,9 +134,9 @@ const Testimonials = () => {
               Clients Say
             </span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed text-transition">
-            Join Fortune 500 companies and leading mining operations who trust our 
-            enterprise-grade infrastructure for their mission-critical mining operations.
+          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-normal text-transition">
+            Kat Pool delivers enterprise-grade performance and open-source freedom.<br />
+            Empowering Kaspa miners at every scale.
           </p>
         </div>
 

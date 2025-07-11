@@ -1,4 +1,5 @@
 import { Zap, Mail, MessageCircle, Twitter, Github, Shield, Award, Globe, MessageSquare, Send, Users } from "lucide-react";
+import Image from "next/image";
 
 // Custom Discord Icon Component
 const DiscordIcon = ({ className }: { className?: string }) => (
@@ -18,37 +19,17 @@ const Footer = () => {
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 p-0.5 scale-transition">
-                <div className="w-full h-full bg-slate-950 rounded-xl flex items-center justify-center">
-                  <Zap className="w-7 h-7 text-white" />
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-bold text-white">KASPA Pool</span>
-                <span className="text-sm text-teal-400">Enterprise Mining Infrastructure</span>
-              </div>
+              <Image
+                src="/images/navlogo.png"
+                alt="KatPool Logo"
+                width={154}
+                height={38}
+                className="h-10 w-auto"
+              />
             </div>
             <p className="text-gray-400 mb-8 max-w-md leading-relaxed text-transition">
-              The world's most advanced KASPA mining pool, trusted by Fortune 500 companies
-              and professional miners worldwide. Built for enterprise-scale operations with
-              institutional-grade security and performance.
+              Kat Pool is an open-source Kaspa mining pool that offers transparency, scalability, and freedom. Rewarding miners in $NACHO. Built on enterprise-grade infrastructure, it delivers unmatched reliability, security, and profitability.
             </p>
-
-            {/* Trust Badges */}
-            <div className="flex flex-wrap gap-4 mb-8">
-              <div className="flex items-center space-x-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50 card-hover">
-                <Shield className="w-4 h-4 text-teal-400" />
-                <span className="text-sm text-gray-300">SOC 2 Certified</span>
-              </div>
-              <div className="flex items-center space-x-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50 card-hover">
-                <Award className="w-4 h-4 text-cyan-400" />
-                <span className="text-sm text-gray-300">99.98% SLA</span>
-              </div>
-              <div className="flex items-center space-x-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50 card-hover">
-                <Globe className="w-4 h-4 text-blue-400" />
-                <span className="text-sm text-gray-300">Global Infrastructure</span>
-              </div>
-            </div>
 
             {/* Social Links */}
             <div className="flex space-x-4">

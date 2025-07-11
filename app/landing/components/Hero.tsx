@@ -28,11 +28,11 @@ const Hero = () => {
 
                     {/* CTA Buttons */}
                     <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mb-16">
-                        <button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white px-12 py-6 text-lg font-semibold shadow-2xl shadow-teal-500/25 transition-all duration-300 hover:shadow-teal-500/40 hover:scale-105 rounded-lg flex items-center btn-hover glow-effect focus-enhanced">
+                        <a href="/connect" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white px-12 py-6 text-lg font-semibold shadow-2xl shadow-teal-500/25 transition-all duration-300 hover:shadow-teal-500/40 hover:scale-105 rounded-lg flex items-center btn-hover glow-effect focus-enhanced">
                             Start Mining
                             <ArrowRight className="ml-2 w-5 h-5 transform-transition" />
-                        </button>
-                        <a href="/pool" className="border-2 border-slate-600 text-white hover:bg-slate-800 hover:border-teal-400 px-12 py-6 text-lg font-semibold backdrop-blur-sm transition-all duration-300 rounded-lg flex items-center btn-hover border-transition focus-enhanced">
+                        </a>
+                        <a href="/pool" target="_blank" rel="noopener noreferrer" className="border-2 border-slate-600 text-white hover:bg-slate-800 hover:border-teal-400 px-12 py-6 text-lg font-semibold backdrop-blur-sm transition-all duration-300 rounded-lg flex items-center btn-hover border-transition focus-enhanced">
                             <TrendingUp className="mr-2 w-5 h-5 transform-transition" />
                             Pool Stats
                         </a>
