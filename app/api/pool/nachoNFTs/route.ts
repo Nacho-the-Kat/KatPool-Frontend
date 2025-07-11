@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import logger from '@/lib/utils/logger'
 
 export const runtime = 'edge';
 
@@ -14,18 +15,68 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(`https://mainnet.krc721.stream/api/v1/krc721/mainnet/address/${wallet}/NACHO`)
-    const data = await response.json()
+    // Fetch config to get nftAllowedTicks array
+    const baseUrl = process.env.API_BASE_URL || 'http://kas.katpool.xyz:8080';
+    const configResponse = await fetch(`${baseUrl}/config`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!configResponse.ok) {
+      throw new Error(`Config fetch failed! status: ${configResponse.status}`);
+    }
+
+    const configData = await configResponse.json();
+    const nftAllowedTicks = configData.nftAllowedTicks || [];
+
+    if (!Array.isArray(nftAllowedTicks) || nftAllowedTicks.length === 0) {
+      return NextResponse.json({
+        status: 'success',
+        data: {
+          nftCount: 0,
+          qualified: false
+        }
+      });
+    }
+
+    // Check each NFT collection
+    let totalNftCount = 0;
+    let hasAnyNfts = false;
+
+    for (const tick of nftAllowedTicks) {
+      try {
+        const nftResponse = await fetch(`https://mainnet.krc721.stream/api/v1/krc721/mainnet/address/${wallet}/${tick}`);
+        const nftData = await nftResponse.json();
+        
+        const nftCount = nftData.result?.length || 0;
+        totalNftCount += nftCount;
+        
+        if (nftCount > 0) {
+          hasAnyNfts = true;
+        }
+      } catch (error) {
+        logger.error(`Error fetching NFTs for tick ${tick}`, {
+          tick,
+          wallet,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
 
     return NextResponse.json({
       status: 'success',
       data: {
-        nftCount: data.result?.length || 0,
-        qualified: (data.result?.length || 0) > 0
+        nftCount: totalNftCount,
+        qualified: hasAnyNfts
       }
     })
   } catch (error) {
-    console.error('Error fetching NACHO NFTs:', error)
+    logger.error('Error fetching NFT data', {
+      wallet,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     return NextResponse.json({
       status: 'success',
       data: {

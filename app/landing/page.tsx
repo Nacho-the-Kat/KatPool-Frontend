@@ -4,6 +4,8 @@ import Statistics from './components/Statistics';
 import Testimonials from './components/Testimonials';
 import Footer from './components/Footer';
 import PoolFeeTiers from './components/PoolFeeTiers';
+import PoolStatsCard from './components/PoolStatsCard';
+import PoolHashrateChart from './components/PoolHashrateChart';
 
 export default function LandingPage() {
   return (
@@ -37,6 +39,12 @@ export default function LandingPage() {
         <Navigation />
         <Hero />
         <Statistics />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-8">
+          <div className="flex flex-col md:flex-row gap-8 justify-center items-start">
+            <PoolStatsCard />
+            <PoolHashrateChart />
+          </div>
+        </div>
         <PoolFeeTiers />
         <Testimonials />
         <Footer />
