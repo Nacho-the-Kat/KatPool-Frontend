@@ -290,24 +290,38 @@ export default function StatCard({ dataType, label, icon }: StatCardProps) {
               const networkHashrateResponse = await KaspaAPI.network.getHashrate(false);
               const networkHashrate = Number(networkHashrateResponse.hashrate) * 1000; // adjust units
               
-              // Fetch 24h blocks
-              const blocks24hData = await $fetch('/api/pool/blocks24h', {
+              // Fetch recent blocks and filter for last 10 minutes
+              const recentBlocksData = await $fetch('/api/pool/recentBlocks?perPage=100', {
                 retry: 1,
                 timeout: 5000,
               });
               
-              if (blocks24hData.status !== 'success' || typeof blocks24hData.data?.totalBlocks24h !== 'number') {
-                throw new Error('Invalid 24h blocks response');
+              if (recentBlocksData.status !== 'success' || !Array.isArray(recentBlocksData.data?.blocks)) {
+                throw new Error('Invalid recent blocks response');
               }
               
-              const actualBlocks24h = blocks24hData.data.totalBlocks24h;
-              const kaspaBlocksPerDay = 864000; // number of blocks per day in kaspa
-              const expected24hBlocks = (poolHashrate / networkHashrate) * kaspaBlocksPerDay;
-              // Calculate luck: Expected Blocks / Actual Blocks
-              const luckPercentage = ((actualBlocks24h / expected24hBlocks) * 100).toFixed(2);
-              result = `${luckPercentage}%`;
+              // Calculate timestamp for 10 minutes ago
+              const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+              
+              // Filter blocks from the last 10 minutes
+              const blocksLast10Minutes = recentBlocksData.data.blocks.filter((block: any) => {
+                const blockTimestamp = new Date(block.timestamp);
+                return blockTimestamp >= tenMinutesAgo;
+              });
+
+              const actualBlocks10Min = blocksLast10Minutes.length;
+              const kaspaBlocksPer10Min = 6000; // number of blocks per 10 minutes in kaspa (1 block per second)
+              const expected10MinBlocks = (poolHashrate / networkHashrate) * kaspaBlocksPer10Min;
+              // Calculate luck: Actual Blocks / Expected Blocks
+              const luckPercentage = ((actualBlocks10Min / expected10MinBlocks) * 100).toFixed(2);
+              
+              // Check if luckPercentage is a valid number
+              if (isNaN(Number(luckPercentage)) || !isFinite(Number(luckPercentage))) {
+                result = '--';
+              } else {
+                result = `${luckPercentage}%`;
+              }
             } catch (error) {
-              console.error('Error calculating pool luck:', error);
               result = '--';
             }
             break
