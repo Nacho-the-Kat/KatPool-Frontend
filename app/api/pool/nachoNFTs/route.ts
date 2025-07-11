@@ -53,8 +53,18 @@ export async function GET(request: Request) {
         const nftCount = nftData.result?.length || 0;
         totalNftCount += nftCount;
         
-        if (nftCount > 0) {
+        if (nftCount > 0 && tick !== 'KATCLAIM') {
           hasAnyNfts = true;
+          break;
+        }
+
+        if(nftCount > 0 && tick === 'KATCLAIM') {
+          for(const nft of nftData.result) {
+            if(nft.tokenId >= 736 && nft.tokenId <= 843) {
+              hasAnyNfts = true;
+              break;
+            }
+          }
         }
       } catch (error) {
         logger.error(`Error fetching NFTs for tick ${tick}`, {

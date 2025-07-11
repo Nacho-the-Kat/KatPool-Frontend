@@ -121,10 +121,10 @@ export default function AnalyticsCard01() {
 
       setMinerHashrateResponse(minerHashrateResponse);
       // Calculate averages for different time periods
-      setOneHourAvg(formatHashrate(minerHashrateResponse.data.averages['1h']));
-      setTwelveHourAvg(formatHashrate(minerHashrateResponse.data.averages['12h']));
-      setTwentyFourHourAvg(formatHashrate(minerHashrateResponse.data.averages['24h']));
-      setFortyEightHourAvg(formatHashrate(minerHashrateResponse.data.averages['48h']));
+      setOneHourAvg(formatHashrate(minerHashrateResponse.data.averages['1h'] || 0));
+      setTwelveHourAvg(formatHashrate(minerHashrateResponse.data.averages['12h'] || 0));
+      setTwentyFourHourAvg(formatHashrate(minerHashrateResponse.data.averages['24h'] || 0));
+      setFortyEightHourAvg(formatHashrate(minerHashrateResponse.data.averages['48h'] || 0));
 
       // Handle chart data
       if (!chartResponse || chartResponse.error) {

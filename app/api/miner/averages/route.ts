@@ -16,12 +16,10 @@ function calculateAverages(values: [number, string][]) {
     '48h': 48 * 60 * 60,
   };
 
-  // Initialize sums and counts for each interval
-  const sums: { [key: string]: number } = {};
-  const counts: { [key: string]: number } = {};
+  // Group values by interval for trimming
+  const intervalValues: { [key: string]: number[] } = {};
   for (const key in intervals) {
-    sums[key] = 0;
-    counts[key] = 1;
+    intervalValues[key] = [];
   }
 
   // Find earliest timestamp with non-zero value
@@ -64,6 +62,7 @@ function calculateAverages(values: [number, string][]) {
     }
   }
 
+  // Collect values for each interval
   for (const [timestamp, valueStr] of values) {
     const value = parseFloat(valueStr);
     if (value === 0) continue; // skip zero values
@@ -71,16 +70,31 @@ function calculateAverages(values: [number, string][]) {
     const age = now - timestamp;
     for (const key of Object.keys(intervals) as (keyof typeof intervals)[]) {
       if (age <= intervals[key]) {
-        sums[key] += value;
-        counts[key]++;
+        intervalValues[key].push(value);
       }
     }
   }
 
-  // Calculate averages
+  // Calculate trimmed averages for each interval
   const averages: { [key: string]: number | null } = {};
   for (const key in intervals) {
-    averages[key] = counts[key] > 0 ? sums[key] / counts[key] : null;
+    const values = intervalValues[key];
+    if (values.length === 0) {
+      averages[key] = null;
+      continue;
+    }
+
+    // Apply trimAmount logic (remove top and bottom 10%)
+    const sortedValues = [...values].sort((a, b) => a - b);
+    const trimAmount = Math.floor(sortedValues.length * 0.1);
+    const trimmedValues = sortedValues.slice(trimAmount, -trimAmount);
+
+    if (trimmedValues.length === 0) {
+      averages[key] = null;
+    } else {
+      const sum = trimmedValues.reduce((acc, val) => acc + val, 0);
+      averages[key] = sum / trimmedValues.length;
+    }
   }
 
   return {
@@ -105,10 +119,18 @@ export async function GET(request: Request) {
       );
     }
 
-    const query = `miner_hash_rate_GHps{wallet_address="${wallet}"}[48h]`;
+    // Calculate time range for the last 48 hours (same as top miners)
+    const end = Math.floor(Date.now() / 1000);
+    const start = end - (48 * 60 * 60);
+    const step = 300; // 5-minute intervals (same as top miners)
+
     const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
-    const url = new URL(`${baseUrl}/api/v1/query`);
-    url.searchParams.append('query', query);
+    const url = new URL(`${baseUrl}/api/v1/query_range`);
+    url.searchParams.append('query', `miner_hash_rate_GHps{wallet_address="${wallet}"}`);
+    url.searchParams.append('start', start.toString());
+    url.searchParams.append('end', end.toString());
+    url.searchParams.append('step', step.toString());
+
     const response = await fetch(url, {
       headers: {
         'x-trace-id': traceId || '',
