@@ -1,14 +1,26 @@
 import React from 'react';
 
+// Reusable button component with consistent styling
+const ActionButton = ({ href, text, className = "" }: { href: string; text: string; className?: string }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={`block w-full py-4 px-6 rounded-xl font-semibold text-center transition-all duration-200 bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 hover:border-slate-500 btn-hover glow-effect focus-enhanced ${className}`}
+  >
+    {text}
+    <span className="ml-2 inline-block transition-transform group-hover:translate-x-1 transform-transition">→</span>
+  </a>
+);
+
 const tiers = [
   {
     title: '0.25%',
     subtitle: 'Enterprise Fee',
     description: 'Premium tier for wallets holding 100M+ $NACHO tokens',
-    badge: 'Premium',
     button: {
-      text: 'Explore $NACHO Benefits',
-      href: '#',
+      text: 'Explore $NACHO',
+      href: 'https://nachothekat.xyz',
     },
     benefitsTitle: 'Enterprise Benefits',
     benefits: [
@@ -18,13 +30,18 @@ const tiers = [
       'Early feature access',
       'Custom integration support',
     ],
+    additionalBenefitsTitle: 'Additional Holder Benefits',
+    additionalBenefits: [
+      'Discounted pool fee',
+      'Priority tech support',
+      'Early features access',
+    ],
     icon: '🏆',
   },
   {
     title: '0.75%',
     subtitle: 'Standard Fee',
     description: 'Professional mining solution with industry-leading features',
-    badge: 'Recommended',
     button: {
       text: 'Start Mining Now',
       href: '#',
@@ -38,17 +55,30 @@ const tiers = [
       '99.9% uptime guarantee',
       'Real-time monitoring dashboard',
     ],
+    alwaysIncludedTitle: 'Always Included Features',
+    alwaysIncluded: [
+      'Support for all ASIC models',
+      'Fair PPLNS pooling scheme',
+      'Rewards paid out twice daily',
+      '0.25% fee refunded as $NACHO',
+      'Open source, secure, anonymous',
+    ],
     icon: '⚡',
   },
   {
     title: '0.25%',
     subtitle: 'NFT Holder Fee',
-    description: 'Exclusive pricing for Nacho Kats NFT collection holders',
-    badge: 'Exclusive',
-    button: {
-      text: 'View NFT Collection',
-      href: '#',
-    },
+    description: 'Exclusive pricing for Nacho Kats and KATCLAIM Level 3 NFT collection holders',
+    buttons: [
+      {
+        text: 'View NACHO NFT',
+        href: 'https://kaspa.com/nft/collections/NACHO',
+      },
+      {
+        text: 'View KATCLAIM NFT',
+        href: 'https://kaspa.com/nft/collections/KATCLAIM',
+      }
+    ],
     benefitsTitle: 'NFT Holder Perks',
     benefits: [
       'Premium fee structure',
@@ -56,6 +86,12 @@ const tiers = [
       'Priority support queue',
       'Early feature releases',
       'Special event invitations',
+    ],
+    additionalBenefitsTitle: 'Additional Benefits',
+    additionalBenefits: [
+      'Discounted pool fee',
+      'Priority tech support',
+      'Early features access',
     ],
     icon: '🎨',
   },
@@ -66,23 +102,18 @@ export default function PoolFeeTiers() {
     <section className="relative py-16 overflow-hidden section-transition">
       {/* Section-specific overlay for depth */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/10 via-transparent to-slate-800/10 overlay-transition"></div>
-      
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm font-medium mb-6 card-hover">
-            <span className="w-2 h-2 bg-teal-400 rounded-full mr-2"></span>
-            Enterprise Mining Solutions
-          </div>
           <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-            Join the Kat Pool
-            <span className="block bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent animate-gradient-text">
+            Earn more with Kat Pool
+            <span className="block bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent animate-gradient-text">
               Revolution
             </span>
           </h2>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed text-transition">
-            Experience enterprise-grade mining infrastructure with competitive fees, 
-            advanced features, and dedicated support for professional miners.
+            Unlock additional $NACHO rewards through dual buyback rebates, complemented by real-time analytics, advanced metrics, optimized 12-hour PPLNS cycles, and a censorship-resistant, private, and secure platform.
           </p>
         </div>
 
@@ -91,37 +122,24 @@ export default function PoolFeeTiers() {
           {tiers.map((tier, idx) => (
             <div
               key={idx}
-              className={`relative group ${
-                idx === 1 
-                  ? 'lg:scale-105 z-10' 
-                  : 'lg:scale-95 hover:scale-100 transition-transform duration-300'
-              }`}
+              className={`relative group ${idx === 1
+                ? 'lg:scale-105 z-10'
+                : 'lg:scale-95 hover:scale-100 transition-transform duration-300'
+                }`}
             >
               {/* Card Background */}
-              <div className={`relative h-full rounded-2xl p-8 ${
-                idx === 1
-                  ? 'bg-gradient-to-br from-slate-800 to-slate-700 border-2 border-teal-400/50 shadow-2xl shadow-teal-400/20'
-                  : 'bg-slate-800/80 border border-slate-700/50 backdrop-blur-sm hover:border-slate-600/50 transition-all duration-300'
-              } card-hover`}>
-                
-                {/* Badge */}
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-6 ${
-                  idx === 1
-                    ? 'bg-teal-500/20 text-teal-300 border border-teal-400/30'
-                    : 'bg-slate-700/50 text-slate-300 border border-slate-600/50'
-                }`}>
-                  {tier.badge}
-                </div>
-
+              <div className={`relative h-full rounded-2xl p-8 ${idx === 1
+                ? 'bg-gradient-to-br from-slate-800 to-slate-700 border-2 border-teal-400/50 shadow-2xl shadow-teal-400/20'
+                : 'bg-slate-800/80 border border-slate-700/50 backdrop-blur-sm hover:border-slate-600/50 transition-all duration-300'
+                } card-hover`}>
                 {/* Icon */}
                 <div className="text-4xl mb-4 scale-transition">{tier.icon}</div>
 
                 {/* Price */}
                 <div className="mb-4">
                   <div className="flex items-baseline gap-2">
-                    <span className={`text-5xl font-black ${
-                      idx === 1 ? 'text-white' : 'text-slate-200'
-                    }`}>
+                    <span className={`text-5xl font-black ${idx === 1 ? 'text-white' : 'text-slate-200'
+                      }`}>
                       {tier.title}
                     </span>
                     <span className="text-lg text-slate-400 font-medium">
@@ -135,41 +153,98 @@ export default function PoolFeeTiers() {
                   {tier.description}
                 </p>
 
-                {/* CTA Button */}
-                <a
-                  href={tier.button.href}
-                  className={`block w-full py-4 px-6 rounded-xl font-semibold text-center transition-all duration-200 mb-8 ${
-                    idx === 1
-                      ? 'bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-300 hover:to-teal-400 text-slate-900 shadow-lg shadow-teal-400/25'
-                      : 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 hover:border-slate-500'
-                  } btn-hover glow-effect focus-enhanced`}
-                >
-                  {tier.button.text}
-                  <span className="ml-2 inline-block transition-transform group-hover:translate-x-1 transform-transition">→</span>
-                </a>
-
-                {/* Benefits */}
-                <div>
-                  <h4 className={`font-semibold mb-4 ${
-                    idx === 1 ? 'text-white' : 'text-slate-200'
-                  }`}>
-                    {tier.benefitsTitle}
-                  </h4>
-                  <ul className="space-y-3">
-                    {tier.benefits.map((benefit, i) => (
-                      <li key={i} className="flex items-start gap-3 text-slate-300">
-                        <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                          idx === 1
-                            ? 'bg-teal-400/20 text-teal-300'
-                            : 'bg-slate-700 text-slate-400'
-                        }`}>
-                          ✓
-                        </span>
-                        <span className="text-sm leading-relaxed">{benefit}</span>
-                      </li>
+                {/* CTA Buttons */}
+                {tier.buttons ? (
+                  // Multiple buttons for NFT tier
+                  <div className="space-y-3 mb-8">
+                    {tier.buttons.map((button, buttonIdx) => (
+                      <ActionButton
+                        key={buttonIdx}
+                        href={button.href}
+                        text={button.text}
+                        className="py-3"
+                      />
                     ))}
-                  </ul>
-                </div>
+                  </div>
+                ) : (
+                  // Single button for other tiers
+                  <div className="mb-8">
+                    {idx === 1 ? (
+                      // Special styling for the middle tier (Standard)
+                      <a
+                        href={tier.button.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full py-4 px-6 rounded-xl font-semibold text-center transition-all duration-200 bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-300 hover:to-teal-400 text-slate-900 shadow-lg shadow-teal-400/25 btn-hover glow-effect focus-enhanced"
+                      >
+                        {tier.button.text}
+                        <span className="ml-2 inline-block transition-transform group-hover:translate-x-1 transform-transition">→</span>
+                      </a>
+                    ) : (
+                      <ActionButton
+                        href={tier.button.href}
+                        text={tier.button.text}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Additional Benefits for NFT Tier */}
+                {idx === 2 && tier.additionalBenefits && (
+                  <div>
+                    <h4 className="font-semibold mb-4 text-slate-200">
+                      {tier.additionalBenefitsTitle}
+                    </h4>
+                    <ul className="space-y-3">
+                      {tier.additionalBenefits.map((benefit, i) => (
+                        <li key={i} className="flex items-start gap-3 text-slate-300">
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-teal-400/20 text-teal-300">
+                            ✓
+                          </span>
+                          <span className="text-sm leading-relaxed">{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Always Included Features for Standard Tier */}
+                {idx === 1 && tier.alwaysIncluded && (
+                  <div>
+                    <h4 className="font-semibold mb-4 text-white">
+                      {tier.alwaysIncludedTitle}
+                    </h4>
+                    <ul className="space-y-3">
+                      {tier.alwaysIncluded.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-3 text-slate-300">
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-teal-400/20 text-teal-300">
+                            ✓
+                          </span>
+                          <span className="text-sm leading-relaxed">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Additional Benefits for Enterprise Tier */}
+                {idx === 0 && tier.additionalBenefits && (
+                  <div>
+                    <h4 className="font-semibold mb-4 text-slate-200">
+                      {tier.additionalBenefitsTitle}
+                    </h4>
+                    <ul className="space-y-3">
+                      {tier.additionalBenefits.map((benefit, i) => (
+                        <li key={i} className="flex items-start gap-3 text-slate-300">
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-teal-400/20 text-teal-300">
+                            ✓
+                          </span>
+                          <span className="text-sm leading-relaxed">{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {/* Glow Effect for Featured Card */}
                 {idx === 1 && (
@@ -178,19 +253,6 @@ export default function PoolFeeTiers() {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Bottom CTA */}
-        <div className="text-center mt-16">
-          <div className="inline-flex items-center gap-4 px-8 py-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm card-hover">
-            <span className="text-slate-300">Ready to start mining?</span>
-            <a
-              href="#"
-              className="bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-300 hover:to-blue-400 text-slate-900 font-semibold px-6 py-2 rounded-lg transition-all duration-200 btn-hover glow-effect focus-enhanced"
-            >
-              Get Started
-            </a>
-          </div>
         </div>
       </div>
     </section>
