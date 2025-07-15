@@ -612,7 +612,7 @@ export default function KatpoolIntro() {
                 <div className="space-y-4">
                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                     <p className="text-green-700 dark:text-green-300">
-                      Save your configuration and restart your miner. Within a few minutes, you should see your worker appearing in your dashboard.
+                      Save your configuration and restart your miner. Pool connection may take up to 10 minutes, depending on the ASIC model. Your worker will appear on the dashboard once connected.
                     </p>
                   </div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">
