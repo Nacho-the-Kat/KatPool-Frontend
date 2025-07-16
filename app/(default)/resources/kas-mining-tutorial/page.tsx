@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import React from 'react';
+import SidebarNavigation from '../components/SidebarNavigation';
 
 export const metadata = {
     title: 'KAS Mining Tutorial - Kat Pool',
@@ -11,27 +12,12 @@ export default function KasMiningTutorial() {
     return (
         <div className="flex flex-col md:flex-row px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
             {/* Sidebar Navigation */}
-            <nav className="md:w-64 mb-8 md:mb-0 md:mr-8">
-                <ul className="flex md:flex-col gap-4">
-                    <li>
-                        <Link href="/resources/kas-mining-tutorial" className="block px-4 py-2 rounded bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-semibold">KAS Mining Tutorial</Link>
-                    </li>
-                    <li>
-                        <Link href="/resources/mining-tools" className="block px-4 py-2 rounded hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">Mining Tools</Link>
-                    </li>
-                    <li>
-                        <Link href="/resources/documentation" className="block px-4 py-2 rounded hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">Documentation & Guides</Link>
-                    </li>
-                    <li>
-                        <Link href="/resources/mining-hardware" className="block px-4 py-2 rounded hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">Mining Hardware</Link>
-                    </li>
-                </ul>
-            </nav>
+            <SidebarNavigation />
             {/* Main Content */}
             <main className="flex-1">
                 <div className="bg-white dark:bg-gray-900 shadow-lg rounded-xl border border-gray-100 dark:border-gray-700/60 p-8">
                     <h1 className="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-100">KAS Mining Tutorial</h1>
-                    <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">Welcome to the KatPool KAS Mining Tutorial. Follow these simple steps to start mining KAS with KatPool using our easy setup guide. This tutorial will walk you through the process of connecting your miner on the Connect page and help you generate your personalized configuration. <Link href="/connect" className="text-primary-600 dark:text-primary-400 hover:underline">
+                    <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">Welcome to the KatPool KAS Mining Tutorial. Follow these simple steps to start mining KAS with KatPool using our easy setup guide. This tutorial will walk you through the process of connecting your miner on the Connect page and help you generate your personalized configuration. <Link href="/connect" className="text-primary-600 dark:text-primary-400 hover:underline" target="_blank" rel="noopener noreferrer">
                         Connect your miner</Link>.</p>
                     {/* Step 1: Location Selection */}
                     <section className="mb-8">
@@ -131,10 +117,10 @@ export default function KasMiningTutorial() {
                         <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
                             <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">What to Expect:</h3>
                             <ul className="list-disc ml-6 text-gray-700 dark:text-gray-300 space-y-1">
-                                <li>Your worker will appear on the <Link href="/miner" className="text-primary-600 dark:text-primary-400 hover:underline">KatPool dashboard</Link> once connected</li>
+                                <li>Your worker will appear on the <Link href="/miner" className="text-primary-600 dark:text-primary-400 hover:underline" target="_blank" rel="noopener noreferrer">KatPool dashboard</Link> once connected</li>
                                 <li>Mining rewards will be automatically accumulated in your account</li>
                                 <li>Payouts occur automatically twice daily</li>
-                                <li>Monitor your mining performance through the <Link href="/miner" className="text-primary-600 dark:text-primary-400 hover:underline">KatPool dashboard</Link></li>
+                                <li>Monitor your mining performance through the <Link href="/miner" className="text-primary-600 dark:text-primary-400 hover:underline" target="_blank" rel="noopener noreferrer">KatPool dashboard</Link></li>
                             </ul>
                         </div>
                         <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">

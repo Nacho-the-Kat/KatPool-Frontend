@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import React from 'react'
+import DocCard from '../components/DocCard';
+import SidebarNavigation from '../components/SidebarNavigation';
 
 export const metadata = {
   title: 'Mining Hardware - Kat Pool',
@@ -12,22 +14,7 @@ export default function MiningHardware() {
       {/* Main Layout */}
       <div className="flex flex-col md:flex-row px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
         {/* Sidebar Navigation */}
-        <nav className="md:w-64 mb-8 md:mb-0 md:mr-8">
-          <ul className="flex md:flex-col gap-4">
-            <li>
-              <Link href="/resources/kas-mining-tutorial" className="block px-4 py-2 rounded hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">KAS Mining Tutorial</Link>
-            </li>
-            <li>
-              <Link href="/resources/mining-tools" className="block px-4 py-2 rounded hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">Mining Tools</Link>
-            </li>
-            <li>
-              <Link href="/resources/documentation" className="block px-4 py-2 rounded hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">Documentation & Guides</Link>
-            </li>
-            <li>
-              <Link href="/resources/mining-hardware" className="block px-4 py-2 rounded bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-semibold">Mining Hardware</Link>
-            </li>
-          </ul>
-        </nav>
+        <SidebarNavigation />
         {/* Main Content */}
         <main className="flex-1">
           <div className="w-full max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-4">
@@ -150,6 +137,22 @@ Consider noise, heat, and power requirements for home mining.</p>
                       </tbody>
                     </table>
                   </div>
+                </div>
+                {/* Hashrate Tables DocCard */}
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+                  For a comprehensive list of mining hardware, including many additional ASIC and GPU models not shown above, see the link below. The hashrate tables provide up-to-date performance data and specifications for a wide variety of devices, making it especially useful for those interested in GPU mining or comparing different miner options.
+                </p>
+                <div className="mt-8 max-w-md">
+                  <DocCard
+                    title="Hashrate Tables"
+                    description="Detailed performance data for various mining hardware, including ASICs and GPUs"
+                    link="https://wiki.kaspa.org/en/hashrate-tables"
+                    icon={
+                      <svg className="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    }
+                  />
                 </div>
               </section>
             </div>

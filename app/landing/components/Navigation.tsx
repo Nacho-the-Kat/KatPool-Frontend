@@ -22,7 +22,7 @@ const Navigation = () => {
     { href: "/miner", label: "Miner Dashboard" },
     { href: "/pool", label: "Pool Statistics" },
     { href: "/topMiners", label: "Top Miners" },
-    { href: "/resources", label: "Resources" },
+    { href: "/resources/kas-mining-tutorial", label: "Resources" },
   ];
 
   return (

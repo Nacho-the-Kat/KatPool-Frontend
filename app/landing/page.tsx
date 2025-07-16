@@ -63,7 +63,7 @@ export default function LandingPage() {
                   Use our mining calculator to estimate your daily, weekly, and yearly rewards based on your hashrate. For more tools, guides, and hardware info, check out our resources page.
                 </p>
                 <a
-                  href="/resources"
+                  href="/resources/kas-mining-tutorial"
                   className="inline-block mt-2 px-5 py-2 rounded-lg bg-gradient-to-r from-teal-400 to-cyan-400 hover:from-teal-300 hover:to-cyan-300 text-slate-900 font-semibold text-base transition-colors shadow-lg shadow-teal-400/25 btn-hover glow-effect focus-enhanced"
                 >
                   Explore Mining Resources
