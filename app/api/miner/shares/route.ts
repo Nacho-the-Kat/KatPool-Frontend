@@ -5,6 +5,28 @@ import logger from '@/lib/utils/logger';
 export const runtime = 'edge';
 export const revalidate = 10; // Revalidate every 10 seconds
 
+// calculate average share difference for last 20 values
+function calculateAverageShareDifferences(results: any[]) {
+  return results.map((result: any) => {
+    const values = result.values;
+    if (!values || values.length < 2) {
+      return { ...result.metric, average_share_per_minute: 0 };
+    }
+    const lastN = values.slice(-20);
+    let diffs: number[] = [];
+    for (let i = 1; i < lastN.length; i++) {
+      const prev = Number(lastN[i - 1][1]);
+      const curr = Number(lastN[i][1]);
+      diffs.push(curr - prev);
+    }
+    const avg = diffs.length > 0 ? diffs.reduce((a, b) => a + b, 0) / diffs.length : 0;
+    return {
+      ...result.metric,
+      average_share_per_minute: avg,
+    };
+  });
+}
+
 export async function GET(request: Request) {
   const headersList = headers();
   const traceId = headersList.get('x-trace-id') || undefined;
@@ -56,7 +78,12 @@ export async function GET(request: Request) {
     // Process the data to get the last share time for each miner
     if (data.status === 'success' && data.data?.result) {
       const results = data.data.result;
-      const processedResults = results.map((result: any) => {
+
+      // Calculate average share difference for last 20 values
+      const avgShareDiffs = calculateAverageShareDifferences(results);
+
+      // Process the data to get the last share time for each miner
+      const processedResults = results.map((result: any, idx: number) => {
         const values = result.values;
         let lastShareTimestamp = null;
         let lastShareValue = '0';
@@ -80,9 +107,13 @@ export async function GET(request: Request) {
           lastShareValue = values[values.length - 1][1]; // Use the latest value for total shares
         }
 
+        // Attach average_share_per_minute from avgShareDiffs (by index)
+        const avgShare = avgShareDiffs[idx]?.average_share_per_minute ?? 0;
+
         return {
           ...result,
-          values: [[lastShareTimestamp, lastShareValue]]
+          values: [[lastShareTimestamp, lastShareValue]],
+          average_share_per_minute: avgShare
         };
       });
 

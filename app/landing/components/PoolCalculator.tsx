@@ -44,7 +44,8 @@ export default function PoolCalculator() {
     fetchPrices();
   }, []);
 
-  // Calculate estimates
+  // TODO: should seperate as a common function, used by miner estimates as well
+  // Calculate estimates (match earnings-card logic)
   const calculateEstimates = async (hashrateValue: number) => {
     setIsLoading(true);
     try {
@@ -61,16 +62,19 @@ export default function PoolCalculator() {
       const kasPerGhPerDay = totalKasPayouts24h / totalHashrate;
       // Calculate estimated KAS for the hashrate
       const estimatedKas = hashrateGH * kasPerGhPerDay;
-      // Pool fee is 0.75%
+      // --- NACHO rebate calculation (match earnings-card) ---
+      // Pool fee is 0.75% of KAS earned
       const poolFee = estimatedKas * 0.0075;
-      // NACHO rebate: 33% for standard, 100% for elite (assume standard for landing)
-      const nachoRebateKas = poolFee * 0.33;
+      // Standard rebate: 33%
+      const rebatePercent = 0.33;
+      // KAS value of rebate
+      const kasRebate = poolFee * rebatePercent;
       // Account for 10% loss during swap
-      const nachoRebateKasAfterLoss = nachoRebateKas * 0.9;
+      const kasAfterSwapLoss = kasRebate * 0.9;
       // Convert KAS rebate to NACHO tokens
-      const nacho = nachoPrice && kasPrice ? (nachoRebateKasAfterLoss * kasPrice) / nachoPrice : 0;
-      // USD value
-      const usd = kasPrice ? estimatedKas * kasPrice : 0;
+      const nacho = nachoPrice && kasPrice && nachoPrice > 0 ? (kasAfterSwapLoss * kasPrice) / nachoPrice : 0;
+      // USD value: KAS + NACHO
+      const usd = kasPrice && nachoPrice ? (estimatedKas * kasPrice) + (nacho * nachoPrice) : 0;
       setEstimates({ kas: estimatedKas, nacho, usd });
     } catch (e) {
       setEstimates(null);
@@ -116,25 +120,27 @@ export default function PoolCalculator() {
         </div>
       </form>
       <div className="mt-8">
-        {estimates ? (
-          <div className="w-full max-w-2xl mx-auto bg-white/5 border border-slate-700/60 rounded-2xl shadow-lg px-8 py-8 flex flex-col sm:flex-row items-stretch justify-center gap-0 sm:gap-0">
-            <div className="flex-1 flex flex-col items-center justify-center px-0 sm:px-8 py-4">
-              <span className="text-xs text-slate-400 mb-2 tracking-wide uppercase">KAS/day</span>
-              <span className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight" style={{fontVariantNumeric:'tabular-nums'}}>{formatNumber(estimates.kas)}</span>
-            </div>
-            <div className="hidden sm:block w-px bg-slate-700/60 mx-0" />
-            <div className="flex-1 flex flex-col items-center justify-center px-0 sm:px-8 py-4">
-              <span className="text-xs text-slate-400 mb-2 tracking-wide uppercase">NACHO/day</span>
-              <span className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight" style={{fontVariantNumeric:'tabular-nums'}}>{formatNumber(estimates.nacho, 3)}</span>
-            </div>
-            <div className="hidden sm:block w-px bg-slate-700/60 mx-0" />
-            <div className="flex-1 flex flex-col items-center justify-center px-0 sm:px-8 py-4">
-              <span className="text-xs text-slate-400 mb-2 tracking-wide uppercase">USD/day</span>
-              <span className="text-4xl md:text-5xl font-extrabold text-green-400 tracking-tight" style={{fontVariantNumeric:'tabular-nums'}}>{formatNumber(estimates.usd, 4)}</span>
-            </div>
+        <div className="w-full max-w-md mx-auto bg-slate-800/80 border border-slate-700/80 rounded-xl shadow px-4 py-4 flex flex-row items-center justify-between gap-2">
+          {/* KAS/day */}
+          <div className="flex flex-col items-center flex-1 min-w-0">
+            <span className="text-[10px] text-slate-400 mb-1 tracking-wide uppercase whitespace-nowrap">KAS/day</span>
+            <span className="text-base md:text-lg font-bold text-slate-100 tracking-tight break-all" style={{fontVariantNumeric:'tabular-nums'}}>{estimates ? formatNumber(estimates.kas, 0) : '--'}</span>
           </div>
-        ) : (
-          <div className="text-gray-400 text-center">Enter your hashrate and click Calculate to see your daily estimate.</div>
+          <div className="w-px h-8 bg-slate-700/60 mx-1" />
+          {/* NACHO/day */}
+          <div className="flex flex-col items-center flex-1 min-w-0">
+            <span className="text-[10px] text-slate-400 mb-1 tracking-wide uppercase whitespace-nowrap">NACHO/day</span>
+            <span className="text-base md:text-lg font-bold text-slate-100 tracking-tight break-all" style={{fontVariantNumeric:'tabular-nums'}}>{estimates ? formatNumber(estimates.nacho, 0) : '--'}</span>
+          </div>
+          <div className="w-px h-8 bg-slate-700/60 mx-1" />
+          {/* USD/day */}
+          <div className="flex flex-col items-center flex-1 min-w-0">
+            <span className="text-[10px] text-slate-400 mb-1 tracking-wide uppercase whitespace-nowrap">USD/day</span>
+            <span className="text-base md:text-lg font-bold text-green-400 tracking-tight break-all" style={{fontVariantNumeric:'tabular-nums'}}>{estimates ? formatNumber(estimates.usd, 0) : '--'}</span>
+          </div>
+        </div>
+        {!estimates && (
+          <div className="text-gray-400 text-center mt-2">Enter your hashrate and click Calculate to see your daily estimate.</div>
         )}
       </div>
     </div>
