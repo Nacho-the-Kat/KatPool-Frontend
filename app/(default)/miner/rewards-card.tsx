@@ -35,6 +35,7 @@ export default function AnalyticsCard02() {
 
       try {
         setIsLoading(true);
+        setPendingNachoRebate('--'); // Set to -- at the start of loading
         const [balanceRes, kasPriceRes] = await Promise.all([
           $fetch(`/api/miner/combinedBalance?wallet=${walletAddress}`, {
             retry: 3,
@@ -61,12 +62,14 @@ export default function AnalyticsCard02() {
         if (kasPriceRes.status === 'success') {
           try {
             const rebateKasAmount = Number(BigInt(balanceRes.data.pendingRebate)) / 1e8;
-            
-            if (nachoPrice !== null && nachoPrice > 0) {
+
+            if (nachoPriceLoading) {
+              setPendingNachoRebate('--'); // Still loading NACHO price
+            } else if (nachoPrice !== null && nachoPrice > 0) {
               const nachoAmount = (rebateKasAmount * kasPriceRes.data.price) / nachoPrice;
               setPendingNachoRebate(Number.isFinite(nachoAmount) ? nachoAmount.toFixed(3) : '--');
             } else {
-              // If NACHO price is not available, show the KAS value instead
+              // If NACHO price is not available after loading, show the KAS value instead
               setPendingNachoRebate(`≈${rebateKasAmount.toFixed(2)} KAS`);
             }
           } catch (e) {
@@ -90,7 +93,7 @@ export default function AnalyticsCard02() {
     // Refresh every minute
     const interval = setInterval(fetchBalances, 60000);
     return () => clearInterval(interval);
-  }, [walletAddress, nachoPrice]);
+  }, [walletAddress, nachoPrice, nachoPriceLoading]);
 
   // Fetch recent payouts
   useEffect(() => {
