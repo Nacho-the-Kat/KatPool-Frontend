@@ -70,7 +70,7 @@ export default function MinerTypes() {
     return (
       <div className="relative flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Manufacturer</h2>
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Firmware</h2>
         </header>
         <div className="flex items-center justify-center h-[260px]">
           <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">Loading...</div>
@@ -84,7 +84,7 @@ export default function MinerTypes() {
     return (
       <div className="relative flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Manufacturer</h2>
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Firmware</h2>
         </header>
         <div className="flex justify-center">
           <FallbackMessage>
@@ -123,7 +123,7 @@ export default function MinerTypes() {
     return (
       <div className="relative flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Manufacturer</h2>
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Firmware</h2>
         </header>
         <div className="flex justify-center">
           <FallbackMessage>
@@ -160,7 +160,7 @@ export default function MinerTypes() {
   return (
     <div className="relative flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Manufacturer</h2>
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">Pool Miners by Firmware</h2>
       </header>
       <div className="flex justify-center">
         <DoughnutChart data={chartData} width={389} height={260} />

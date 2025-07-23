@@ -10,13 +10,17 @@ export async function GET() {
   const traceId = headersList.get('x-trace-id') || undefined;
 
   try {
-    // TODO: May remove `asic_type!=""` filter once backend consistently includes `asic_type` in all metrics
+    // Use query_range to get data for the last 10 minutes
+    const end = Math.floor(Date.now() / 1000);
+    const start = end - (10 * 60); // Last 10 minutes
+    const step = 10; // 1-minute intervals
+
     const baseUrl = process.env.METRICS_BASE_URL || 'http://kas.katpool.xyz:8080';
-    const url = new URL(`${baseUrl}/api/v1/query`);
-    url.searchParams.append(
-      'query',
-      'active_workers_10m_count{asic_type!=""} != 0'
-    );
+    const url = new URL(`${baseUrl}/api/v1/query_range`);
+    url.searchParams.append('query', 'active_workers_10m_count');
+    url.searchParams.append('start', start.toString());
+    url.searchParams.append('end', end.toString());
+    url.searchParams.append('step', step.toString());
     const response = await fetch(url, {
       headers: {
         'x-trace-id': traceId || '',
@@ -38,18 +42,28 @@ export async function GET() {
       throw new Error('Invalid response format');
     }
 
-    // Count miners by ASIC type
+    // Count miners by ASIC type using the latest value in the time series
     const minerTypeCount: { [key: string]: number } = {};
-    
     data.data.result.forEach((item: any) => {
-      const asicType = item.metric.asic_type;
-      // All returned miners are active, so just count them
-      minerTypeCount[asicType] = (minerTypeCount[asicType] || 0) + 1;
+      let asicType = item.metric.asic_type;
+      if (!asicType) {
+        asicType = 'Other';
+      }
+      // Use the latest value in the time series
+      const latestValue = item.values[item.values.length - 1]?.[1];
+      if (Number(latestValue) > 0) {
+        minerTypeCount[asicType] = (minerTypeCount[asicType] || 0) + 1;
+      }
     });
 
     // Sort by count in descending order
     const sortedTypes = Object.entries(minerTypeCount)
-      .sort(([, a], [, b]) => b - a)
+      // sort by count in descending order, but put Other at the end
+      .sort(([keyA, a], [keyB, b]) => {
+        if (keyA === 'Other') return 1;
+        if (keyB === 'Other') return -1;
+        return b - a;
+      })
       .reduce((acc, [key, value]) => {
         acc.labels.push(key);
         acc.values.push(value);
