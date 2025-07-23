@@ -31,7 +31,7 @@ export default function MinerTypes() {
           labels: data.data.labels,
           datasets: [
             {
-              label: 'Top Manufacturers',
+              label: 'Firmwares count',
               data: data.data.values,
               backgroundColor: [
                 tailwindConfig.theme.colors.primary[500],
@@ -92,7 +92,7 @@ export default function MinerTypes() {
               data={{
                 labels: ['Bitmain', 'MicroBT', 'Canaan', 'Other'],
                 datasets: [{
-                  label: 'Top Manufacturers',
+                  label: 'Firmwares count',
                   data: [25, 30, 20, 25],
                   backgroundColor: [
                     tailwindConfig.theme.colors.primary[500],
@@ -131,7 +131,7 @@ export default function MinerTypes() {
               data={{
                 labels: ['Bitmain', 'MicroBT', 'Canaan', 'Other'],
                 datasets: [{
-                  label: 'Top Manufacturers',
+                  label: 'Firmwares count',
                   data: [25, 30, 20, 25],
                   backgroundColor: [
                     tailwindConfig.theme.colors.primary[500],
