@@ -53,7 +53,7 @@ export default function AnalyticsCard03() {
           throw new Error('No data available');
         }
 
-        // Group values by day and get the highest value for each day per miner
+        // Group values by day and accumulate shares throughout the day
         const minerDailyGroups = results.reduce((acc, result) => {
           const minerId = result.metric.miner_id;
           if (!acc[minerId]) acc[minerId] = {};
@@ -64,16 +64,42 @@ export default function AnalyticsCard03() {
             const dayKey = date.toLocaleDateString('en-CA'); // en-CA gives YYYY-MM-DD format
             const numValue = Number(value);
             
-            // Keep track of the highest value for each day for this miner
-            if (!acc[minerId][dayKey] || numValue > acc[minerId][dayKey].value) {
+            if (!acc[minerId][dayKey]) {
               acc[minerId][dayKey] = { 
                 value: numValue,
-                timestamp: timestamp 
+                timestamp: timestamp,
+                maxValue: numValue,
+                accumulatedValue: numValue
               };
+            } else {
+              // Track the maximum value seen for this day
+              if (numValue > acc[minerId][dayKey].maxValue) {
+                acc[minerId][dayKey].maxValue = numValue;
+              }
+              
+              // If current value is less than previous max, it might be a restart
+              // In this case, we accumulate the new shares on top of the previous max
+              if (numValue < acc[minerId][dayKey].maxValue) {
+                // This is likely a restart, accumulate the new value
+                acc[minerId][dayKey].accumulatedValue = acc[minerId][dayKey].maxValue + numValue;
+              } else {
+                // Normal progression, update accumulated value
+                acc[minerId][dayKey].accumulatedValue = numValue;
+              }
+              
+              acc[minerId][dayKey].timestamp = timestamp;
             }
           });
           return acc;
-        }, {} as Record<string, Record<string, { value: number; timestamp: number }>>);
+        }, {} as Record<string, Record<string, { 
+          value: number; 
+          timestamp: number; 
+          maxValue: number; 
+          accumulatedValue: number; 
+        }>>);
+
+        // Debug: Log the processed data to understand accumulation
+        console.log('Miner daily groups:', minerDailyGroups);
 
         // Get all unique days and sort them
         const allDays = new Set<string>();
@@ -88,23 +114,28 @@ export default function AnalyticsCard03() {
           const minerId = result.metric.miner_id;
           const minerData = minerDailyGroups[minerId];
           
-          // Calculate daily differences for this miner
+          // Calculate daily accumulated shares for this miner
           const data = sortedDays.map((day, i) => {
-            const todayValue = minerData[day]?.value || 0;
+            const todayAccumulated = minerData[day]?.accumulatedValue || 0;
             if (i === 0) {
-              return todayValue;
+              return todayAccumulated;
             }
-            const previousValue = minerData[sortedDays[i - 1]]?.value || 0;
+            const previousAccumulated = minerData[sortedDays[i - 1]]?.accumulatedValue || 0;
             
-            // For any element where current value < previous value, return current value
-            if (todayValue < previousValue) {
-              return todayValue;
+            // Calculate the difference in accumulated shares
+            const diff = todayAccumulated - previousAccumulated;
+            
+            // If the difference is negative (which shouldn't happen with accumulated values),
+            // or if it's the first day, return the accumulated value
+            if (diff < 0 || i === 0) {
+              return todayAccumulated;
             }
             
-            // Otherwise return the difference
-            const diff = todayValue - previousValue;
             return diff;
           });
+
+          // Debug: Log the calculated data for this miner
+          console.log(`Data for miner ${minerId}:`, data);
 
           return {
             label: minerId,
