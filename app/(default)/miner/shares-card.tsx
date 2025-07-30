@@ -98,9 +98,6 @@ export default function AnalyticsCard03() {
           accumulatedValue: number; 
         }>>);
 
-        // Debug: Log the processed data to understand accumulation
-        console.log('Miner daily groups:', minerDailyGroups);
-
         // Get all unique days and sort them
         const allDays = new Set<string>();
         Object.values(minerDailyGroups).forEach(minerData => {
@@ -133,9 +130,6 @@ export default function AnalyticsCard03() {
             
             return diff;
           });
-
-          // Debug: Log the calculated data for this miner
-          console.log(`Data for miner ${minerId}:`, data);
 
           return {
             label: minerId,
