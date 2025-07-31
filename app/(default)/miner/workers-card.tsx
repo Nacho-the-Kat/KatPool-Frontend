@@ -41,6 +41,7 @@ interface WorkerData {
     twelveHour: number;
     twentyFourHour: number;
   };
+  averageSharePerMinute: number; // <-- add this
 }
 
 interface Worker {
@@ -101,11 +102,13 @@ export default function AnalyticsCard11() {
           });
         }
 
-        // Process shares data just for timestamp
+        // Process shares data for timestamp and average_share_per_minute
         const timestampMap = new Map<string, number>();
+        const avgShareMap = new Map<string, number>();
         if (totalSharesRes?.data?.result) {
-          totalSharesRes.data.result.forEach((result: SharesData) => {
+          totalSharesRes.data.result.forEach((result: any) => {
             timestampMap.set(result.metric.miner_id, result.values[0][0]);
+            avgShareMap.set(result.metric.miner_id, result.average_share_per_minute);
           });
         }
 
@@ -115,6 +118,7 @@ export default function AnalyticsCard11() {
             minerId,
             lastShareTimestamp: timestampMap.get(minerId) || Date.now() / 1000,
             hashrates,
+            averageSharePerMinute: avgShareMap.get(minerId) ?? 0,
           }))
            .filter(worker => {
             // Filter out workers that have not shared in the last 10 minutes
@@ -229,7 +233,7 @@ export default function AnalyticsCard11() {
           </FallbackMessage>
         ) : (
           <div className="overflow-x-auto">
-            <table className="table-auto w-full dark:text-gray-300">
+            <table className="table-auto w-full table-fixed dark:text-gray-300">
               {/* Table header */}
               <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/20 border-t border-gray-100 dark:border-gray-700">
                 <tr>
@@ -258,7 +262,7 @@ export default function AnalyticsCard11() {
                 {workers.map((worker) => {
                   const secondsSinceLastShare = Date.now() / 1000 - worker.lastShareTimestamp;
                   const isOnline = secondsSinceLastShare < 300; // 5 minutes
-                  
+                  const blur = worker.averageSharePerMinute < 3.5;
                   return (
                     <tr key={worker.minerId}>
                       <td className="p-2 whitespace-nowrap">
@@ -267,25 +271,50 @@ export default function AnalyticsCard11() {
                           <div className="font-medium text-gray-800 dark:text-gray-100">{worker.minerId}</div>
                         </div>
                       </td>
-                      <td className="p-2 whitespace-nowrap">
-                        <div className="text-center">
-                          {secondsSinceLastShare > 600 ? 'estimating ...' : formatHashrate(worker.hashrates.fifteenMin)}
-                        </div>
-                      </td>
-                      <td className="p-2 whitespace-nowrap">
-                        <div className="text-center">{formatHashrate(worker.hashrates.oneHour)}</div>
-                      </td>
-                      <td className="p-2 whitespace-nowrap">
-                        <div className="text-center">{formatHashrate(worker.hashrates.twelveHour)}</div>
-                      </td>
-                      <td className="p-2 whitespace-nowrap">
-                        <div className="text-center">{formatHashrate(worker.hashrates.twentyFourHour)}</div>
-                      </td>
-                      <td className="p-2 whitespace-nowrap">
-                        <div className="text-center">
-                          {formatTimeAgo(worker.lastShareTimestamp)}
-                        </div>
-                      </td>
+                      {blur ? (
+                        <td colSpan={5} className="relative p-0">
+                          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg backdrop-blur-sm text-xs text-yellow-900 dark:text-yellow-100 font-semibold text-center" style={{pointerEvents:'none', margin:0}}>
+                            <div className="relative flex items-center mr-2">
+                              <div className="group">
+                                <button className="flex items-center justify-center w-6 h-6 rounded-full text-yellow-500 hover:text-yellow-600" tabIndex={0} style={{pointerEvents:'auto'}}>
+                                  <span className="sr-only">View information</span>
+                                  <svg className="w-4 h-4 fill-current" viewBox="0 0 16 16">
+                                    <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z"></path>
+                                  </svg>
+                                </button>
+                                <div className="absolute top-full right-0 mt-2 w-72 bg-gray-800 text-xs text-white p-3 rounded-lg shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30">
+                                  <div className="relative">
+                                    <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 right-4 -top-[6px]"></div>
+                                    <div className="font-medium mb-1"><strong>Why low shares?</strong></div>
+                                    <p className="mb-2">Low shares can happen if a low hashrate miner connects to a high difficulty port. The miner will take much longer to find valid shares, resulting in fewer submissions. This can cause stale shares or timeouts. It’s best to match miner hashrate with the appropriate pool difficulty.</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            Warning: Few shares submitted. Your miner may be connected to a port with too high difficulty. Try changing your miner port number.
+                          </div>
+                        </td>
+                      ) : (
+                        <>
+                          <td className="p-2 whitespace-nowrap relative">
+                            <div className="text-center">
+                              {secondsSinceLastShare > 600 ? 'estimating ...' : formatHashrate(worker.hashrates.fifteenMin)}
+                            </div>
+                          </td>
+                          <td className="p-2 whitespace-nowrap relative">
+                            <div className="text-center">{formatHashrate(worker.hashrates.oneHour)}</div>
+                          </td>
+                          <td className="p-2 whitespace-nowrap relative">
+                            <div className="text-center">{formatHashrate(worker.hashrates.twelveHour)}</div>
+                          </td>
+                          <td className="p-2 whitespace-nowrap relative">
+                            <div className="text-center">{formatHashrate(worker.hashrates.twentyFourHour)}</div>
+                          </td>
+                          <td className="p-2 whitespace-nowrap relative">
+                            <div className="text-center">{formatTimeAgo(worker.lastShareTimestamp)}</div>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   );
                 })}

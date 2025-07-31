@@ -22,7 +22,7 @@ const Navigation = () => {
     { href: "/miner", label: "Miner Dashboard" },
     { href: "/pool", label: "Pool Statistics" },
     { href: "/topMiners", label: "Top Miners" },
-    { href: "/resources", label: "Resources" },
+    { href: "/resources/kas-mining-tutorial", label: "Resources" },
   ];
 
   return (
@@ -36,7 +36,7 @@ const Navigation = () => {
           {/* Logo */}
           <div className="flex items-center space-x-3">
             <Image
-              src="/images/navLogo.png"
+              src="/images/navlogo.png"
               alt="KatPool Logo"
               width={154}
               height={38}
@@ -65,11 +65,9 @@ const Navigation = () => {
           <div className="hidden lg:flex items-center space-x-4">
             <a
               href="/connect"
-              className={`inline-flex items-center px-6 py-2.5 rounded-lg text-sm font-semibold ${
-                isScrolled
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-white/10 text-white backdrop-blur-sm'
-              }`}
+              className={
+                `inline-flex items-center px-6 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-2xl shadow-teal-500/25 transition-all duration-300 hover:shadow-teal-500/40 hover:scale-105 btn-hover glow-effect focus-enhanced`
+              }
             >
               Start Mining
               <ExternalLink className="ml-2 h-4 w-4" />
@@ -118,11 +116,9 @@ const Navigation = () => {
               <div className="pt-4 border-t border-gray-200/50">
                 <a
                   href="/connect"
-                  className={`inline-flex items-center justify-center w-full px-6 py-3 rounded-lg text-sm font-semibold ${
-                    isScrolled
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white/10 text-white'
-                  }`}
+                  className={
+                    `inline-flex items-center justify-center w-full px-6 py-3 rounded-lg text-sm font-semibold bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-2xl shadow-teal-500/25 transition-all duration-300 hover:shadow-teal-500/40 hover:scale-105 btn-hover glow-effect focus-enhanced`
+                  }
                   onClick={() => setIsOpen(false)}
                 >
                   Start Mining

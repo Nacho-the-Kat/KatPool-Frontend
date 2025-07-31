@@ -4,6 +4,8 @@ import Statistics from './components/Statistics';
 import Testimonials from './components/Testimonials';
 import Footer from './components/Footer';
 import PoolFeeTiers from './components/PoolFeeTiers';
+import PoolCalculator from './components/PoolCalculator';
+import MiningCalculatorSection from './components/MiningCalculatorSection';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -43,6 +45,8 @@ export default function LandingPage() {
         <Navigation />
         <Hero />
         <Statistics />
+        {/* Mining Calculator Section - Styled as a block */}
+        <MiningCalculatorSection />
         <PoolFeeTiers />
         <Testimonials />
         <Footer />

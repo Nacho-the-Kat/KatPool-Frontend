@@ -141,7 +141,7 @@ const Testimonials = () => {
         </div>
 
         {/* Carousel Container */}
-        <div className="relative overflow-visible" style={{ overflowX: 'hidden' }}>
+        <div className="relative overflow-hidden" style={{ overflowX: 'hidden', overflowY: 'hidden' }}>
           {/* Carousel Track */}
           <div 
             ref={carouselRef}
@@ -161,7 +161,7 @@ const Testimonials = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 
                 {/* Card */}
-                <div className="relative bg-slate-900/50 backdrop-blur-enhanced rounded-2xl p-8 border border-slate-700/50 hover:border-teal-500/50 transition-all duration-300 h-full flex flex-col card-hover">
+                <div className="testimonial-card relative bg-slate-900/50 backdrop-blur-enhanced rounded-2xl p-8 border border-slate-700/50 hover:border-teal-500/50 transition-all duration-300 h-full flex flex-col card-hover">
                   {/* Header */}
                   <div className="flex items-start justify-between mb-6">
                     <Quote className="w-8 h-8 text-teal-400 flex-shrink-0" />
@@ -238,9 +238,16 @@ const Testimonials = () => {
         </div>
       </div>
 
-      {/* Hide scrollbar for webkit browsers */}
-      <style jsx>{`
-        .flex::-webkit-scrollbar {
+      {/* Hide scrollbar for testimonial cards and carousel track, make both static */}
+      <style jsx global>{`
+        .testimonial-card {
+          overflow: hidden;
+        }
+        .testimonials-carousel-track {
+          overflow: hidden;
+        }
+        .testimonial-card::-webkit-scrollbar,
+        .testimonials-carousel-track::-webkit-scrollbar {
           display: none;
         }
       `}</style>
@@ -248,4 +255,4 @@ const Testimonials = () => {
   );
 };
 
-export default Testimonials; 
+export default Testimonials;
