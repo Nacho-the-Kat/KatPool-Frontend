@@ -44,7 +44,7 @@ export default function DropdownHelp({ align }: {
                 {({ active }) => (
                   <Link 
                     className={`font-medium text-sm flex items-center py-1 px-3 ${active ? 'text-primary-600 dark:text-primary-400' : 'text-primary-500'}`} 
-                    href="https://kas.fyi/address/kaspa:qz4j8mu269z8llgcczmfukm9fan2fq822kzxu4cfukd5fqrhxpsv2zhs9jxnp"
+                    href="https://kaspa.stream/addresses/kaspa:qz4j8mu269z8llgcczmfukm9fan2fq822kzxu4cfukd5fqrhxpsv2zhs9jxnp"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
