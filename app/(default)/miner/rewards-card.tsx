@@ -338,7 +338,7 @@ export default function AnalyticsCard02() {
                           {formatTimestamp(payout.timestamp)}
                           <span className="mx-2">•</span>
                           <a
-                            href={`https://kas.fyi/transaction/${payout.transactionHash}`}
+                            href={`https://kaspa.stream/transactions/${payout.transactionHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="hover:text-primary-500 dark:hover:text-primary-400"

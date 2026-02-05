@@ -209,7 +209,7 @@ export default function PayoutsCard({
                   <td className="p-2 whitespace-nowrap">
                     <div className="text-center">
                       <a 
-                        href={`https://kas.fyi/transaction/${payout.transactionHash}`}
+                        href={`https://kaspa.stream/transactions/${payout.transactionHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
